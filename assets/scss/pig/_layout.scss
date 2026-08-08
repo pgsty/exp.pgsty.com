@@ -1,16 +1,16 @@
 // ============================================================
-// silo/layout —— 文档页三栏壳：侧栏列 / 正文列 / TOC 列
+// pig/layout —— 文档页三栏壳：侧栏列 / 正文列 / TOC 列
 // 含桌面侧栏收起状态机（16px 热区 + 悬停弹出 overlay）与移动抽屉。
 // ============================================================
 
 // 全出血布局：去掉 container-fluid 的默认水平内边距。
-.silo-chrome .td-outer {
+.pig-chrome .td-outer {
   padding-left: 0;
   padding-right: 0;
   max-width: none;
 }
 
-.td-main.silo-layout {
+.td-main.pig-layout {
   display: flex;
   align-items: stretch;
   padding-top: 0;
@@ -19,19 +19,19 @@
 
   @include media-breakpoint-up(md) {
     // 固定顶栏只在 ≥md 存在，布局整体下移一个顶栏高度。
-    padding-top: var(--silo-nav-h);
+    padding-top: var(--pig-nav-h);
   }
 }
 
 // 干掉 Docsy 给 .td-main main 的 calc(1.5rem + 4rem) 顶距，改由 article 自理。
-.silo-layout .silo-main {
+.pig-layout .pig-main {
   flex: 1 1 0;
   min-width: 0;
   padding: 0;
 }
 
 // 正文列宽：page_width 参数（normal 1050 / wide 1300 / full 占满）。
-.silo-article {
+.pig-article {
   max-width: 1050px;
   width: 100%;
   margin-inline: auto;
@@ -42,11 +42,11 @@
   }
 }
 
-.silo-layout--w-wide .silo-article {
+.pig-layout--w-wide .pig-article {
   max-width: 1300px;
 }
 
-.silo-layout--w-full .silo-article {
+.pig-layout--w-full .pig-article {
   max-width: none;
 }
 
@@ -54,19 +54,19 @@
 
 // 全宽贴文档底：td-outer 纵向 flex + 布局区 flex:1，短页面时页脚也钉在
 // 视口底；长页面时隐于首屏外，滚动到底才出现。
-.silo-chrome .td-outer {
+.pig-chrome .td-outer {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
 }
 
-.td-main.silo-layout {
+.td-main.pig-layout {
   flex: 1 0 auto;
 }
 
 // 页脚 = 不透明「盖板」：滚动到底时作为一整张全宽面从下方浮现，
 // 盖住两侧 fixed 面板的底缘 —— 侧栏内容不动、不裁切，渲染自然。
-.silo-footline {
+.pig-footline {
   position: relative;
   z-index: 35; // 高于两侧面板（sidebar 30 / toc 20），低于浮控（40）与弹层
   display: flex;
@@ -77,7 +77,7 @@
   border-top: 1px solid var(--bs-border-color);
   background: var(--bs-body-bg);
   font-size: 13px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
 
   a {
     color: inherit;
@@ -116,7 +116,7 @@
 
 /* ------------------------------------------------------- 移动端 subnav */
 
-.silo-subnav {
+.pig-subnav {
   position: sticky;
   top: 0;
   z-index: 30;
@@ -159,9 +159,9 @@
 
 // 占位列：只负责在布局中保留宽度（面板本体 fixed，不随文档滚动——
 // 右侧正文滚到底时 logo/搜索框纹丝不动，全宽页脚从面板下方滑过）。
-.silo-sidebar {
+.pig-sidebar {
   flex: 0 0 auto;
-  width: clamp(var(--silo-sidebar-min), var(--silo-sidebar-w), var(--silo-sidebar-max));
+  width: clamp(var(--pig-sidebar-min), var(--pig-sidebar-w), var(--pig-sidebar-max));
   transition: width 150ms ease; // v16 列宽过渡时长
 
   @include media-breakpoint-down(md) {
@@ -169,14 +169,14 @@
   }
 }
 
-.silo-sidebar__panel {
+.pig-sidebar__panel {
   position: fixed;
   inset: 0 auto 0 0;
-  width: clamp(var(--silo-sidebar-min), var(--silo-sidebar-w), var(--silo-sidebar-max));
+  width: clamp(var(--pig-sidebar-min), var(--pig-sidebar-w), var(--pig-sidebar-max));
   z-index: 30;
   display: flex;
   flex-direction: column;
-  background: var(--silo-card);
+  background: var(--pig-card);
   border-right: 1px solid var(--bs-border-color);
   font-size: 14px;
   transition:
@@ -194,7 +194,7 @@
     z-index: 1045;
     border-right: 0;
     border-inline-start: 1px solid var(--bs-border-color);
-    box-shadow: var(--silo-shadow-lg);
+    box-shadow: var(--pig-shadow-lg);
     transform: translateX(100%);
     transition: transform 250ms ease;
   }
@@ -202,36 +202,36 @@
 
 // ---- 桌面收起状态机 ----
 @include media-breakpoint-up(md) {
-  [data-silo-sidebar='collapsed'] .silo-sidebar {
+  [data-pig-sidebar='collapsed'] .pig-sidebar {
     width: 0;
   }
 
   // 收起：面板滑出视口，仅留 16px 隐形热区（opacity:0 不影响命中测试）。
-  [data-silo-sidebar='collapsed'] .silo-sidebar__panel {
+  [data-pig-sidebar='collapsed'] .pig-sidebar__panel {
     transform: translateX(calc(-100% + 16px));
     opacity: 0;
   }
 
   // 悬停弹出：浮层形态（圆角 + 全描边 + 投影），不回推正文；
   // z 提到浮控（z-40）之上。
-  [data-silo-sidebar='collapsed'] .silo-sidebar--overlay .silo-sidebar__panel {
+  [data-pig-sidebar='collapsed'] .pig-sidebar--overlay .pig-sidebar__panel {
     transform: translateX(8px);
     opacity: 1;
     inset-block: 8px;
     z-index: 60;
     border: 1px solid var(--bs-border-color);
     border-radius: 14px;
-    box-shadow: var(--silo-shadow-lg);
+    box-shadow: var(--pig-shadow-lg);
   }
 }
 
 /* ------------------------------------------------------------- 移动抽屉 */
 
-[data-silo-drawer='open'] .silo-sidebar__panel {
+[data-pig-drawer='open'] .pig-sidebar__panel {
   transform: translateX(0);
 }
 
-.silo-drawer-backdrop {
+.pig-drawer-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1040;
@@ -243,30 +243,30 @@
   transition: opacity 250ms ease;
 }
 
-[data-silo-drawer='open'] .silo-drawer-backdrop {
+[data-pig-drawer='open'] .pig-drawer-backdrop {
   opacity: 1;
   pointer-events: auto;
 }
 
 /* --------------------------------------------------- 收起态左上浮动控件 */
 
-.silo-float {
+.pig-float {
   display: none;
   position: fixed;
   left: 16px;
-  top: calc(var(--silo-nav-h) + 16px);
+  top: calc(var(--pig-nav-h) + 16px);
   z-index: 40;
   gap: 2px;
   padding: 2px;
   border-radius: 12px; // v16 rounded-xl
   border: 1px solid var(--bs-border-color);
-  background: var(--silo-card);
-  box-shadow: var(--silo-shadow-lg);
+  background: var(--pig-card);
+  box-shadow: var(--pig-shadow-lg);
 }
 
 /* ------------------------------------------------------------ 拖拽调宽 */
 
-.silo-sidebar__resizer {
+.pig-sidebar__resizer {
   display: none;
   position: absolute;
   inset-block: 0;
@@ -283,7 +283,7 @@
     inset-block: 0;
     inset-inline-start: 2px;
     width: 2px;
-    background: var(--silo-primary);
+    background: var(--pig-primary);
     opacity: 0;
     transition: opacity 150ms ease;
   }
@@ -298,17 +298,17 @@
 }
 
 // 拖拽进行中：全局关过渡、禁选中，指示条常亮。
-html[data-silo-resizing] {
+html[data-pig-resizing] {
   cursor: col-resize;
   user-select: none;
   -webkit-user-select: none;
 
-  .silo-sidebar,
-  .silo-sidebar__panel {
+  .pig-sidebar,
+  .pig-sidebar__panel {
     transition: none !important;
   }
 
-  .silo-sidebar__resizer::after {
+  .pig-sidebar__resizer::after {
     opacity: 0.7;
   }
 
@@ -319,8 +319,8 @@ html[data-silo-resizing] {
 }
 
 @include media-breakpoint-up(md) {
-  [data-silo-sidebar='collapsed'] .silo-float {
+  [data-pig-sidebar='collapsed'] .pig-float {
     display: flex;
-    animation: silo-fade 300ms ease both;
+    animation: pig-fade 300ms ease both;
   }
 }

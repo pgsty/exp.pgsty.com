@@ -4,7 +4,7 @@
 	{{/* byline：撰文 · 发布于 {日期} · {栏目链接}（栏目可点击回到对应博客专栏）。 */}}
 	<div class="td-byline mb-4">
 		{{ with .Params.author }}{{ T "post_byline_by" }} <b>{{ . | markdownify }}</b> ·{{ end }}
-		{{ T "silo_published_on" }} <time datetime="{{ $.Date.Format "2006-01-02" }}" class="text-body-secondary">{{ $.Date.Format $.Site.Params.time_format_blog }}</time>
+		{{ T "pig_published_on" }} <time datetime="{{ $.Date.Format "2006-01-02" }}" class="text-body-secondary">{{ $.Date.Format $.Site.Params.time_format_blog }}</time>
 		{{- with .CurrentSection }} · <a class="td-byline__section" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>{{ end }}
 	</div>
 	<header class="article-meta">

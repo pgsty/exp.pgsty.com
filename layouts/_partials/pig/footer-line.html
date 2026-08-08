@@ -21,20 +21,20 @@
     {{- $languageLabel = default .Language.Lang .Language.Label -}}
   {{- end -}}
 {{- end -}}
-<footer class="silo-footline d-print-none">
-  <div class="silo-footline__copy">
+<footer class="pig-footline d-print-none">
+  <div class="pig-footline__copy">
     © {{ .Site.Params.copyright.from_year | default 2020 }}-{{ now.Year }}
-    <a href="https://vonng.com" target="_blank" rel="noopener">{{ T "silo_footer_author" }}</a>
+    <a href="https://vonng.com" target="_blank" rel="noopener">{{ T "pig_footer_author" }}</a>
     (<a href="https://github.com/Vonng" target="_blank" rel="noopener">Vonng</a>)
     @ <a href="https://pgsty.com" target="_blank" rel="noopener">PGSTY</a>
   </div>
   {{ with .Site.Params.footer_icp -}}
-  <div class="silo-footline__icp">
+  <div class="pig-footline__icp">
     <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ . }}</a>
   </div>
   {{- end }}
   {{ if $languageTarget -}}
-  <div class="silo-footline__lang">
+  <div class="pig-footline__lang">
     <a href="{{ $languageTarget }}">{{ $languageLabel }}</a>
   </div>
   {{- end }}

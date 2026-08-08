@@ -1,10 +1,10 @@
 // ============================================================
-// silo/toc —— 右侧「本页目录」：灰轨 + 1px 主色 thumb 竖条
-// thumb 的 top/height 由 silo-docs.js 写入 --silo-thumb-top / --silo-thumb-h。
+// pig/toc —— 右侧「本页目录」：灰轨 + 1px 主色 thumb 竖条
+// thumb 的 top/height 由 pig-docs.js 写入 --pig-thumb-top / --pig-thumb-h。
 // ============================================================
 
 // 占位列（面板本体 fixed，右侧滚到底不随文档移动；整栏可隐藏）。
-.silo-toc {
+.pig-toc {
   display: none;
 
   @include media-breakpoint-up(xl) {
@@ -15,7 +15,7 @@
   }
 }
 
-.silo-toc__panel {
+.pig-toc__panel {
   display: none;
 
   @include media-breakpoint-up(xl) {
@@ -31,14 +31,14 @@
   }
 }
 
-// 整栏隐藏（html[data-silo-toc=collapsed]）：列宽归零、面板右滑出。
+// 整栏隐藏（html[data-pig-toc=collapsed]）：列宽归零、面板右滑出。
 @include media-breakpoint-up(xl) {
-  [data-silo-toc='collapsed'] .silo-toc {
+  [data-pig-toc='collapsed'] .pig-toc {
     width: 0;
     flex-basis: 0;
   }
 
-  [data-silo-toc='collapsed'] .silo-toc__panel {
+  [data-pig-toc='collapsed'] .pig-toc__panel {
     transform: translateX(100%);
     opacity: 0;
     pointer-events: none;
@@ -46,7 +46,7 @@
 }
 
 // 右上恢复浮钮（仅 collapsed + ≥xl 显示）。
-.silo-toc-float {
+.pig-toc-float {
   display: none;
   position: fixed;
   top: 16px;
@@ -55,20 +55,20 @@
   padding: 2px;
   border-radius: 12px;
   border: 1px solid var(--bs-border-color);
-  background: var(--silo-card);
-  box-shadow: var(--silo-shadow-lg);
+  background: var(--pig-card);
+  box-shadow: var(--pig-shadow-lg);
 }
 
 @include media-breakpoint-up(xl) {
-  [data-silo-toc='collapsed'] .silo-toc-float {
+  [data-pig-toc='collapsed'] .pig-toc-float {
     display: flex;
-    animation: silo-fade 300ms ease both;
+    animation: pig-fade 300ms ease both;
   }
 }
 
 /* actions 行：标题图标钮（=整栏隐藏开关）+ 标题 + 语言直切 + 亮暗直切 */
 
-.silo-toc__actions {
+.pig-toc__actions {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -76,7 +76,7 @@
   padding-bottom: 6px;
 }
 
-.silo-toc__title-btn {
+.pig-toc__title-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -84,40 +84,40 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   transition: background-color 100ms ease, color 100ms ease;
 
-  .silo-icon {
+  .pig-icon {
     width: 16px;
     height: 16px;
   }
 
   &:hover {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     color: var(--bs-body-color);
   }
 }
 
-.silo-toc__title {
+.pig-toc__title {
   margin: 0;
   font-size: 14px;
   font-weight: 400;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.silo-toc__actions-spacer {
+.pig-toc__actions-spacer {
   flex: 1 1 auto;
 }
 
 // 小号 ghost 钮（actions 行专用，紧凑排布容纳五枚）。
-.silo-iconbtn.silo-iconbtn--sm {
+.pig-iconbtn.pig-iconbtn--sm {
   padding: 4px;
   border-radius: 6px;
 
-  .silo-icon {
+  .pig-icon {
     width: 16px;
     height: 16px;
   }
@@ -133,27 +133,27 @@
 }
 
 // 亮暗直切钮：显示「目标模式」图标（亮色下出月亮，点击即切暗）。
-.silo-quick-theme .silo-icon--sun {
+.pig-quick-theme .pig-icon--sun {
   display: none;
 }
 
-html[data-bs-theme='dark'] .silo-quick-theme {
-  .silo-icon--moon {
+html[data-bs-theme='dark'] .pig-quick-theme {
+  .pig-icon--moon {
     display: none;
   }
 
-  .silo-icon--sun {
+  .pig-icon--sun {
     display: inline-block;
   }
 }
 
-.silo-toc__inner {
+.pig-toc__inner {
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
-.silo-toc__body {
+.pig-toc__body {
   position: relative;
   min-height: 0;
   overflow-y: auto;
@@ -169,9 +169,9 @@ html[data-bs-theme='dark'] .silo-quick-theme {
 }
 
 /* v16「normal」变体：每条目一段 SVG 轨道 + 主色路径 clip-path 高亮 + 滑动圆点。
-   缩进（20/32/44px）由 silo-docs.js 以内联 padding-inline-start 写入。 */
+   缩进（20/32/44px）由 pig-docs.js 以内联 padding-inline-start 写入。 */
 
-.silo-toc__body #TableOfContents {
+.pig-toc__body #TableOfContents {
   ul {
     list-style: none;
     margin: 0;
@@ -185,7 +185,7 @@ html[data-bs-theme='dark'] .silo-quick-theme {
     padding: 6px 0;
     font-size: 14px;
     line-height: 20px;
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
     overflow-wrap: anywhere;
     transition: color 150ms ease;
 
@@ -195,7 +195,7 @@ html[data-bs-theme='dark'] .silo-quick-theme {
     }
 
     &.active {
-      color: var(--silo-primary);
+      color: var(--pig-primary);
     }
   }
 
@@ -209,7 +209,7 @@ html[data-bs-theme='dark'] .silo-quick-theme {
 }
 
 // 每条目的灰色轨道段（line + 深度变化的贝塞尔连接线）。
-.silo-toc__rail {
+.pig-toc__rail {
   position: absolute;
   inset-inline-start: 0;
   top: -6px;
@@ -219,7 +219,7 @@ html[data-bs-theme='dark'] .silo-quick-theme {
 
   line,
   path {
-    stroke: var(--silo-rail);
+    stroke: var(--pig-rail);
     stroke-width: 1;
     fill: none;
   }
@@ -230,8 +230,8 @@ html[data-bs-theme='dark'] .silo-quick-theme {
   }
 }
 
-// 活跃高亮：整列主色路径按 --silo-track-top/bottom 裁剪，150ms 平滑伸缩。
-.silo-toc__active {
+// 活跃高亮：整列主色路径按 --pig-track-top/bottom 裁剪，150ms 平滑伸缩。
+.pig-toc__active {
   position: absolute;
   top: 0;
   inset-inline-start: 0;
@@ -242,38 +242,38 @@ html[data-bs-theme='dark'] .silo-quick-theme {
     display: block;
     overflow: visible;
     clip-path: polygon(
-      0 var(--silo-track-top, 0px),
-      100% var(--silo-track-top, 0px),
-      100% var(--silo-track-bottom, 0px),
-      0 var(--silo-track-bottom, 0px)
+      0 var(--pig-track-top, 0px),
+      100% var(--pig-track-top, 0px),
+      100% var(--pig-track-bottom, 0px),
+      0 var(--pig-track-bottom, 0px)
     );
     transition: clip-path 150ms ease;
   }
 
   path {
-    stroke: var(--silo-primary);
+    stroke: var(--pig-primary);
     stroke-width: 1;
     fill: none;
   }
 }
 
 // 沿路径滑动的 4px 圆点（CSS motion path）。
-.silo-toc__dot {
+.pig-toc__dot {
   position: absolute;
   top: 0;
   inset-inline-start: 0;
   width: 4px;
   height: 4px;
   border-radius: 999px;
-  background: var(--silo-primary);
-  offset-distance: var(--silo-dot-d, 0px);
-  opacity: var(--silo-dot-o, 0);
+  background: var(--pig-primary);
+  offset-distance: var(--pig-dot-d, 0px);
+  opacity: var(--pig-dot-o, 0);
   transition: offset-distance 150ms ease, opacity 150ms ease;
 }
 
 /* TOC 下方的页面元链接（编辑 / 查看源码 / 提 issue …） */
 
-.silo-toc .td-page-meta {
+.pig-toc .td-page-meta {
   margin: 16px 0 0 !important;
   padding: 12px 0 0 !important;
   border-top: 1px solid var(--bs-border-color);
@@ -286,7 +286,7 @@ html[data-bs-theme='dark'] .silo-quick-theme {
     padding: 3px 0;
     font-size: 13px;
     font-weight: 400;
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
 
     &:hover {
       color: var(--bs-body-color);

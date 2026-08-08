@@ -1,5 +1,5 @@
 /**
- * SILO landing interactions, reused from Pigsty Landing v3.
+ * PIG landing interactions, reused from Pigsty Landing v3.
  * Theme switch / command copy / reveal / counters / gallery.
  */
 
@@ -8,7 +8,7 @@
 
   var DARK_THEME_COLOR = '#0b1119';
   var LIGHT_THEME_COLOR = '#f1f4f8';
-  var THEME_KEY = 'silo-landing-theme';
+  var THEME_KEY = 'pig-landing-theme';
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -55,7 +55,7 @@
     });
 
     try {
-      window.dispatchEvent(new CustomEvent('silo-theme-change', { detail: { theme: theme } }));
+      window.dispatchEvent(new CustomEvent('pig-theme-change', { detail: { theme: theme } }));
     } catch (err) { /* ignore */ }
   }
 
@@ -188,7 +188,7 @@
     });
 
     // 链接与搜索按钮点击后收起菜单（主题切换按钮除外，保持菜单打开）。
-    menu.querySelectorAll('a, [data-silo-search-open]').forEach(function (link) {
+    menu.querySelectorAll('a, [data-pig-search-open]').forEach(function (link) {
       link.addEventListener('click', function () {
         menu.classList.remove('active');
         toggle.classList.remove('active');
@@ -267,7 +267,7 @@
 
     renderAsciinema(container, currentTheme());
 
-    window.addEventListener('silo-theme-change', function (event) {
+    window.addEventListener('pig-theme-change', function (event) {
       var theme = event && event.detail ? event.detail.theme : currentTheme();
       renderAsciinema(container, theme);
     });

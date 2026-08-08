@@ -90,7 +90,7 @@
   <script>
     (function () {
       var theme = null;
-      try { theme = window.localStorage.getItem('silo-landing-theme'); } catch (error) {}
+      try { theme = window.localStorage.getItem('pig-landing-theme'); } catch (error) {}
       if (theme !== 'light' && theme !== 'dark') {
         theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       }
@@ -104,7 +104,7 @@
   <link rel="stylesheet" href="{{ "vendor/fontawesome/css/all.min.css" | relURL }}">
   {{/* Content hash in the query string: static/ assets are served with long cache
        lifetimes, so an edited stylesheet must change its URL to be picked up. */}}
-  {{- range slice "css/landing-v3.css" "css/silo-v3.css" "css/download.css" "css/silo-footer.css" }}
+  {{- range slice "css/landing-v3.css" "css/pig-v3.css" "css/download.css" "css/pig-footer.css" }}
   <link rel="stylesheet" href="{{ . | relURL }}?v={{ substr (md5 (readFile (path.Join "static" .))) 0 8 }}">
   {{- end }}
   {{- $searchCss := resources.Get "scss/landing-search.scss" | toCSS | minify | fingerprint }}
@@ -126,18 +126,18 @@
           <a href="{{ relLangURL "docs/" }}" class="nav-link">{{ if $zh }}文档{{ else }}Docs{{ end }}</a>
           <a href="{{ relLangURL "blog/" }}" class="nav-link">{{ if $zh }}博客{{ else }}Blog{{ end }}</a>
           <div class="nav-utils">
-            <button type="button" class="nav-util" data-silo-search-open title="{{ if $zh }}搜索（⌘K）{{ else }}Search (⌘K){{ end }}" aria-label="{{ if $zh }}搜索{{ else }}Search{{ end }}">
-              {{- partialCached "silo/icon.html" "search" "search" -}}
+            <button type="button" class="nav-util" data-pig-search-open title="{{ if $zh }}搜索（⌘K）{{ else }}Search (⌘K){{ end }}" aria-label="{{ if $zh }}搜索{{ else }}Search{{ end }}">
+              {{- partialCached "pig/icon.html" "search" "search" -}}
             </button>
             <button type="button" class="nav-util" data-theme-toggle title="{{ if $zh }}切换深浅主题{{ else }}Switch light / dark mode{{ end }}" aria-label="{{ if $zh }}切换深浅主题{{ else }}Switch light / dark mode{{ end }}">
-              {{- partialCached "silo/icon.html" "moon" "moon" -}}
-              {{- partialCached "silo/icon.html" "sun" "sun" -}}
+              {{- partialCached "pig/icon.html" "moon" "moon" -}}
+              {{- partialCached "pig/icon.html" "sun" "sun" -}}
             </button>
             {{ range .Translations }}
-            <a href="{{ .RelPermalink }}" class="nav-util" title="{{ .Language.Label }}" aria-label="{{ .Language.Label }}">{{ partialCached "silo/icon.html" "languages" "languages" }}</a>
+            <a href="{{ .RelPermalink }}" class="nav-util" title="{{ .Language.Label }}" aria-label="{{ .Language.Label }}">{{ partialCached "pig/icon.html" "languages" "languages" }}</a>
             {{ end }}
             <a href="https://github.com/pgsty/pig" class="nav-github" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
-              {{ partialCached "silo/icon.html" "github" "github" }}
+              {{ partialCached "pig/icon.html" "github" "github" }}
             </a>
           </div>
         </div>
@@ -153,7 +153,7 @@
     <a href="{{ relLangURL "docs/" }}" class="mobile-menu-link">{{ if $zh }}文档{{ else }}Docs{{ end }}</a>
     <a href="{{ relLangURL "blog/" }}" class="mobile-menu-link">{{ if $zh }}博客{{ else }}Blog{{ end }}</a>
     <a href="{{ relLangURL "install/" }}" class="mobile-menu-link"><i class="fas fa-download" aria-hidden="true"></i> {{ if $zh }}下载安装{{ else }}Download &amp; Install{{ end }}</a>
-    <button type="button" class="mobile-menu-link mobile-menu-link--btn" data-silo-search-open><i class="fas fa-search" aria-hidden="true"></i> {{ if $zh }}搜索{{ else }}Search{{ end }}</button>
+    <button type="button" class="mobile-menu-link mobile-menu-link--btn" data-pig-search-open><i class="fas fa-search" aria-hidden="true"></i> {{ if $zh }}搜索{{ else }}Search{{ end }}</button>
     {{ range .Translations }}<a href="{{ .RelPermalink }}" class="mobile-menu-link"><i class="fas fa-language" aria-hidden="true"></i> {{ .Language.Label }}</a>{{ end }}
     <button type="button" class="mobile-menu-link mobile-menu-link--btn" data-theme-toggle><i class="fas fa-moon" aria-hidden="true"></i> {{ if $zh }}浅色 / 深色{{ else }}Light / Dark{{ end }}</button>
     <a href="https://github.com/pgsty/pig" class="mobile-menu-link" target="_blank" rel="noopener"><i class="fab fa-github" aria-hidden="true"></i> GitHub</a>
@@ -173,7 +173,7 @@
               <span class="eyebrow-en">{{ if $zh }}PostgreSQL 扩展包管理器{{ else }}THE POSTGRESQL EXTENSION PACKAGE MANAGER{{ end }}</span>
             </p>
 
-            <h1 class="hero-title silo-hero-title anim" style="--d:1">
+            <h1 class="hero-title pig-hero-title anim" style="--d:1">
               <span class="hero-title-line"><b class="ini ini-p">P</b>ostgres</span>
               <span class="hero-title-line"><b class="ini ini-i">I</b>nstall</span>
               <span class="hero-title-line"><b class="ini ini-g">G</b>enius</span>
@@ -209,28 +209,28 @@
           </div>
 
           <div class="hero-board anim" style="--d:2">
-            <figure class="board-stage silo-board-stage" data-board aria-label="{{ if $zh }}PIG 在系统包管理器之上的位置{{ else }}Where pig sits above the OS package manager{{ end }}">
-              <div class="silo-board">
-                <div class="silo-board-top">
+            <figure class="board-stage pig-board-stage" data-board aria-label="{{ if $zh }}PIG 在系统包管理器之上的位置{{ else }}Where pig sits above the OS package manager{{ end }}">
+              <div class="pig-board">
+                <div class="pig-board-top">
                   <span><i aria-hidden="true"></i>PIG // ONE LAYER ABOVE APT AND DNF</span>
                   <b>pig install</b>
                 </div>
-                <div class="silo-board-canvas">
-                  <div class="silo-board-core">
-                    <div class="silo-port silo-port--api"><small>APT</small><strong>deb</strong><span>DEBIAN · UBUNTU</span></div>
-                    <div class="silo-chip">
+                <div class="pig-board-canvas">
+                  <div class="pig-board-core">
+                    <div class="pig-port pig-port--api"><small>APT</small><strong>deb</strong><span>DEBIAN · UBUNTU</span></div>
+                    <div class="pig-chip">
                       <small>NAME · VERSION · ARCH</small>
                       <strong>PIG</strong>
                       <span>RESOLVE · INSTALL</span>
                     </div>
-                    <div class="silo-port silo-port--console"><small>YUM</small><strong>rpm</strong><span>EL 8 · 9 · 10</span></div>
+                    <div class="pig-port pig-port--console"><small>YUM</small><strong>rpm</strong><span>EL 8 · 9 · 10</span></div>
                   </div>
-                  <div class="silo-disks">
+                  <div class="pig-disks">
                     <p>CATALOG // {{ $metrics.packaged_extensions }} PACKAGED EXTENSIONS</p>
                     <div><span><i></i><b>postgis</b><small>PG14-18</small></span><span><i></i><b>vector</b><small>PG14-18</small></span><span><i></i><b>timescaledb</b><small>PG14-18</small></span><span><i></i><b>pg_duckdb</b><small>PG14-18</small></span></div>
                   </div>
                 </div>
-                <div class="silo-board-foot"><span>5 MB STATIC BINARY</span><span><i aria-hidden="true"></i>MAINTAINED BY PIGSTY</span></div>
+                <div class="pig-board-foot"><span>5 MB STATIC BINARY</span><span><i aria-hidden="true"></i>MAINTAINED BY PIGSTY</span></div>
               </div>
             </figure>
           </div>
@@ -277,8 +277,8 @@
           <p class="section-subtitle">{{ if $zh }}从一台裸机，到 PostgreSQL 18 上跑起来的 <code>pg_duckdb</code>。{{ else }}From a bare host to <code>pg_duckdb</code> running on PostgreSQL 18.{{ end }}</p>
         </div>
 
-        {{/* silo-steps：把 flex 排改成 2fr/1fr/1fr 栅格，长命令折行而不是被裁掉。 */}}
-        <div class="steps-rail silo-steps" data-reveal>
+        {{/* pig-steps：把 flex 排改成 2fr/1fr/1fr 栅格，长命令折行而不是被裁掉。 */}}
+        <div class="steps-rail pig-steps" data-reveal>
           <div class="step-card">
             <div class="step-head">
               <span class="step-num">1</span>
@@ -598,8 +598,8 @@
   {{ partial "footer.html" . }}
 
   <script src="{{ "js/landing-v3.js" | relURL }}?v={{ substr (md5 (readFile "static/js/landing-v3.js")) 0 8 }}"></script>
-  {{ partial "silo/search-dialog.html" . }}
-  {{- $searchJs := slice (resources.Get "js/vendor/lunr.min.js") (resources.Get "js/silo-search.js")
+  {{ partial "pig/search-dialog.html" . }}
+  {{- $searchJs := slice (resources.Get "js/vendor/lunr.min.js") (resources.Get "js/pig-search.js")
         | resources.Concat "js/landing-search-bundle.js" | minify | fingerprint }}
   <script src="{{ $searchJs.RelPermalink }}" integrity="{{ $searchJs.Data.Integrity }}" defer></script>
 </body>

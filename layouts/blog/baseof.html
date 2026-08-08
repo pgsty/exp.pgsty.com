@@ -17,18 +17,18 @@
   {{ if not (in (slice "normal" "wide" "full") $pw) -}}
     {{ errorf "invalid page_width %q in %s (allowed: normal | wide | full)" $pw .Path -}}
   {{ end -}}
-  <body class="td-{{ .Kind }} td-blog silo-chrome{{ with .Page.Params.body_class }} {{ . }}{{ end }}">
-    {{ partial "silo/subnav.html" . }}
+  <body class="td-{{ .Kind }} td-blog pig-chrome{{ with .Page.Params.body_class }} {{ . }}{{ end }}">
+    {{ partial "pig/subnav.html" . }}
     <div class="container-fluid td-outer">
-      <div class="td-main silo-layout silo-layout--w-{{ $pw }}{{ if not $hasToc }} silo-layout--no-toc{{ end }}{{ if $navWrap }} silo-layout--nav-wrap{{ end }}"
-           style="--silo-sidebar-min: {{ $sidebarMin }}px; --silo-sidebar-max: {{ $sidebarMax }}px;">
-        <aside id="silo-sidebar" class="silo-sidebar d-print-none">
-          {{ partial "silo/sidebar.html" . }}
+      <div class="td-main pig-layout pig-layout--w-{{ $pw }}{{ if not $hasToc }} pig-layout--no-toc{{ end }}{{ if $navWrap }} pig-layout--nav-wrap{{ end }}"
+           style="--pig-sidebar-min: {{ $sidebarMin }}px; --pig-sidebar-max: {{ $sidebarMax }}px;">
+        <aside id="pig-sidebar" class="pig-sidebar d-print-none">
+          {{ partial "pig/sidebar.html" . }}
         </aside>
-        <div class="silo-drawer-backdrop d-md-none d-print-none" data-silo-drawer-close></div>
-        {{ partial "silo/floating-pill.html" . }}
-        <main class="silo-main" role="main">
-          <article class="silo-article">
+        <div class="pig-drawer-backdrop d-md-none d-print-none" data-pig-drawer-close></div>
+        {{ partial "pig/floating-pill.html" . }}
+        <main class="pig-main" role="main">
+          <article class="pig-article">
             {{ with .CurrentSection.OutputFormats.Get "rss" -}}
             <a class="td-rss-button" title="RSS" href="{{ .RelPermalink | safeURL }}" target="_blank" rel="noopener">
               <i class="fa-solid fa-rss" aria-hidden="true"></i>
@@ -40,9 +40,9 @@
             {{ block "main" . }}{{ end }}
           </article>
         </main>
-        {{ partial "silo/toc-aside.html" (dict "page" . "hasToc" $hasToc) }}
+        {{ partial "pig/toc-aside.html" (dict "page" . "hasToc" $hasToc) }}
       </div>
-      {{ partial "silo/footer-line.html" . }}
+      {{ partial "pig/footer-line.html" . }}
     </div>
     {{ partial "scripts.html" . }}
   </body>

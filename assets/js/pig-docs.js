@@ -1,5 +1,5 @@
 /**
- * silo-docs.js — SILO 文档站 fumadocs 风格交互（无 jQuery / 无框架）。
+ * pig-docs.js — PIG 文档站 fumadocs 风格交互（无 jQuery / 无框架）。
  *
  * 模块：theme（底部组合件主题钮）/ rootMenu（根节点下拉）/ drawer（移动抽屉）/
  *       collapse（桌面侧栏收起 + 悬停弹出）/ resize（拖拽调宽）/
@@ -7,8 +7,8 @@
  *       search（⌘K 弹窗，lunr + 中文子串兜底）。
  *
  * 约定：主题沿用 localStorage `td-color-theme` + <html data-bs-theme>；
- *       侧栏收起态存 localStorage `silo-sidebar-collapsed`，由 head-end 的
- *       预绘制脚本在首帧前恢复；首帧动画由 <html data-silo-no-anim> 抑制，
+ *       侧栏收起态存 localStorage `pig-sidebar-collapsed`，由 head-end 的
+ *       预绘制脚本在首帧前恢复；首帧动画由 <html data-pig-no-anim> 抑制，
  *       本文件在两帧后移除该属性。
  */
 (function () {
@@ -20,7 +20,7 @@
   /* ---------------------------------------------------------------- theme */
 
   function initTheme() {
-    var buttons = document.querySelectorAll('[data-silo-theme-toggle]');
+    var buttons = document.querySelectorAll('[data-pig-theme-toggle]');
     if (!buttons.length) return;
     function apply(theme) {
       html.setAttribute('data-bs-theme', theme);
@@ -38,20 +38,20 @@
 
   // 右侧栏整栏隐藏（与左侧对称）：标题图标钮切换，右上浮动钮恢复，localStorage 持久化。
   function initRightCollapse() {
-    var buttons = document.querySelectorAll('[data-silo-right-toggle]');
+    var buttons = document.querySelectorAll('[data-pig-right-toggle]');
     if (!buttons.length) return;
     function collapsed() {
-      return html.getAttribute('data-silo-toc') === 'collapsed';
+      return html.getAttribute('data-pig-toc') === 'collapsed';
     }
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         var next = !collapsed();
         if (next) {
-          html.setAttribute('data-silo-toc', 'collapsed');
+          html.setAttribute('data-pig-toc', 'collapsed');
         } else {
-          html.removeAttribute('data-silo-toc');
+          html.removeAttribute('data-pig-toc');
         }
-        try { localStorage.setItem('silo-toc-collapsed', next ? '1' : '0'); } catch (e) { /* ignore */ }
+        try { localStorage.setItem('pig-toc-collapsed', next ? '1' : '0'); } catch (e) { /* ignore */ }
       });
     });
   }
@@ -60,10 +60,10 @@
 
   // 根节点下拉（v16 SidebarTabsDropdown）：100ms scale 弹层，外点/Esc 关闭。
   function initRootMenu() {
-    var root = document.querySelector('.silo-root');
+    var root = document.querySelector('.pig-root');
     if (!root) return;
-    var btn = root.querySelector('[data-silo-root-toggle]');
-    var pop = root.querySelector('.silo-root__pop');
+    var btn = root.querySelector('[data-pig-root-toggle]');
+    var pop = root.querySelector('.pig-root__pop');
     if (!btn || !pop) return;
 
     function close() {
@@ -93,18 +93,18 @@
   /* --------------------------------------------------------------- drawer */
 
   function initDrawer() {
-    var sidebar = document.getElementById('silo-sidebar');
+    var sidebar = document.getElementById('pig-sidebar');
     if (!sidebar) return;
-    function open() { html.setAttribute('data-silo-drawer', 'open'); }
-    function close() { html.removeAttribute('data-silo-drawer'); }
-    document.querySelectorAll('[data-silo-drawer-open]').forEach(function (el) {
+    function open() { html.setAttribute('data-pig-drawer', 'open'); }
+    function close() { html.removeAttribute('data-pig-drawer'); }
+    document.querySelectorAll('[data-pig-drawer-open]').forEach(function (el) {
       el.addEventListener('click', open);
     });
-    document.querySelectorAll('[data-silo-drawer-close]').forEach(function (el) {
+    document.querySelectorAll('[data-pig-drawer-close]').forEach(function (el) {
       el.addEventListener('click', close);
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && html.hasAttribute('data-silo-drawer')) close();
+      if (e.key === 'Escape' && html.hasAttribute('data-pig-drawer')) close();
     });
     // 视口跨过 md 断点时清掉抽屉态，避免桌面端残留滚动锁。
     window.matchMedia(MD).addEventListener('change', function (mq) {
@@ -115,30 +115,30 @@
   /* ------------------------------------------------------------- collapse */
 
   function initCollapse() {
-    var aside = document.getElementById('silo-sidebar');
+    var aside = document.getElementById('pig-sidebar');
     if (!aside) return;
-    var panel = aside.querySelector('.silo-sidebar__panel');
+    var panel = aside.querySelector('.pig-sidebar__panel');
     if (!panel) return;
     var mdQuery = window.matchMedia(MD);
     var lockUntil = 0;
     var closeTimer = 0;
 
     function collapsed() {
-      return html.getAttribute('data-silo-sidebar') === 'collapsed';
+      return html.getAttribute('data-pig-sidebar') === 'collapsed';
     }
     function setCollapsed(value) {
       window.clearTimeout(closeTimer);
-      aside.classList.remove('silo-sidebar--overlay');
+      aside.classList.remove('pig-sidebar--overlay');
       if (value) {
-        html.setAttribute('data-silo-sidebar', 'collapsed');
+        html.setAttribute('data-pig-sidebar', 'collapsed');
       } else {
-        html.removeAttribute('data-silo-sidebar');
+        html.removeAttribute('data-pig-sidebar');
       }
-      try { localStorage.setItem('silo-sidebar-collapsed', value ? '1' : '0'); } catch (e) { /* ignore */ }
+      try { localStorage.setItem('pig-sidebar-collapsed', value ? '1' : '0'); } catch (e) { /* ignore */ }
       lockUntil = performance.now() + 150; // fumadocs 同款：状态切换后 150ms 抑制悬停弹出
     }
 
-    document.querySelectorAll('[data-silo-sidebar-toggle]').forEach(function (btn) {
+    document.querySelectorAll('[data-pig-sidebar-toggle]').forEach(function (btn) {
       btn.addEventListener('click', function () { setCollapsed(!collapsed()); });
     });
 
@@ -147,7 +147,7 @@
       if (e.pointerType === 'touch' || !mdQuery.matches) return;
       if (!collapsed() || performance.now() < lockUntil) return;
       window.clearTimeout(closeTimer);
-      aside.classList.add('silo-sidebar--overlay');
+      aside.classList.add('pig-sidebar--overlay');
     });
     panel.addEventListener('pointerleave', function (e) {
       if (e.pointerType === 'touch' || !collapsed()) return;
@@ -155,35 +155,35 @@
       var nearEdge = Math.min(e.clientX, document.body.clientWidth - e.clientX) <= 100;
       window.clearTimeout(closeTimer);
       closeTimer = window.setTimeout(function () {
-        aside.classList.remove('silo-sidebar--overlay');
+        aside.classList.remove('pig-sidebar--overlay');
         lockUntil = performance.now() + 150;
       }, nearEdge ? 500 : 0);
     });
 
     mdQuery.addEventListener('change', function (mq) {
-      if (!mq.matches) aside.classList.remove('silo-sidebar--overlay');
+      if (!mq.matches) aside.classList.remove('pig-sidebar--overlay');
     });
   }
 
   /* --------------------------------------------------------------- resize */
 
-  // 侧栏拖拽调宽：写 --silo-sidebar-w（列与面板共用），localStorage 持久化，
-  // 双击复位。min/max 由 .silo-layout 的 --silo-sidebar-min/max 钳制
+  // 侧栏拖拽调宽：写 --pig-sidebar-w（列与面板共用），localStorage 持久化，
+  // 双击复位。min/max 由 .pig-layout 的 --pig-sidebar-min/max 钳制
   // （站点参数 + 栏目 front matter cascade）。嵌入态与悬浮弹出态共用同一面板。
   function initResize() {
-    var aside = document.getElementById('silo-sidebar');
+    var aside = document.getElementById('pig-sidebar');
     if (!aside) return;
-    var handle = aside.querySelector('[data-silo-resizer]');
-    var panel = aside.querySelector('.silo-sidebar__panel');
-    var layout = document.querySelector('.silo-layout');
+    var handle = aside.querySelector('[data-pig-resizer]');
+    var panel = aside.querySelector('.pig-sidebar__panel');
+    var layout = document.querySelector('.pig-layout');
     if (!handle || !panel || !layout) return;
     var mdQuery = window.matchMedia(MD);
 
     function bounds() {
       var cs = getComputedStyle(layout);
       return {
-        min: parseFloat(cs.getPropertyValue('--silo-sidebar-min')) || 220,
-        max: parseFloat(cs.getPropertyValue('--silo-sidebar-max')) || 480
+        min: parseFloat(cs.getPropertyValue('--pig-sidebar-min')) || 220,
+        max: parseFloat(cs.getPropertyValue('--pig-sidebar-max')) || 480
       };
     }
 
@@ -192,21 +192,21 @@
       e.preventDefault();
       var b = bounds();
       var left = panel.getBoundingClientRect().left;
-      html.setAttribute('data-silo-resizing', '');
+      html.setAttribute('data-pig-resizing', '');
       handle.setPointerCapture(e.pointerId);
 
       function onMove(ev) {
         var w = Math.round(Math.min(b.max, Math.max(b.min, ev.clientX - left)));
-        html.style.setProperty('--silo-sidebar-w', w + 'px');
+        html.style.setProperty('--pig-sidebar-w', w + 'px');
       }
       function onUp() {
         handle.removeEventListener('pointermove', onMove);
         handle.removeEventListener('pointerup', onUp);
         handle.removeEventListener('pointercancel', onUp);
-        html.removeAttribute('data-silo-resizing');
-        var w = parseFloat(getComputedStyle(html).getPropertyValue('--silo-sidebar-w'));
+        html.removeAttribute('data-pig-resizing');
+        var w = parseFloat(getComputedStyle(html).getPropertyValue('--pig-sidebar-w'));
         if (w > 0) {
-          try { localStorage.setItem('silo-sidebar-w', String(Math.round(w))); } catch (err) { /* ignore */ }
+          try { localStorage.setItem('pig-sidebar-w', String(Math.round(w))); } catch (err) { /* ignore */ }
         }
       }
       handle.addEventListener('pointermove', onMove);
@@ -216,17 +216,17 @@
 
     // 双击复位为断点默认宽（268/286）。
     handle.addEventListener('dblclick', function () {
-      html.style.removeProperty('--silo-sidebar-w');
-      try { localStorage.removeItem('silo-sidebar-w'); } catch (err) { /* ignore */ }
+      html.style.removeProperty('--pig-sidebar-w');
+      try { localStorage.removeItem('pig-sidebar-w'); } catch (err) { /* ignore */ }
     });
   }
 
   /* ------------------------------------------------------------ treeScroll */
 
   function initTreeScroll() {
-    var viewport = document.querySelector('[data-silo-sidebar-scroll]');
+    var viewport = document.querySelector('[data-pig-sidebar-scroll]');
     if (!viewport) return;
-    var key = 'silo-sidebar-scroll:' + (html.lang || 'en');
+    var key = 'pig-sidebar-scroll:' + (html.lang || 'en');
 
     try {
       var saved = sessionStorage.getItem(key);
@@ -234,7 +234,7 @@
     } catch (e) { /* ignore */ }
 
     // 活跃行不在视口内时（深链直达 / 恢复位失效）将其居中。
-    var active = viewport.querySelector('.silo-tree__row.silo-active');
+    var active = viewport.querySelector('.pig-tree__row.pig-active');
     if (active) {
       var rowRect = active.getBoundingClientRect();
       var boxRect = viewport.getBoundingClientRect();
@@ -264,7 +264,7 @@
    * 缩进 20/32/44px，轨道 x 8/16/24（+0.5 使 1px 描边落在整像素）。
    */
   function initToc() {
-    var body = document.getElementById('silo-toc-body');
+    var body = document.getElementById('pig-toc-body');
     if (!body) return;
     var tocNav = body.querySelector('#TableOfContents');
     var links = Array.prototype.slice.call(
@@ -295,7 +295,7 @@
 
     function build() {
       // 清场重建（ResizeObserver 触发时布局已变）。
-      body.querySelectorAll('.silo-toc__rail').forEach(function (el) { el.remove(); });
+      body.querySelectorAll('.pig-toc__rail').forEach(function (el) { el.remove(); });
       if (overlay) overlay.remove();
       positions = [];
 
@@ -315,7 +315,7 @@
 
         // --- 每条目的灰色轨道段 ---
         var rail = document.createElementNS(SVG_NS, 'svg');
-        rail.setAttribute('class', 'silo-toc__rail' + (l1 !== l2 ? ' silo-toc__rail--cut' : ''));
+        rail.setAttribute('class', 'pig-toc__rail' + (l1 !== l2 ? ' pig-toc__rail--cut' : ''));
         rail.setAttribute('aria-hidden', 'true');
         rail.style.width = (Math.max(l0, l1) + 9) + 'px';
         if (l0 !== l1) {
@@ -351,7 +351,7 @@
       });
 
       overlay = document.createElement('div');
-      overlay.className = 'silo-toc__active';
+      overlay.className = 'pig-toc__active';
       var svg = document.createElementNS(SVG_NS, 'svg');
       svg.setAttribute('viewBox', '0 0 ' + maxW + ' ' + maxH);
       svg.style.width = maxW + 'px';
@@ -361,7 +361,7 @@
       svg.appendChild(pathEl);
       overlay.appendChild(svg);
       dot = document.createElement('span');
-      dot.className = 'silo-toc__dot';
+      dot.className = 'pig-toc__dot';
       dot.style.offsetPath = 'path("' + d + '")';
       overlay.appendChild(dot);
       body.appendChild(overlay);
@@ -411,18 +411,18 @@
 
       if (lastIdx < 0 || !overlay) {
         if (overlay) {
-          overlay.style.setProperty('--silo-track-top', '0px');
-          overlay.style.setProperty('--silo-track-bottom', '0px');
-          overlay.style.setProperty('--silo-dot-o', '0');
+          overlay.style.setProperty('--pig-track-top', '0px');
+          overlay.style.setProperty('--pig-track-bottom', '0px');
+          overlay.style.setProperty('--pig-dot-o', '0');
         }
         return;
       }
       var trackTop = positions[firstIdx][0];
       var trackBottom = positions[lastIdx][1];
-      overlay.style.setProperty('--silo-track-top', trackTop + 'px');
-      overlay.style.setProperty('--silo-track-bottom', trackBottom + 'px');
-      overlay.style.setProperty('--silo-dot-o', '1');
-      overlay.style.setProperty('--silo-dot-d', distanceAtY(trackTop) + 'px');
+      overlay.style.setProperty('--pig-track-top', trackTop + 'px');
+      overlay.style.setProperty('--pig-track-bottom', trackBottom + 'px');
+      overlay.style.setProperty('--pig-dot-o', '1');
+      overlay.style.setProperty('--pig-dot-d', distanceAtY(trackTop) + 'px');
 
       // 长 TOC：保证首个活跃项在滚动区内可见。
       var first = links[firstIdx];
@@ -468,11 +468,11 @@
   /* --------------------------------------------------------------- search */
 
   function initSearch() {
-    var root = document.getElementById('silo-search');
+    var root = document.getElementById('pig-search');
     if (!root) return;
-    var input = root.querySelector('.silo-search__input');
-    var list = root.querySelector('.silo-search__list');
-    var panel = root.querySelector('.silo-search__panel');
+    var input = root.querySelector('.pig-search__input');
+    var list = root.querySelector('.pig-search__list');
+    var panel = root.querySelector('.pig-search__panel');
     if (!input || !list || !panel) return;
 
     var CJK = /[぀-ヿ㐀-䶿一-鿿豈-﫿]/;
@@ -489,7 +489,7 @@
     function open() {
       window.clearTimeout(hideTimer);
       root.hidden = false;
-      html.setAttribute('data-silo-lock', '');
+      html.setAttribute('data-pig-lock', '');
       window.requestAnimationFrame(function () { root.classList.add('is-open'); });
       input.focus();
       input.select();
@@ -497,14 +497,14 @@
     }
     function close() {
       root.classList.remove('is-open');
-      html.removeAttribute('data-silo-lock');
+      html.removeAttribute('data-pig-lock');
       hideTimer = window.setTimeout(function () { root.hidden = true; }, 240);
     }
 
     function message(text) {
       list.textContent = '';
       var el = document.createElement('div');
-      el.className = 'silo-search__empty';
+      el.className = 'pig-search__empty';
       el.textContent = text;
       list.appendChild(el);
     }
@@ -621,24 +621,24 @@
       }
       results.forEach(function (r, i) {
         var row = document.createElement('a');
-        row.className = 'silo-search__item';
+        row.className = 'pig-search__item';
         row.setAttribute('role', 'option');
         row.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
         row.href = r.doc.ref;
 
         var title = document.createElement('div');
-        title.className = 'silo-search__item-title';
+        title.className = 'pig-search__item-title';
         title.appendChild(highlight(r.doc.title || r.doc.ref, q));
         row.appendChild(title);
 
         var ref = document.createElement('div');
-        ref.className = 'silo-search__item-ref';
+        ref.className = 'pig-search__item-ref';
         ref.textContent = r.doc.ref;
         row.appendChild(ref);
 
         if (r.excerpt) {
           var excerpt = document.createElement('div');
-          excerpt.className = 'silo-search__item-excerpt';
+          excerpt.className = 'pig-search__item-excerpt';
           excerpt.appendChild(highlight(r.excerpt, q));
           row.appendChild(excerpt);
         }
@@ -676,17 +676,17 @@
         close();
       }
     });
-    document.querySelectorAll('[data-silo-search-open]').forEach(function (el) {
+    document.querySelectorAll('[data-pig-search-open]').forEach(function (el) {
       el.addEventListener('click', open);
     });
-    root.querySelectorAll('[data-silo-search-close]').forEach(function (el) {
+    root.querySelectorAll('[data-pig-search-close]').forEach(function (el) {
       el.addEventListener('click', close);
     });
 
     // 非 Apple 平台把 ⌘ 徽章换成 Ctrl。
     var apple = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
     if (!apple) {
-      document.querySelectorAll('[data-silo-meta-key]').forEach(function (el) {
+      document.querySelectorAll('[data-pig-meta-key]').forEach(function (el) {
         el.textContent = 'Ctrl';
       });
     }
@@ -707,7 +707,7 @@
   // 首帧后恢复过渡动画（head-end 预绘制脚本置位）。
   window.requestAnimationFrame(function () {
     window.requestAnimationFrame(function () {
-      html.removeAttribute('data-silo-no-anim');
+      html.removeAttribute('data-pig-no-anim');
     });
   });
 })();

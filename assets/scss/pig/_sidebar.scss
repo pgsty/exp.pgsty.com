@@ -1,11 +1,11 @@
 // ============================================================
-// silo/sidebar —— 侧栏面板内部：头部搜索钮 / 导航树 / 底部操作区
+// pig/sidebar —— 侧栏面板内部：头部搜索钮 / 导航树 / 底部操作区
 // ============================================================
 
 /* ----------------------------------------------------------------- 头部 */
 
 // 固定头部纵列：品牌行 + 搜索行 + 根下拉（fumadocs v16 header stack 同构）。
-.silo-sidebar__header {
+.pig-sidebar__header {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -14,7 +14,7 @@
 
 // 品牌行（v16 logo row）：logo+wordmark 左、收起钮右上。抽屉态（<md）隐藏
 //（subnav 已展示品牌）。
-.silo-sidebar__brand-row {
+.pig-sidebar__brand-row {
   display: none;
 
   @include media-breakpoint-up(md) {
@@ -23,7 +23,7 @@
   }
 }
 
-.silo-sidebar__brand {
+.pig-sidebar__brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -42,13 +42,13 @@
   }
 }
 
-.silo-sidebar__header-row {
+.pig-sidebar__header-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.silo-search-btn {
+.pig-search-btn {
   flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
@@ -57,21 +57,21 @@
   padding: 6px 6px 6px 8px;
   border: 1px solid var(--bs-border-color);
   border-radius: 10px;
-  background: var(--silo-field);
+  background: var(--pig-field);
   color: var(--bs-tertiary-color); // 占位文案更灰一档
   font-size: 14px;
   line-height: 20px;
   text-align: start;
   transition: background-color 150ms ease, color 150ms ease;
 
-  .silo-icon {
+  .pig-icon {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
   }
 
   &:hover {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     color: var(--bs-body-color);
   }
 
@@ -99,13 +99,13 @@
       border: 1px solid var(--bs-border-color);
       border-radius: 7px;
       background: var(--bs-body-bg);
-      color: var(--silo-muted-fg);
+      color: var(--pig-muted-fg);
     }
   }
 }
 
-// 抽屉关闭钮：仅移动端显示（复合选择器压过 .silo-iconbtn 的 display）。
-.silo-iconbtn.silo-sidebar__close {
+// 抽屉关闭钮：仅移动端显示（复合选择器压过 .pig-iconbtn 的 display）。
+.pig-iconbtn.pig-sidebar__close {
   display: none;
 
   @include media-breakpoint-down(md) {
@@ -115,7 +115,7 @@
 
 /* ------------------------------------------------------------- 滚动视口 */
 
-.silo-sidebar__viewport {
+.pig-sidebar__viewport {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -150,7 +150,7 @@
 
 /* --------------------------------------------------------------- 导航树 */
 
-.silo-tree {
+.pig-tree {
   ul {
     list-style: none;
     margin: 0;
@@ -163,19 +163,19 @@
   }
 }
 
-.silo-tree__item--hidden {
+.pig-tree__item--hidden {
   display: none;
 }
 
-.silo-tree__row {
+.pig-tree__row {
   position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 8px;
-  padding-inline-start: var(--silo-indent, 8px);
+  padding-inline-start: var(--pig-indent, 8px);
   border-radius: 10px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   transition: background-color 150ms ease;
 
   @include media-breakpoint-up(md) {
@@ -184,26 +184,26 @@
 
   // fumadocs 手感：hover 入场瞬时、出场 150ms 淡出。
   &:hover {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     transition: none;
 
-    > .silo-tree__link {
+    > .pig-tree__link {
       color: var(--bs-body-color);
     }
   }
 
-  &.silo-active {
-    background: var(--silo-primary-dim);
+  &.pig-active {
+    background: var(--pig-primary-dim);
     transition: none;
 
-    > .silo-tree__link,
-    &:hover > .silo-tree__link {
-      color: var(--silo-primary);
+    > .pig-tree__link,
+    &:hover > .pig-tree__link {
+      color: var(--pig-primary);
     }
   }
 }
 
-.silo-tree__link {
+.pig-tree__link {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -237,7 +237,7 @@
 }
 
 // wrap 模式（params.ui.sidebar_item_overflow: wrap，经 cascade 可按栏目覆盖）。
-.silo-layout--nav-wrap .silo-tree__link > span {
+.pig-layout--nav-wrap .pig-tree__link > span {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
@@ -245,27 +245,27 @@
 }
 
 // 顶级小节行：字重与颜色略强，构成分组层级。
-.silo-tree .ul-1 > li > .silo-tree__row > .silo-tree__link {
+.pig-tree .ul-1 > li > .pig-tree__row > .pig-tree__link {
   font-weight: 500;
   color: var(--bs-body-color);
 }
 
-.silo-tree .ul-1 > li > .silo-tree__row {
+.pig-tree .ul-1 > li > .pig-tree__row {
   color: var(--bs-body-color);
 }
 
 // 活跃行内的图标随主色。
-.silo-tree__row.silo-active .silo-tree__link > i {
+.pig-tree__row.pig-active .pig-tree__link > i {
   color: inherit;
 }
 
 /* 折叠机制：隐藏 checkbox + chevron label + grid-rows 高度动画 */
 
-.silo-tree__state {
+.pig-tree__state {
   display: none;
 }
 
-.silo-tree__chevron {
+.pig-tree__chevron {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -275,10 +275,10 @@
   margin: 0;
   margin-inline-start: auto;
   border-radius: 7px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   cursor: pointer;
 
-  .silo-icon {
+  .pig-icon {
     width: 16px;
     height: 16px;
     transform: rotate(-90deg);
@@ -290,18 +290,18 @@
   }
 }
 
-.silo-tree__state:checked ~ .silo-tree__row .silo-tree__chevron .silo-icon {
+.pig-tree__state:checked ~ .pig-tree__row .pig-tree__chevron .pig-icon {
   transform: rotate(0deg);
 }
 
-.silo-tree__children {
+.pig-tree__children {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   // visibility 在收起动画结束后才切换，保证折叠内容不可命中 / 不可键盘聚焦。
   visibility: hidden;
   transition:
-    grid-template-rows 150ms var(--silo-ease-collapsible),
+    grid-template-rows 150ms var(--pig-ease-collapsible),
     opacity 150ms ease,
     visibility 0s linear 150ms;
 
@@ -313,29 +313,29 @@
   }
 }
 
-.silo-tree__state:checked ~ .silo-tree__children {
+.pig-tree__state:checked ~ .pig-tree__children {
   grid-template-rows: 1fr;
   opacity: 1;
   visibility: visible;
   transition:
-    grid-template-rows 150ms var(--silo-ease-collapsible),
+    grid-template-rows 150ms var(--pig-ease-collapsible),
     opacity 150ms ease,
     visibility 0s;
 }
 
-.silo-tree__children-inner {
+.pig-tree__children-inner {
   overflow: hidden;
   min-height: 0;
 }
 
 /* 缩进（行自身 padding）与嵌套竖轨（挂在 ul-2 容器上，x=10px） */
 
-.silo-tree .ul-2 > li > .silo-tree__row { --silo-indent: 24px; }
-.silo-tree .ul-3 > li > .silo-tree__row { --silo-indent: 36px; }
-.silo-tree .ul-4 > li > .silo-tree__row { --silo-indent: 48px; }
-.silo-tree .ul-5 > li > .silo-tree__row { --silo-indent: 60px; }
+.pig-tree .ul-2 > li > .pig-tree__row { --pig-indent: 24px; }
+.pig-tree .ul-3 > li > .pig-tree__row { --pig-indent: 36px; }
+.pig-tree .ul-4 > li > .pig-tree__row { --pig-indent: 48px; }
+.pig-tree .ul-5 > li > .pig-tree__row { --pig-indent: 60px; }
 
-.silo-tree .ul-2 {
+.pig-tree .ul-2 {
   position: relative;
 
   &::before {
@@ -344,27 +344,27 @@
     inset-block: 4px;
     inset-inline-start: 10px;
     width: 1px;
-    background: var(--silo-rail);
+    background: var(--pig-rail);
   }
 }
 
 // 活跃行在同一 x 处覆画一段主色轨。
-.silo-tree .ul-2 .silo-tree__row.silo-active::before {
+.pig-tree .ul-2 .pig-tree__row.pig-active::before {
   content: '';
   position: absolute;
   inset-block: 6px;
   inset-inline-start: 10px;
   width: 1px;
-  background: var(--silo-primary);
+  background: var(--pig-primary);
   z-index: 2;
 }
 
 /* blog 树根：渲染成小节标题样貌的链接行 */
 
-.silo-tree__row--root {
+.pig-tree__row--root {
   margin-bottom: 4px;
 
-  > .silo-tree__link {
+  > .pig-tree__link {
     font-weight: 600;
     color: var(--bs-body-color);
   }
@@ -374,7 +374,7 @@
 
 /* ghost 图标钮（浮控等通用） */
 
-.silo-iconbtn {
+.pig-iconbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -382,17 +382,17 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   transition: background-color 100ms ease, color 100ms ease;
 
-  .silo-icon {
+  .pig-icon {
     width: 18px;
     height: 18px;
   }
 
   &:hover,
   &:focus-visible {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     color: var(--bs-body-color);
     text-decoration: none;
   }
@@ -400,11 +400,11 @@
 
 /* 根节点下拉（v16 SidebarTabsDropdown）：搜索行下方，切换 docs 根 / self 根 section */
 
-.silo-root {
+.pig-root {
   position: relative;
 }
 
-.silo-root__trigger {
+.pig-root__trigger {
   display: flex;
   align-items: center;
   width: 100%;
@@ -412,7 +412,7 @@
   padding: 8px;
   border: 1px solid var(--bs-border-color);
   border-radius: 8px;
-  background: var(--silo-field);
+  background: var(--pig-field);
   color: var(--bs-body-color);
   font-size: 14px;
   text-align: start;
@@ -420,26 +420,26 @@
 
   &:hover,
   &[aria-expanded='true'] {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
   }
 
-  > .silo-icon--chevrons-up-down {
+  > .pig-icon--chevrons-up-down {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
     margin-inline-start: auto;
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 }
 
-.silo-root__icon {
+.pig-root__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: var(--silo-primary);
+  color: var(--pig-primary);
 
   i {
     font-size: 15px;
@@ -450,7 +450,7 @@
   }
 }
 
-.silo-root__title {
+.pig-root__title {
   min-width: 0;
   font-weight: 500;
   overflow: hidden;
@@ -458,7 +458,7 @@
   white-space: nowrap;
 }
 
-.silo-root__pop {
+.pig-root__pop {
   position: absolute;
   top: calc(100% + 4px);
   inset-inline: 0;
@@ -470,10 +470,10 @@
   padding: 4px;
   border: 1px solid var(--bs-border-color);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--silo-popover) 60%, transparent);
+  background: color-mix(in srgb, var(--pig-popover) 60%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--silo-shadow-lg);
+  box-shadow: var(--pig-shadow-lg);
   transform-origin: top;
   opacity: 0;
   transform: scale(0.9);
@@ -485,7 +485,7 @@
   }
 }
 
-.silo-root__item {
+.pig-root__item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -494,33 +494,33 @@
   color: var(--bs-body-color);
 
   &:hover {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     color: var(--bs-body-color);
     text-decoration: none;
   }
 
-  .silo-root__icon {
+  .pig-root__icon {
     margin-top: 1px;
   }
 }
 
-.silo-root__meta {
+.pig-root__meta {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
 }
 
-.silo-root__item-title {
+.pig-root__item-title {
   font-size: 14px;
   font-weight: 500;
   line-height: 1.1;
 }
 
-.silo-root__item-desc {
+.pig-root__item-desc {
   font-size: 13px;
   line-height: 1.35;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -528,14 +528,14 @@
 }
 
 // 非活跃条目的对勾保留占位（invisible），保证行宽一致（v16 同款）。
-.silo-root__check {
+.pig-root__check {
   display: inline-flex;
   flex-shrink: 0;
   margin-inline-start: auto;
   padding-top: 3px;
-  color: var(--silo-primary);
+  color: var(--pig-primary);
 
-  .silo-icon {
+  .pig-icon {
     width: 14px;
     height: 14px;
   }
@@ -548,7 +548,7 @@
 /* 分区丝印行（sidebar_divider: true 的占位页）：非链接分组标题。
    沿用 pigsty 既有「丝印」美学：等宽小字 + 宽字距 + 铜色渐变发丝线。 */
 
-.silo-tree__heading {
+.pig-tree__heading {
   margin-top: 1.5rem;
 
   &:first-child {
@@ -556,14 +556,14 @@
   }
 }
 
-.silo-tree__heading-label {
+.pig-tree__heading-label {
   display: block;
   padding: 0.4rem 8px 0.15rem;
   font-family: var(--bs-font-monospace);
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.16em;
-  color: var(--pg-silk, var(--silo-muted-fg));
+  color: var(--pg-silk, var(--pig-muted-fg));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

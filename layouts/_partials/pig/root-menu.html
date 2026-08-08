@@ -14,24 +14,24 @@
     {{- if or (eq $ .) ($.IsDescendant .) (eq $.Type .Type) }}{{ $current = . }}{{ end -}}
   {{- end -}}
   {{- with $current -}}
-<div class="silo-root">
-  <button type="button" class="silo-root__trigger" data-silo-root-toggle
-    aria-haspopup="true" aria-expanded="false" aria-label="{{ T "silo_root_menu_label" }}">
-    <span class="silo-root__icon">{{ with .Params.Icon }}<i class="{{ . }}" aria-hidden="true"></i>{{ end }}</span>
-    <span class="silo-root__title">{{ .LinkTitle }}</span>
-    {{ partialCached "silo/icon.html" "chevrons-up-down" "chevrons-up-down" }}
+<div class="pig-root">
+  <button type="button" class="pig-root__trigger" data-pig-root-toggle
+    aria-haspopup="true" aria-expanded="false" aria-label="{{ T "pig_root_menu_label" }}">
+    <span class="pig-root__icon">{{ with .Params.Icon }}<i class="{{ . }}" aria-hidden="true"></i>{{ end }}</span>
+    <span class="pig-root__title">{{ .LinkTitle }}</span>
+    {{ partialCached "pig/icon.html" "chevrons-up-down" "chevrons-up-down" }}
   </button>
-  <div class="silo-root__pop" hidden>
+  <div class="pig-root__pop" hidden>
     {{ range $entries -}}
     {{ $active := eq . $current -}}
-    <a class="silo-root__item{{ if $active }} is-active{{ end }}" href="{{ .RelPermalink }}">
-      <span class="silo-root__icon">{{ with .Params.Icon }}<i class="{{ . }}" aria-hidden="true"></i>{{ end }}</span>
-      <span class="silo-root__meta">
-        <span class="silo-root__item-title">{{ .LinkTitle }}</span>
-        {{ with .Description }}<span class="silo-root__item-desc">{{ . }}</span>{{ end }}
+    <a class="pig-root__item{{ if $active }} is-active{{ end }}" href="{{ .RelPermalink }}">
+      <span class="pig-root__icon">{{ with .Params.Icon }}<i class="{{ . }}" aria-hidden="true"></i>{{ end }}</span>
+      <span class="pig-root__meta">
+        <span class="pig-root__item-title">{{ .LinkTitle }}</span>
+        {{ with .Description }}<span class="pig-root__item-desc">{{ . }}</span>{{ end }}
       </span>
-      <span class="silo-root__check{{ if not $active }} is-hidden{{ end }}">
-        {{- partialCached "silo/icon.html" "check" "check" -}}
+      <span class="pig-root__check{{ if not $active }} is-hidden{{ end }}">
+        {{- partialCached "pig/icon.html" "check" "check" -}}
       </span>
     </a>
     {{ end -}}

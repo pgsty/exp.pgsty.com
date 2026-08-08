@@ -1,20 +1,20 @@
 /**
- * silo-search.js — ⌘K 搜索弹窗（lunr + 中文子串兜底）。
+ * pig-search.js — ⌘K 搜索弹窗（lunr + 中文子串兜底）。
  *
  * 首页独立载入；交互与文档页内置搜索保持一致，样式通过
  * scss/landing-search.scss 桥接 landing 主题令牌。
- * 依赖：全局 lunr、#silo-search 弹窗标记（layouts/_partials/silo/search-dialog.html）。
+ * 依赖：全局 lunr、#pig-search 弹窗标记（layouts/_partials/pig/search-dialog.html）。
  */
 (function () {
   'use strict';
 
   var html = document.documentElement;
 
-  var root = document.getElementById('silo-search');
+  var root = document.getElementById('pig-search');
   if (!root) return;
-  var input = root.querySelector('.silo-search__input');
-  var list = root.querySelector('.silo-search__list');
-  var panel = root.querySelector('.silo-search__panel');
+  var input = root.querySelector('.pig-search__input');
+  var list = root.querySelector('.pig-search__list');
+  var panel = root.querySelector('.pig-search__panel');
   if (!input || !list || !panel) return;
 
   var CJK = /[぀-ヿ㐀-䶿一-鿿豈-﫿]/;
@@ -31,7 +31,7 @@
   function open() {
     window.clearTimeout(hideTimer);
     root.hidden = false;
-    html.setAttribute('data-silo-lock', '');
+    html.setAttribute('data-pig-lock', '');
     window.requestAnimationFrame(function () { root.classList.add('is-open'); });
     input.focus();
     input.select();
@@ -39,14 +39,14 @@
   }
   function close() {
     root.classList.remove('is-open');
-    html.removeAttribute('data-silo-lock');
+    html.removeAttribute('data-pig-lock');
     hideTimer = window.setTimeout(function () { root.hidden = true; }, 240);
   }
 
   function message(text) {
     list.textContent = '';
     var el = document.createElement('div');
-    el.className = 'silo-search__empty';
+    el.className = 'pig-search__empty';
     el.textContent = text;
     list.appendChild(el);
   }
@@ -163,24 +163,24 @@
     }
     results.forEach(function (r, i) {
       var row = document.createElement('a');
-      row.className = 'silo-search__item';
+      row.className = 'pig-search__item';
       row.setAttribute('role', 'option');
       row.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
       row.href = r.doc.ref;
 
       var title = document.createElement('div');
-      title.className = 'silo-search__item-title';
+      title.className = 'pig-search__item-title';
       title.appendChild(highlight(r.doc.title || r.doc.ref, q));
       row.appendChild(title);
 
       var ref = document.createElement('div');
-      ref.className = 'silo-search__item-ref';
+      ref.className = 'pig-search__item-ref';
       ref.textContent = r.doc.ref;
       row.appendChild(ref);
 
       if (r.excerpt) {
         var excerpt = document.createElement('div');
-        excerpt.className = 'silo-search__item-excerpt';
+        excerpt.className = 'pig-search__item-excerpt';
         excerpt.appendChild(highlight(r.excerpt, q));
         row.appendChild(excerpt);
       }
@@ -218,17 +218,17 @@
       close();
     }
   });
-  document.querySelectorAll('[data-silo-search-open]').forEach(function (el) {
+  document.querySelectorAll('[data-pig-search-open]').forEach(function (el) {
     el.addEventListener('click', open);
   });
-  root.querySelectorAll('[data-silo-search-close]').forEach(function (el) {
+  root.querySelectorAll('[data-pig-search-close]').forEach(function (el) {
     el.addEventListener('click', close);
   });
 
   // 非 Apple 平台把 ⌘ 徽章换成 Ctrl。
   var apple = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
   if (!apple) {
-    document.querySelectorAll('[data-silo-meta-key]').forEach(function (el) {
+    document.querySelectorAll('[data-pig-meta-key]').forEach(function (el) {
       el.textContent = 'Ctrl';
     });
   }

@@ -39,17 +39,17 @@
 // Keep plain fenced blocks, highlighted Chroma blocks, and inline code on the
 // same visual system so dark-mode tweaks don't regress one while fixing another.
 .td-content {
-  --silo-code-bg: var(--td-pre-bg);
-  --silo-code-border: var(--bs-border-color);
-  --silo-code-fg: inherit;
-  --silo-code-inline-bg: var(--td-pre-bg);
-  --silo-code-inline-fg: inherit;
-  --silo-code-copy-fg: var(--bs-tertiary-color);
-  --silo-code-copy-bg: transparent;
+  --pig-code-bg: var(--td-pre-bg);
+  --pig-code-border: var(--bs-border-color);
+  --pig-code-fg: inherit;
+  --pig-code-inline-bg: var(--td-pre-bg);
+  --pig-code-inline-fg: inherit;
+  --pig-code-copy-fg: var(--bs-tertiary-color);
+  --pig-code-copy-bg: transparent;
 
   .highlight {
-    background-color: var(--silo-code-bg);
-    border: 1px solid var(--silo-code-border);
+    background-color: var(--pig-code-bg);
+    border: 1px solid var(--pig-code-border);
     border-radius: $border-radius;
     overflow: hidden;
   }
@@ -60,9 +60,9 @@
 
   pre,
   .chroma {
-    background-color: var(--silo-code-bg);
-    color: var(--silo-code-fg);
-    border-color: var(--silo-code-border);
+    background-color: var(--pig-code-bg);
+    color: var(--pig-code-fg);
+    border-color: var(--pig-code-border);
     border-radius: $border-radius;
   }
 
@@ -73,22 +73,22 @@
   p code,
   li > code,
   table code {
-    background-color: var(--silo-code-inline-bg);
-    color: var(--silo-code-inline-fg);
+    background-color: var(--pig-code-inline-bg);
+    color: var(--pig-code-inline-fg);
   }
 
   .highlight pre button.td-click-to-copy {
-    --bs-btn-color: var(--silo-code-copy-fg);
+    --bs-btn-color: var(--pig-code-copy-fg);
     --bs-btn-hover-color: var(--bs-body-color);
     --bs-btn-active-color: var(--bs-body-color);
-    --bs-btn-bg: var(--silo-code-copy-bg);
-    --bs-btn-hover-bg: color-mix(in srgb, var(--silo-code-bg) 78%, var(--bs-body-color) 14%);
-    --bs-btn-active-bg: color-mix(in srgb, var(--silo-code-bg) 72%, var(--bs-body-color) 18%);
-    --bs-btn-border-color: color-mix(in srgb, var(--silo-code-border) 82%, transparent);
-    --bs-btn-hover-border-color: color-mix(in srgb, var(--silo-code-border) 92%, var(--bs-body-color) 12%);
+    --bs-btn-bg: var(--pig-code-copy-bg);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--pig-code-bg) 78%, var(--bs-body-color) 14%);
+    --bs-btn-active-bg: color-mix(in srgb, var(--pig-code-bg) 72%, var(--bs-body-color) 18%);
+    --bs-btn-border-color: color-mix(in srgb, var(--pig-code-border) 82%, transparent);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--pig-code-border) 92%, var(--bs-body-color) 12%);
 
-    color: var(--silo-code-copy-fg);
-    background-color: var(--silo-code-copy-bg);
+    color: var(--pig-code-copy-fg);
+    background-color: var(--pig-code-copy-bg);
     border: 1px solid var(--bs-btn-border-color);
     border-radius: 0.4rem;
     opacity: 1;
@@ -96,19 +96,19 @@
     &:hover,
     &:active {
       color: var(--bs-body-color);
-      background-color: color-mix(in srgb, var(--silo-code-bg) 78%, var(--bs-body-color) 14%);
+      background-color: color-mix(in srgb, var(--pig-code-bg) 78%, var(--bs-body-color) 14%);
     }
   }
 }
 
 [data-bs-theme='dark'] .td-content {
-  --silo-code-bg: #1b1f22;
-  --silo-code-border: #3a4148;
-  --silo-code-fg: #d0d7de;
-  --silo-code-inline-bg: #2a2f36;
-  --silo-code-inline-fg: #e6edf3;
-  --silo-code-copy-fg: #98a6b3;
-  --silo-code-copy-bg: rgba(255, 255, 255, 0.02);
+  --pig-code-bg: #1b1f22;
+  --pig-code-border: #3a4148;
+  --pig-code-fg: #d0d7de;
+  --pig-code-inline-bg: #2a2f36;
+  --pig-code-inline-fg: #e6edf3;
+  --pig-code-copy-fg: #98a6b3;
+  --pig-code-copy-bg: rgba(255, 255, 255, 0.02);
 
   .chroma {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
@@ -123,7 +123,7 @@
   }
 }
 
-// 内容最大宽度交给 .silo-article 的 860px 列（见 silo/_layout.scss），
+// 内容最大宽度交给 .pig-article 的 860px 列（见 pig/_layout.scss），
 // 这里放开 Docsy 默认的 80% 限制。
 .td-max-width-on-larger-screens {
   @include media-breakpoint-up(lg) {
@@ -248,7 +248,7 @@ a {
 }
 
 // ============================================================
-// Silo「通电主板」主题 —— 与首页 landing-v3 同一套设计令牌
+// PIG「通电主板」主题 —— 与首页 landing-v3 同一套设计令牌
 // 暗色 = 通电电路板（蓝黑阻焊 + 铜色丝印），亮色 = 印刷工程图纸
 // 此段追加于文件末尾，晚于 Bootstrap / Docsy 编译，天然胜出级联
 // ============================================================
@@ -279,17 +279,17 @@ a {
   --bs-link-hover-color-rgb: 29, 88, 140;
   --bs-code-color: #b4762e; // 行内代码 → 铜色
 
-  // Silo 专用令牌
-  --silo-elev: #ffffff; // 卡片 / 浮层
-  --silo-silk: #5d7189; // 丝印文字
-  --silo-copper: #b4762e; // 铜
-  --silo-copper-dim: rgba(180, 118, 46, 0.6);
-  --silo-line-strong: rgba(48, 74, 105, 0.3);
-  --silo-header-bg: rgba(241, 244, 248, 0.88);
-  --silo-grid-line: rgba(47, 103, 147, 0.05);
-  --silo-mark-from: #1d588c; // 文本商标：PG 蓝 → 铜箔
-  --silo-mark-to: #b4762e;
-  --silo-mark-gradient: linear-gradient(115deg, var(--silo-mark-from) 6%, var(--silo-mark-to) 94%);
+  // PIG 专用令牌
+  --pig-elev: #ffffff; // 卡片 / 浮层
+  --pig-silk: #5d7189; // 丝印文字
+  --pig-copper: #b4762e; // 铜
+  --pig-copper-dim: rgba(180, 118, 46, 0.6);
+  --pig-line-strong: rgba(48, 74, 105, 0.3);
+  --pig-header-bg: rgba(241, 244, 248, 0.88);
+  --pig-grid-line: rgba(47, 103, 147, 0.05);
+  --pig-mark-from: #1d588c; // 文本商标：PG 蓝 → 铜箔
+  --pig-mark-to: #b4762e;
+  --pig-mark-gradient: linear-gradient(115deg, var(--pig-mark-from) 6%, var(--pig-mark-to) 94%);
 }
 
 // 暗色：通电板卡
@@ -317,15 +317,15 @@ a {
   --bs-code-color: #e0a35c;
   --td-pre-bg: #0a0f16; // 终端底色（与首页命令框一致）
 
-  --silo-elev: #121c29;
-  --silo-silk: #93a3b8;
-  --silo-copper: #e0a35c;
-  --silo-copper-dim: rgba(224, 163, 92, 0.55);
-  --silo-line-strong: rgba(148, 176, 210, 0.32);
-  --silo-header-bg: rgba(11, 17, 25, 0.92);
-  --silo-grid-line: rgba(120, 150, 190, 0.045);
-  --silo-mark-from: #7fb8e8;
-  --silo-mark-to: #e0a35c;
+  --pig-elev: #121c29;
+  --pig-silk: #93a3b8;
+  --pig-copper: #e0a35c;
+  --pig-copper-dim: rgba(224, 163, 92, 0.55);
+  --pig-line-strong: rgba(148, 176, 210, 0.32);
+  --pig-header-bg: rgba(11, 17, 25, 0.92);
+  --pig-grid-line: rgba(120, 150, 190, 0.045);
+  --pig-mark-from: #7fb8e8;
+  --pig-mark-to: #e0a35c;
 }
 
 // 文档/博客页背景保持纯平（fumadocs 基调）；覆铜网格背景仅保留在
@@ -333,7 +333,7 @@ a {
 
 // ---- 导航栏：毛玻璃电路板顶盖 ----------------------------------
 .td-navbar {
-  --td-navbar-bg-color: var(--silo-header-bg);
+  --td-navbar-bg-color: var(--pig-header-bg);
   --td-navbar-backdrop-filter: blur(14px);
   --td-navbar-border-bottom: 1px solid var(--bs-border-color);
   -webkit-backdrop-filter: blur(14px);
@@ -350,7 +350,7 @@ a {
       font-size: 1.3rem;
       letter-spacing: 0.16em;
       margin-right: -0.16em; // 抵消末位字距，让渐变正好收在 O 上
-      background: var(--silo-mark-gradient);
+      background: var(--pig-mark-gradient);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -377,7 +377,7 @@ a {
 
     &:hover {
       color: var(--bs-body-color);
-      background: var(--silo-elev);
+      background: var(--pig-elev);
     }
 
     &.active,
@@ -385,7 +385,7 @@ a {
       color: var(--bs-link-color);
       background: transparent;
       text-decoration: underline;
-      text-decoration-color: var(--silo-copper);
+      text-decoration-color: var(--pig-copper);
       text-decoration-thickness: 2px;
       text-underline-offset: 0.5em;
     }
@@ -397,7 +397,7 @@ a {
     align-items: center;
   }
 
-  .silo-navbar-util {
+  .pig-navbar-util {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -416,26 +416,26 @@ a {
     &:hover,
     &:focus {
       color: var(--bs-body-color);
-      background: var(--silo-elev);
+      background: var(--pig-elev);
       text-decoration: none;
     }
   }
 
-  .silo-navbar-github {
+  .pig-navbar-github {
     margin-left: 6px;
     font-size: 1.05rem;
   }
 
-  // 搜索、主题、语言控件已全部移入左侧栏（见 silo/_sidebar.scss）。
+  // 搜索、主题、语言控件已全部移入左侧栏（见 pig/_sidebar.scss）。
   // 顶栏仅保留：品牌 + 主导航 + GitHub + 移动端汉堡/搜索图标钮。
-  .silo-navbar-util .silo-icon {
+  .pig-navbar-util .pig-icon {
     width: 18px;
     height: 18px;
   }
 }
 
 // 移动端汉堡钮（打开抽屉侧栏），仅 < md 显示（d-md-none）。
-.silo-navbar-hamburger {
+.pig-navbar-hamburger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -451,19 +451,19 @@ a {
   background: transparent;
   color: var(--bs-secondary-color);
 
-  .silo-icon {
+  .pig-icon {
     width: 20px;
     height: 20px;
   }
 
   &:hover {
     color: var(--bs-body-color);
-    background: var(--silo-elev);
+    background: var(--pig-elev);
   }
 }
 
 // 左侧边栏 / 右侧 TOC / 搜索弹窗的全部样式见文件尾部导入的
-// silo/_layout.scss、silo/_sidebar.scss、silo/_toc.scss、silo/_search.scss。
+// pig/_layout.scss、pig/_sidebar.scss、pig/_toc.scss、pig/_search.scss。
 
 // ---- 正文排版 ---------------------------------------------------
 .td-content {
@@ -506,7 +506,7 @@ a {
   // 引用块：铜色左轨（与首页 module-value 同款语言）
   // 首末子元素外边距收掉，避免块内上下留白失衡
   blockquote {
-    border-left: 2px solid var(--silo-copper);
+    border-left: 2px solid var(--pig-copper);
     background: linear-gradient(90deg, rgba(224, 163, 92, 0.07), transparent 80%);
     margin: 1.25rem 0;
     padding: 0.7rem 1.1rem;
@@ -534,7 +534,7 @@ a {
     thead th,
     thead td {
       background: var(--bs-tertiary-bg);
-      border-bottom: 1px solid var(--silo-line-strong);
+      border-bottom: 1px solid var(--pig-line-strong);
     }
   }
 }
@@ -576,7 +576,7 @@ a {
 // 注意：播放器 CSS 由 shortcode 在正文中延迟加载，晚于 main.css，
 // 因此这里用 .ap-player 提高特异性，压过其默认的黑底变量
 // 暗色：landing 命令框同款 #0a0f16 底 + 板卡调 ANSI 色
-.ap-player.asciinema-player-theme-silo {
+.ap-player.asciinema-player-theme-pig {
   --term-color-foreground: #dbe7f5;
   --term-color-background: #0a0f16;
   --term-color-0: #1c2736;
@@ -598,7 +598,7 @@ a {
 }
 
 // 亮色：图纸纸面 + 同族加深 ANSI 色
-.ap-player.asciinema-player-theme-silo-light {
+.ap-player.asciinema-player-theme-pig-light {
   --term-color-foreground: #16222e;
   --term-color-background: #f6f9fc;
   --term-color-0: #16222e;
@@ -666,14 +666,14 @@ a {
 }
 
 // 图标列：FA 与 lucide SVG 共用，等宽居中对齐、弱化。
-.silo-origin__icon {
+.pig-origin__icon {
   flex-shrink: 0;
   display: inline-flex;
   justify-content: center;
   width: 1.25em;
   opacity: 0.65;
 
-  .silo-icon {
+  .pig-icon {
     width: 1.05em;
     height: 1.05em;
     align-self: center;
@@ -681,7 +681,7 @@ a {
 }
 
 // ---- 页脚：landing 同款（pg-footer 全自定义，见 footer.html） -----
-// 页脚样式已抽到 static/css/silo-footer.css：首页与下载页不加载这个 SCSS 包，
+// 页脚样式已抽到 static/css/pig-footer.css：首页与下载页不加载这个 SCSS 包，
 // 但要用同一个页脚，所以样式必须是三类模板都能 <link> 的独立文件。
 
 // 隐藏 Docsy 默认 td-footer 的暗盒样式残留（我们完全接管 footer）
@@ -701,7 +701,7 @@ a {
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--silo-silk);
+  color: var(--pig-silk);
 
   &::before {
     content: '';
@@ -709,7 +709,7 @@ a {
     width: 8px;
     height: 8px;
     margin-right: 10px;
-    border: 1.5px solid var(--silo-copper);
+    border: 1.5px solid var(--pig-copper);
     border-radius: 50%;
   }
 }
@@ -750,7 +750,7 @@ a {
   flex-direction: column;
   gap: 0.55rem;
   padding: 1.05rem 1.2rem;
-  background: var(--silo-elev);
+  background: var(--pig-elev);
   border: 1px solid var(--bs-border-color);
   border-radius: 0.5rem;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
@@ -767,12 +767,12 @@ a {
 }
 
 .docs-nav__card--copper {
-  --nav-accent: var(--silo-copper);
-  border-color: color-mix(in srgb, var(--silo-copper) 24%, var(--bs-border-color));
+  --nav-accent: var(--pig-copper);
+  border-color: color-mix(in srgb, var(--pig-copper) 24%, var(--bs-border-color));
 }
 
 .docs-nav__card--gray {
-  --nav-accent: var(--silo-silk);
+  --nav-accent: var(--pig-silk);
 }
 
 .docs-nav__head {
@@ -860,7 +860,7 @@ a {
 }
 
 
-// Silo-specific Docsy components
+// PIG-specific Docsy components
 .navbar-brand__logo img,
 
 // 上游 MinIO 文档里的行内 octicon（清单勾选圈、星标、铅笔、齿轮）没有 fill，
@@ -880,17 +880,17 @@ a {
   }
 
   .alert > :last-child,
-  .silo-details__body > :last-child,
-  .silo-doc-card__body > :last-child {
+  .pig-details__body > :last-child,
+  .pig-doc-card__body > :last-child {
     margin-bottom: 0;
   }
 }
 
-.silo-details {
+.pig-details {
   margin: 1rem 0;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.55rem;
-  background: var(--silo-elev);
+  background: var(--pig-elev);
 
   summary {
     cursor: pointer;
@@ -908,14 +908,14 @@ a {
   }
 }
 
-.silo-doc-cards {
+.pig-doc-cards {
   display: grid;
   gap: 1rem;
   margin: 1rem 0;
-  grid-template-columns: repeat(var(--silo-card-columns, 3), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--pig-card-columns, 3), minmax(0, 1fr));
 }
 
-.silo-doc-card {
+.pig-doc-card {
   position: relative;
   display: flex;
   min-width: 0;
@@ -923,7 +923,7 @@ a {
   overflow: hidden;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.6rem;
-  background: var(--silo-elev);
+  background: var(--pig-elev);
   color: var(--bs-body-color);
 
   &:hover {
@@ -950,11 +950,11 @@ a {
   }
 }
 
-a.silo-doc-card {
+a.pig-doc-card {
   text-decoration: none;
 }
 
-.silo-doc-carousel {
+.pig-doc-carousel {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -973,7 +973,7 @@ a.silo-doc-card {
     scrollbar-width: thin;
   }
 
-  &-track > .silo-doc-card {
+  &-track > .pig-doc-card {
     scroll-snap-align: start;
   }
 
@@ -985,28 +985,28 @@ a.silo-doc-card {
     justify-content: center;
     border: 1px solid var(--bs-border-color);
     border-radius: 999px;
-    background: var(--silo-elev);
+    background: var(--pig-elev);
     color: var(--bs-body-color);
     font-size: 1.5rem;
   }
 }
 
 @media (max-width: 767.98px) {
-  .silo-doc-cards {
+  .pig-doc-cards {
     grid-template-columns: 1fr;
   }
 
-  .silo-doc-carousel {
+  .pig-doc-carousel {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .silo-doc-carousel-button {
+  .pig-doc-carousel-button {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .silo-doc-carousel-track {
+  .pig-doc-carousel-track {
     scroll-behavior: auto;
   }
 }
@@ -1015,9 +1015,9 @@ a.silo-doc-card {
 // Fumadocs 风格文档 chrome（侧栏 / TOC / 搜索弹窗 / 布局壳）
 // 置于文件最末，享有整个样式管线的最高级联优先级。
 // ============================================================
-@import 'silo/tokens';
-@import 'silo/layout';
-@import 'silo/sidebar';
-@import 'silo/toc';
-@import 'silo/search';
-@import 'silo/blog';
+@import 'pig/tokens';
+@import 'pig/layout';
+@import 'pig/sidebar';
+@import 'pig/toc';
+@import 'pig/search';
+@import 'pig/blog';

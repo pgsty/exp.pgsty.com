@@ -32,7 +32,7 @@ module:
 # Languages and navigation
 #=======================================#
 # 文档正文直接挂在站点根下（/install/、/pg/、/ext/……），不带 /docs/ 前缀；
-# /docs/ 只是文档总览页，与 silo.pgsty.com 的 URL 布局一致。
+# /docs/ 只是文档总览页 —— 这套 URL 布局参照姊妹站 silo.pgsty.com。
 languages:
   en:
     label: English
@@ -137,12 +137,12 @@ outputs:
 #=======================================#
 # Services
 #=======================================#
-# Google Analytics 4：拿到 pig.pgsty.com 的数据流 ID 后在此打开；埋点仅生产
-# 构建注入（docsy head.html / layouts/index.html 都用 hugo.IsProduction 包裹），
-# 本地 hugo server 不会加载。
-# services:
-#   googleAnalytics:
-#     id: G-XXXXXXXXXX
+# Google Analytics 4：pig.pgsty.com 自己的数据流，别沿用其它站点的 ID。
+# 埋点仅生产构建注入（docsy head.html / layouts/index.html 都用 hugo.IsProduction
+# 包裹），本地 hugo server 不会加载。
+services:
+  googleAnalytics:
+    id: G-1D95QFXC80
 
 #=======================================#
 # Site parameters
@@ -189,7 +189,7 @@ params:
     sidebar_root_enabled: true
     ul_show: 2
     showLightDarkModeMenu: true
-    # TOC 高亮由 silo-docs.js 的 IntersectionObserver 实现；Docsy 的
+    # TOC 高亮由 pig-docs.js 的 IntersectionObserver 实现；Docsy 的
     # Bootstrap ScrollSpy 注入路径存在属性转义 bug，本就从未生效。
     scrollSpy:
       disable: true

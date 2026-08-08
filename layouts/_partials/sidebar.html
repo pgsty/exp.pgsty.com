@@ -55,17 +55,17 @@
     "sidebarRootID" $sidebarRootID
 -}}
 {{/* 单一权重驱动的导航树：pig 文档全部是 content 顶层页面，按 front matter
-     weight 排序即可，无需 silo/sow 那套 docs_nav.json 冻结目录。 */ -}}
+     weight 排序即可，无需 silo / sow 那两个站的 docs_nav.json 冻结目录。 */ -}}
 {{ $treePartial := "sidebar-tree.html" -}}
 {{ if $cacheSidebar -}}
   {{ $mid := printf "m-%s" (.RelPermalink | anchorize) }}
   <script>
     $(function() {
     $("#td-section-nav a").removeClass("active");
-    $("#td-section-nav .silo-tree__row").removeClass("silo-active");
+    $("#td-section-nav .pig-tree__row").removeClass("pig-active");
     var $link = $("#td-section-nav #{{ $mid }}");
     $link.addClass("active").attr("aria-current", "page");
-    $link.closest(".silo-tree__row").addClass("silo-active");
+    $link.closest(".pig-tree__row").addClass("pig-active");
     $link.parents("li").addClass("active-path");
     $("#td-section-nav li.active-path").children("input").prop('checked', true);
     $("#td-sidebar-menu").toggleClass("d-none");

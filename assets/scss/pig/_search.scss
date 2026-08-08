@@ -1,8 +1,8 @@
 // ============================================================
-// silo/search —— ⌘K 搜索弹窗（240ms 缩放入场，键盘导航）
+// pig/search —— ⌘K 搜索弹窗（240ms 缩放入场，键盘导航）
 // ============================================================
 
-.silo-search {
+.pig-search {
   position: fixed;
   inset: 0;
   z-index: 1050;
@@ -12,7 +12,7 @@
   }
 }
 
-.silo-search__backdrop {
+.pig-search__backdrop {
   position: absolute;
   inset: 0;
   background: rgba(4, 10, 18, 0.45);
@@ -22,7 +22,7 @@
   transition: opacity 240ms ease;
 }
 
-.silo-search__panel {
+.pig-search__panel {
   position: relative;
   width: calc(100vw - 24px);
   max-width: 640px;
@@ -32,19 +32,19 @@
   flex-direction: column;
   border: 1px solid var(--bs-border-color);
   border-radius: 14px;
-  background: var(--silo-popover);
-  box-shadow: var(--silo-shadow-lg);
+  background: var(--pig-popover);
+  box-shadow: var(--pig-shadow-lg);
   opacity: 0;
   transform: scale(1.06);
-  transition: opacity 240ms var(--silo-ease-dialog), transform 240ms var(--silo-ease-dialog);
+  transition: opacity 240ms var(--pig-ease-dialog), transform 240ms var(--pig-ease-dialog);
 }
 
-.silo-search.is-open {
-  .silo-search__backdrop {
+.pig-search.is-open {
+  .pig-search__backdrop {
     opacity: 1;
   }
 
-  .silo-search__panel {
+  .pig-search__panel {
     opacity: 1;
     transform: scale(1);
   }
@@ -52,22 +52,22 @@
 
 /* 输入行 */
 
-.silo-search__head {
+.pig-search__head {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--bs-border-color);
 
-  > .silo-icon {
+  > .pig-icon {
     width: 18px;
     height: 18px;
     flex-shrink: 0;
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 }
 
-.silo-search__input {
+.pig-search__input {
   flex: 1 1 auto;
   min-width: 0;
   border: 0;
@@ -82,7 +82,7 @@
   }
 
   &::placeholder {
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 
   // 干掉 UA 自带的清除小叉，避免与 esc 徽章打架。
@@ -92,7 +92,7 @@
   }
 }
 
-.silo-search__esc {
+.pig-search__esc {
   flex-shrink: 0;
   padding: 0;
   border: 0;
@@ -106,13 +106,13 @@
     border: 1px solid var(--bs-border-color);
     border-radius: 7px;
     background: var(--bs-body-bg);
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 }
 
 /* 结果列表 */
 
-.silo-search__list {
+.pig-search__list {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -134,7 +134,7 @@
   }
 }
 
-.silo-search__item {
+.pig-search__item {
   display: block;
   padding: 8px 10px;
   border-radius: 10px;
@@ -146,60 +146,60 @@
   }
 
   &[aria-selected='true'] {
-    background: var(--silo-primary-dim);
+    background: var(--pig-primary-dim);
   }
 
   mark {
     padding: 0;
     background: transparent;
-    color: var(--silo-primary);
+    color: var(--pig-primary);
     font-weight: 600;
   }
 }
 
-.silo-search__item-title {
+.pig-search__item-title {
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
 }
 
-.silo-search__item-ref {
+.pig-search__item-ref {
   margin-top: 1px;
   font-size: 12px;
   line-height: 16px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.silo-search__item-excerpt {
+.pig-search__item-excerpt {
   margin-top: 2px;
   font-size: 13px;
   line-height: 18px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.silo-search__empty {
+.pig-search__empty {
   padding: 24px 12px;
   text-align: center;
   font-size: 14px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
 }
 
 /* 底部快捷键提示 */
 
-.silo-search__foot {
+.pig-search__foot {
   display: flex;
   gap: 16px;
   padding: 8px 14px;
   border-top: 1px solid var(--bs-border-color);
   font-size: 12px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
 
   span {
     display: inline-flex;
@@ -217,16 +217,16 @@
     border: 1px solid var(--bs-border-color);
     border-radius: 5px;
     background: var(--bs-body-bg);
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 }
 
 @media (max-width: 575.98px) {
-  .silo-search__panel {
+  .pig-search__panel {
     margin-top: 6vh;
   }
 
-  .silo-search__foot {
+  .pig-search__foot {
     display: none;
   }
 }

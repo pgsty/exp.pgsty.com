@@ -3,20 +3,20 @@
 {{- if eq .Type "blog" -}}
 {{- $tags := .Site.Taxonomies.tags -}}
 {{- if gt (len $tags) 0 -}}
-<div class="silo-tags-cloud">
-  <input type="checkbox" class="silo-tree__state" id="silo-tags-toggle" checked>
-  <label class="silo-tree__row silo-tags-cloud__head" for="silo-tags-toggle">
-    <span class="silo-tags-cloud__title">{{ T "silo_tags_title" }}</span>
-    <span class="silo-tree__chevron" aria-hidden="true">
-      {{- partialCached "silo/icon.html" "chevron-down" "chevron-down" -}}
+<div class="pig-tags-cloud">
+  <input type="checkbox" class="pig-tree__state" id="pig-tags-toggle" checked>
+  <label class="pig-tree__row pig-tags-cloud__head" for="pig-tags-toggle">
+    <span class="pig-tags-cloud__title">{{ T "pig_tags_title" }}</span>
+    <span class="pig-tree__chevron" aria-hidden="true">
+      {{- partialCached "pig/icon.html" "chevron-down" "chevron-down" -}}
     </span>
   </label>
-  <div class="silo-tree__children">
-    <div class="silo-tree__children-inner">
-      <div class="silo-tags-cloud__chips">
+  <div class="pig-tree__children">
+    <div class="pig-tree__children-inner">
+      <div class="pig-tags-cloud__chips">
         {{ range $tags.ByCount -}}
-        <a class="silo-tag" href="{{ .Page.RelPermalink }}">
-          <span>{{ .Page.LinkTitle }}</span><span class="silo-tag__count">{{ .Count }}</span>
+        <a class="pig-tag" href="{{ .Page.RelPermalink }}">
+          <span>{{ .Page.LinkTitle }}</span><span class="pig-tag__count">{{ .Count }}</span>
         </a>
         {{ end -}}
       </div>

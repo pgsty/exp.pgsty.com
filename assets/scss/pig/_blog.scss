@@ -1,17 +1,17 @@
 // ============================================================
-// silo/blog —— 博客列表（Docsy 原版式 + fumadocs 风格美化）与 Tags 样式
+// pig/blog —— 博客列表（Docsy 原版式 + fumadocs 风格美化）与 Tags 样式
 // ============================================================
 
 /* ------------------------------------------------- 列表页（Docsy 版式） */
 
 // 年份分组标签：小号大写 muted（替代 Docsy 的 h2 大标题观感）。
-.silo-chrome .td-blog-posts > .h2 {
+.pig-chrome .td-blog-posts > .h2 {
   margin: 2.25rem 0 0.25rem;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
 
   &:first-child {
     margin-top: 0.75rem;
@@ -41,14 +41,14 @@
       color: var(--bs-body-color);
 
       &:hover {
-        color: var(--silo-primary);
+        color: var(--pig-primary);
         text-decoration: none;
       }
     }
 
     i {
       font-size: 11px;
-      color: var(--silo-muted-fg);
+      color: var(--pig-muted-fg);
     }
   }
 
@@ -94,7 +94,7 @@
 }
 
 // RSS 按钮：纯图标，无任何背景框/描边，hover 仅变色。
-.silo-chrome .td-rss-button {
+.pig-chrome .td-rss-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -105,12 +105,12 @@
   border-radius: 0;
   background: transparent !important;
   box-shadow: none !important;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   font-size: 1rem;
   transition: color 100ms ease;
 
   &:hover {
-    color: var(--silo-primary);
+    color: var(--pig-primary);
     background: transparent !important;
   }
 }
@@ -128,7 +128,7 @@
     margin: 0;
     font-size: 13px;
     font-weight: 500;
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 
   .taxonomy-terms {
@@ -156,12 +156,12 @@ a.taxonomy-term {
   background: transparent;
   font-size: 12.5px;
   line-height: 18px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   text-decoration: none;
   transition: background-color 100ms ease, color 100ms ease;
 
   &:hover {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     color: var(--bs-body-color);
     text-decoration: none;
   }
@@ -178,30 +178,30 @@ a.taxonomy-term {
 
 /* ------------------------------------------ 标签 chip（云图/过滤条通用） */
 
-.silo-tag {
+.pig-tag {
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
   padding: 3px 9px;
   border: 1px solid var(--bs-border-color);
   border-radius: 7px;
-  background: var(--silo-field);
+  background: var(--pig-field);
   font-size: 12.5px;
   line-height: 18px;
-  color: var(--silo-muted-fg);
+  color: var(--pig-muted-fg);
   text-decoration: none;
   transition: background-color 100ms ease, color 100ms ease, border-color 100ms ease;
 
   &:hover {
-    background: var(--silo-accent);
+    background: var(--pig-accent);
     color: var(--bs-body-color);
     text-decoration: none;
   }
 
   &.is-active {
-    background: var(--silo-primary-dim);
-    border-color: color-mix(in srgb, var(--silo-primary) 35%, transparent);
-    color: var(--silo-primary);
+    background: var(--pig-primary-dim);
+    border-color: color-mix(in srgb, var(--pig-primary) 35%, transparent);
+    color: var(--pig-primary);
     font-weight: 500;
   }
 
@@ -218,7 +218,7 @@ a.taxonomy-term {
 
 /* 右栏标签云：可折叠区块（默认展开），chips 按文章数降序 */
 
-.silo-tags-cloud {
+.pig-tags-cloud {
   margin-top: 16px;
   padding-top: 10px;
   border-top: 1px solid var(--bs-border-color);
@@ -233,7 +233,7 @@ a.taxonomy-term {
     flex: 1 1 auto;
     font-size: 14px;
     font-weight: 400;
-    color: var(--silo-muted-fg);
+    color: var(--pig-muted-fg);
   }
 
   &__chips {
@@ -246,7 +246,7 @@ a.taxonomy-term {
 
 /* 标签索引页顶部过滤条 */
 
-.silo-tags-filter {
+.pig-tags-filter {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -255,7 +255,7 @@ a.taxonomy-term {
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-.silo-term-summary {
+.pig-term-summary {
   font-size: 15px;
   line-height: 1.65;
   color: var(--bs-secondary-color);

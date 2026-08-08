@@ -18,22 +18,27 @@ is built from the top-level pages by front-matter `weight`.
 content/
   _index.md            # landing page metadata (the page itself is layouts/index.html)
   docs/_index.md       # /docs/ — documentation overview, listed in the sidebar root menu
-  start.md             # /start/     weight 10
-  intro.md             # /intro/     weight 20
+  start.md             # /start/      weight 10
+  intro.md             # /intro/      weight 20
   install.md           # /install/    weight 30
-  release.md           # /release/    weight 40 — version index table only
-  _div_cmd.md          # sidebar group heading (sidebar_divider, never rendered)
+  _link_release.md     # sidebar entry pointing at /release/ (manualLink, not a page)
+  _div_cmd.md          # sidebar group heading (sidebar_divider, not a page)
   cmd.md               # /cmd/        weight 100
   repo.md ext.md build.md sty.md inventory.md pg.md pt.md pb.md pitr.md
-  blog/                # /blog/ — announcements
-    release/           # /blog/release/pig-X.Y.Z/ — one note per released version
+  blog/                # /blog/ — all posts, newest first
+    release/           # /release/ and /release/pig-X.Y.Z/
 data/home/metrics.yaml # landing page counters
 ```
 
-Release notes live in `content/blog/release/`, one dated post per version. The
-`/release/` documentation page carries only the version index table, and each row links
-to its post. A new release therefore means: add a post pair under `content/blog/release/`
-(`weight` ascending from the newest) and add one row to `content/release.md(.zh.md)`.
+Blog URLs drop the `blog` prefix: `permalinks.page` and `permalinks.section` in
+`hugo.yaml` use `:sections[1:]`, so `content/blog/release/pig-1.6.0.md` publishes at
+`/release/pig-1.6.0/`. A new blog subsection is a new top-level prefix with no config
+change. Only `content/blog/_index.md` pins its own `url: /blog/`, because slicing its
+single section would resolve to `/`.
+
+Release notes are one dated post per version under `content/blog/release/`. Adding a
+release means adding a `pig-X.Y.Z.md` / `.zh.md` pair with `weight` ascending from the
+newest.
 
 Each page ships as an English `.md` plus a Chinese `.zh.md`. Two sections stay out of the
 docs sidebar tree via `toc_root: true` — `docs/` and `blog/` — because the sidebar root
