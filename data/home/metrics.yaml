@@ -1,0 +1,16 @@
+# Landing page counters. These are product facts, not adoption numbers — every
+# value must stay verifiable against the documentation page the stat links to.
+
+# Extensions packaged by Pigsty and installable through `pig install`.
+# Keep in sync with params.pgext_count in hugo.yaml.
+packaged_extensions: 562
+
+# PostgreSQL major versions covered by the repositories: 14, 15, 16, 17, 18.
+pg_majors: 5
+
+# Linux distro majors in the compatibility table on /intro/:
+# EL 7 / 8 / 9 / 10, Debian 11 / 12 / 13, Ubuntu 22 / 24 / 26.
+linux_distros: 10
+
+# pig is a single static Go binary: nothing to install alongside it.
+runtime_deps: 0

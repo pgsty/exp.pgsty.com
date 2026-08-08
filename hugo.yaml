@@ -1,0 +1,229 @@
+#=======================================#
+# Basics
+#=======================================#
+baseURL: https://pig.pgsty.com/
+title: PIG - Postgres Install Genius
+defaultContentLanguage: en
+defaultContentLanguageInSubdir: false
+enableRobotsTXT: true
+enableGitInfo: true
+hasCJKLanguage: true
+# 标签等列表页标题保留作者原始大小写（不要把 pg_duckdb 渲染成 Pg_duckdb）。
+capitalizeListTitles: false
+
+# 列表页每页条目数（博客列表、标签页等）。放宽到 60，让 /release/ 的全部版本
+# 在一页里列完，不必翻页。
+pagination:
+  pagerSize: 60
+
+#=======================================#
+# Hugo Module
+#=======================================#
+module:
+  proxy: direct
+  hugoVersion:
+    extended: true
+    min: "0.155.0"
+  imports:
+    - path: github.com/google/docsy
+      disable: false
+
+#=======================================#
+# Languages and navigation
+#=======================================#
+# 文档正文直接挂在站点根下（/install/、/pg/、/ext/……），不带 /docs/ 前缀；
+# /docs/ 只是文档总览页，与 silo.pgsty.com 的 URL 布局一致。
+languages:
+  en:
+    label: English
+    locale: en
+    weight: 1
+    title: PIG
+    params:
+      description: "PIG: the PostgreSQL extension package manager. Install PostgreSQL 14-18 and 562 packaged extensions with one command."
+      time_format_blog: 'January 02, 2006'
+    menu:
+      main:
+        - identifier: docs
+          name: Docs
+          weight: 10
+          url: /docs/
+          pre: <i class='fa-solid fa-book'></i>
+        - identifier: blog
+          name: Blog
+          weight: 20
+          url: /blog/
+          pre: <i class='fa-solid fa-blog'></i>
+  zh:
+    label: 简体中文
+    locale: zh-CN
+    weight: 2
+    title: PIG
+    params:
+      description: "PIG：PostgreSQL 扩展包管理器，一行命令安装 PostgreSQL 14-18 与 562 个已打包扩展。"
+      time_format_blog: '2006年01月02日'
+    menu:
+      main:
+        - identifier: docs
+          name: 文档
+          weight: 10
+          url: /zh/docs/
+          pre: <i class='fa-solid fa-book'></i>
+        - identifier: blog
+          name: 博客
+          weight: 20
+          url: /zh/blog/
+          pre: <i class='fa-solid fa-blog'></i>
+
+#=======================================#
+# Taxonomies and blog URLs
+#=======================================#
+taxonomies:
+  categories: categories
+  tags: tags
+
+# 博客内容按栏目组织在 content/blog/ 下，但 URL 不带 blog 前缀：
+# content/blog/release/pig-1.6.0.md → /release/pig-1.6.0/
+# content/blog/release/_index.md    → /release/
+# :sections[1:] 丢掉第一段（blog），新开的博客栏目自动照此规则。
+# content/blog/_index.md 自身会算出 "/"，所以它在 front matter 里显式写死 url。
+permalinks:
+  page:
+    blog: '/:sections[1:]/:contentbasename/'
+  section:
+    blog: '/:sections[1:]/'
+
+#=======================================#
+# Markdown and syntax highlighting
+#=======================================#
+markup:
+  goldmark:
+    parser:
+      attribute:
+        block: true
+      autoHeadingID: true
+      autoHeadingIDType: github
+    renderer:
+      unsafe: true
+    extensions:
+      footnote: true
+      linkify: true
+      table: true
+      taskList: true
+      typographer: true
+      passthrough:
+        enable: true
+        delimiters:
+          inline:
+            - ['\(', '\)']
+          block:
+            - ['$$', '$$']
+  highlight:
+    style: tango
+    codeFences: true
+    noClasses: false
+  tableOfContents:
+    startLevel: 2
+    endLevel: 4
+
+#=======================================#
+# Outputs
+#=======================================#
+outputs:
+  home: [HTML, RSS, JSON]
+  page: [HTML]
+  section: [HTML, RSS]
+
+#=======================================#
+# Services
+#=======================================#
+# Google Analytics 4：拿到 pig.pgsty.com 的数据流 ID 后在此打开；埋点仅生产
+# 构建注入（docsy head.html / layouts/index.html 都用 hugo.IsProduction 包裹），
+# 本地 hugo server 不会加载。
+# services:
+#   googleAnalytics:
+#     id: G-XXXXXXXXXX
+
+#=======================================#
+# Site parameters
+#=======================================#
+params:
+  description: "PIG is the missing package manager for the PostgreSQL ecosystem: install PostgreSQL kernels and 562 packaged extensions on EL / Debian / Ubuntu with a single 5 MB binary."
+  images:
+    - img/pig-social-card.png
+  version: 1.6.1            # pig 最新版本号（= internal/config.PigVersion），正文用 {{< param version >}}
+  pigsty_version: 4.5.0     # pig 内置的 Pigsty 版本（= internal/config.PigstyVersion）
+  pgext_count: 562          # Pigsty 已打包 PG 扩展数量，正文用 {{< param pgext_count >}}
+  copyright:
+    authors: PIGSTY & PIG Contributors
+    from_year: 2025
+    url: https://pgsty.com
+
+  # 正文列宽模式：normal（1050px，默认）| wide（1300px）| full（占满可用宽）。
+  # 页面 front matter 可单页覆盖（page_width: wide），栏目可经 cascade 继承。
+  page_width: normal
+  # ICP 备案号（单行页脚居中显示，链接到 beian.miit.gov.cn；留空则不渲染）。
+  footer_icp: ""
+
+  archived_version: false
+  url_latest_version: https://pig.pgsty.com
+  github_repo: https://github.com/pgsty/pig.pgsty.com
+  github_project_repo: https://github.com/pgsty/pig
+  github_branch: main
+
+  # 站内搜索由项目自有的 ⌘K 弹窗实现（lunr 自托管 + 按语言索引），
+  # 必须关闭 Docsy offlineSearch：否则其 offline-search.js 在页面上找不到
+  # .td-search input 时会 $.ajax(undefined) 抓当前页 HTML 并抛错。
+  offlineSearch: false
+  prism_syntax_highlighting: false
+
+  ui:
+    breadcrumb_disable: false
+    navbar_logo: true
+    navbar_translucent_over_cover_disable: false
+    navbar_theme: dark
+    sidebar_menu_compact: true
+    sidebar_menu_foldable: true
+    sidebar_menu_truncate: 2000
+    sidebar_cache_limit: 1000
+    sidebar_root_enabled: true
+    ul_show: 2
+    showLightDarkModeMenu: true
+    # TOC 高亮由 silo-docs.js 的 IntersectionObserver 实现；Docsy 的
+    # Bootstrap ScrollSpy 注入路径存在属性转义 bug，本就从未生效。
+    scrollSpy:
+      disable: true
+    # ---- Fumadocs 式侧栏定制（chrome）----
+    # 搜索框下方的根节点下拉：列出 /docs/ 总览 + 所有 sidebar_root_for: self
+    # 的 section（这里就是 Blog）。
+    sidebar_root_menu: true
+    # 侧栏宽度（px）：默认宽随断点 268/286，可拖拽调整并持久化；
+    # min/max 为拖拽钳制范围，可在栏目 front matter 中经 cascade 覆盖。
+    sidebar_width_min: 220
+    sidebar_width_max: 480
+    # 侧栏条目文字溢出策略：ellipsis（省略号，默认）| wrap（换行）。
+    sidebar_item_overflow: ellipsis
+    feedback:
+      enable: false
+    readingtime:
+      enable: false
+
+  links:
+    user:
+      - name: PIG source
+        url: https://github.com/pgsty/pig
+        icon: fab fa-github
+        desc: pig source repository
+      - name: Pigsty
+        url: https://pigsty.io
+        icon: fa fa-database
+        desc: Pigsty project
+    developer:
+      - name: Releases
+        url: https://github.com/pgsty/pig/releases
+        icon: fa fa-box-archive
+        desc: pig release artifacts
+      - name: Documentation source
+        url: https://github.com/pgsty/pig.pgsty.com
+        icon: fab fa-github
+        desc: pig documentation repository

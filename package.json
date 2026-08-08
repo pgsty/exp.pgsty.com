@@ -1,0 +1,13 @@
+{
+  "name": "pig.pgsty.com",
+  "version": "1.6.1",
+  "private": true,
+  "description": "PIG documentation site",
+  "license": "CC-BY-4.0",
+  "type": "commonjs",
+  "dependencies": {
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1"
+  }
+}
