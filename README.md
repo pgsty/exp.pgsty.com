@@ -118,10 +118,10 @@ checks against an in-progress sibling OINK checkout.
 
 ## Publishing caution
 
-This checkout still has a copied `pig.pgsty.com` Git remote. Before pushing or
-enabling deployment, replace it with the verified `exp.pgsty.com` repository and
-confirm the Pages target, custom domain, and remote OINK revision. Never publish
-this site through the copied `pig.pgsty.com` remote.
+The canonical Git remote is `git@github.com:pgsty/exp.pgsty.com.git`. Before any
+push or deployment, verify that target together with the Pages project, custom
+domain, and pinned OINK revision. Never publish this site through the historical
+copied `pig.pgsty.com` remote.
 
 ## License
 
