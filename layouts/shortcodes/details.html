@@ -1,8 +1,0 @@
-{{- $title := .Get "title" | default "Details" -}}
-{{- $closed := .Get "closed" | default true -}}
-<details class="pig-details"{{ if not $closed }} open{{ end }}>
-  <summary>{{ $title }}</summary>
-  <div class="pig-details__body">
-    {{ .Inner }}
-  </div>
-</details>

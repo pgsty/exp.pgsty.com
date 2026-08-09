@@ -39,7 +39,7 @@
       </div>
     </div>
     <div class="pig-footer__bottom">
-      <span>&copy; {{ .Site.Params.copyright.from_year }}-{{ now.Year }} <a href="https://github.com/pgsty/pg_exporter" target="_blank" rel="noopener">PG Exporter Contributors</a> @ <a href="https://pgsty.com" target="_blank" rel="noopener">PGSTY</a></span>
+      <span>&copy; {{ .Site.Params.copyright.from_year }}-{{ now.Year }} <a href="https://github.com/pgsty/pg_exporter" target="_blank" rel="noopener">PG Exporter Contributors</a> · <a href="{{ .Site.Params.content_license.url }}" target="_blank" rel="license noopener">{{ .Site.Params.content_license.name }}</a></span>
       {{ with .Site.Params.footer_icp -}}<span class="pig-footer__icp"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ . }}</a></span>{{- end }}
       <span class="pig-footer__lang">{{- range .Site.Home.Translations -}}<a href="{{ .RelPermalink }}" lang="{{ .Language.Locale }}">{{ .Language.Label }}</a>{{- end -}}</span>
     </div>

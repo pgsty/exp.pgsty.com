@@ -1,0 +1,102 @@
+{
+  "meta": {
+    "purpose": "OINK navigation for root-level PG Exporter manuals",
+    "page_count": 13,
+    "sidebar_entry_count": 12
+  },
+  "page_by_url": {
+    "/docs/": "docs",
+    "/intro/": "intro",
+    "/start/": "start",
+    "/install/": "install",
+    "/compatibility/": "compatibility",
+    "/deploy/": "deploy",
+    "/security/": "security",
+    "/troubleshooting/": "troubleshooting",
+    "/config/": "config",
+    "/collectors/": "collectors",
+    "/api/": "api",
+    "/development/": "development",
+    "/release/": "_link_release"
+  },
+  "active_path_by_url": {
+    "/docs/": ["/docs/"],
+    "/intro/": ["/intro/"],
+    "/start/": ["/start/"],
+    "/install/": ["/start/", "/install/"],
+    "/compatibility/": ["/start/", "/compatibility/"],
+    "/deploy/": ["/deploy/"],
+    "/security/": ["/deploy/", "/security/"],
+    "/troubleshooting/": ["/deploy/", "/troubleshooting/"],
+    "/config/": ["/config/"],
+    "/collectors/": ["/config/", "/collectors/"],
+    "/api/": ["/config/", "/api/"],
+    "/development/": ["/development/"],
+    "/release/": ["/release/"]
+  },
+  "sections": [
+    {
+      "page": "intro",
+      "url": "/intro/",
+      "children": []
+    },
+    {
+      "page": "start",
+      "url": "/start/",
+      "children": [
+        {
+          "page": "install",
+          "url": "/install/",
+          "children": []
+        },
+        {
+          "page": "compatibility",
+          "url": "/compatibility/",
+          "children": []
+        }
+      ]
+    },
+    {
+      "page": "deploy",
+      "url": "/deploy/",
+      "children": [
+        {
+          "page": "security",
+          "url": "/security/",
+          "children": []
+        },
+        {
+          "page": "troubleshooting",
+          "url": "/troubleshooting/",
+          "children": []
+        }
+      ]
+    },
+    {
+      "page": "config",
+      "url": "/config/",
+      "children": [
+        {
+          "page": "collectors",
+          "url": "/collectors/",
+          "children": []
+        },
+        {
+          "page": "api",
+          "url": "/api/",
+          "children": []
+        }
+      ]
+    },
+    {
+      "page": "development",
+      "url": "/development/",
+      "children": []
+    },
+    {
+      "page": "_link_release",
+      "url": "/release/",
+      "children": []
+    }
+  ]
+}

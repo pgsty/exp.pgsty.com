@@ -2,6 +2,8 @@ public/
 resources/_gen/
 tmp/
 .hugo_build.lock
+go.work
+go.work.sum
 .DS_Store
 .idea/
 node_modules/
@@ -13,4 +15,3 @@ CLAUDE.md
 AGENTS.md
 .codex/
 .claude/
-

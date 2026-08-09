@@ -1,19 +1,20 @@
-# PG Exporter Documentation
+# PG Exporter Documentation on OINK
 
-This repository contains the standalone bilingual site for
-[PG Exporter](https://github.com/pgsty/pg_exporter), a declarative PostgreSQL and
-PgBouncer metrics exporter for Prometheus. It uses Hugo Extended and Docsy, with
+This repository is the OINK-based standalone bilingual
+[PG Exporter](https://github.com/pgsty/pg_exporter) documentation site. It uses
+Hugo Extended and the reusable [OINK](https://github.com/pgsty/oink) theme, with
 English at `/` and Simplified Chinese at `/zh/`.
 
 - Site: <https://exp.pgsty.com>
-- Project: <https://github.com/pgsty/pg_exporter>
+- Product source: <https://github.com/pgsty/pg_exporter>
+- Theme source: <https://github.com/pgsty/oink>
 - Latest stable release documented: `v1.4.1`
 
 ## Content layout
 
-Documentation pages live at the site root. `/docs/` is the documentation overview;
-the actual pages are `/start/`, `/install/`, `/deploy/`, `/config/`, `/api/`, and so
-on. Chinese translations use the same paths below `/zh/`.
+Documentation pages live at the site root. `/docs/` is the documentation
+overview; the actual pages are `/start/`, `/install/`, `/deploy/`, `/config/`,
+`/api/`, and so on. Chinese translations use the same paths below `/zh/`.
 
 ```text
 content/
@@ -36,6 +37,31 @@ Every English `.md` page has a `.zh.md` peer. Blog content stays under
 `content/blog/`, but its public URL drops the `blog` component: for example,
 `content/blog/release/v1.4.1.md` publishes at `/release/v1.4.1/`.
 
+## Theme boundary
+
+OINK owns the documentation and blog shell, navigation tree, table of contents,
+language switcher, offline search, syntax highlighting, print/Markdown outputs,
+Docsy blocks, content shortcodes, and standard footer. The site deliberately
+keeps only PG Exporter landing behavior and site-level output policy as local
+layout overrides:
+
+- `layouts/index.html` and `layouts/_partials/home/footer.html`: branded landing
+  page and its footer
+- `layouts/_partials/pig/{icon,search-dialog}.html` plus
+  `layouts/_default/index.json`: landing-only search UI and bilingual index
+- `layouts/robots.txt`: environment-aware crawler policy
+
+The landing search reuses OINK's bundled Lunr runtime; only the PG Exporter
+dialog controller and styling remain local.
+
+Because the manuals intentionally remain physical root-level content files,
+`data/docs_nav.json` supplies their hierarchy to OINK without moving them under
+`content/docs/` or overriding the theme's sidebar templates.
+
+The local `layouts/` directory should therefore remain small. Do not copy an
+OINK layout into this site merely to restyle it; prefer theme configuration,
+data-driven OINK components, and supported Sass variables first.
+
 ## Authoritative sources
 
 The working product contract comes from the current
@@ -56,31 +82,56 @@ python3 bin/sync_pg_exporter_content.py \
   --output content
 ```
 
-The standalone pages in this repository add architecture, compatibility, security,
-troubleshooting, collector inventory, development, and release-history corrections.
-Do not overwrite them with old content from the former demo site.
+The standalone pages in this repository add architecture, compatibility,
+security, troubleshooting, collector inventory, development, and release-history
+corrections. Do not overwrite them with old content from the former demo site.
 
 ## Local development
 
-Install Hugo Extended, Go, Node.js, and npm, then install the pinned PostCSS tools:
+Install Hugo Extended, Go, and Git. For theme development and migration QA,
+keep the OINK checkout beside this directory:
+
+```text
+~/pgsty/
+├── oink/
+└── exp.pgsty.com/
+```
+
+`make dev` creates an ignored `go.work` file that points Hugo at the sibling
+theme checkout. No Node.js toolchain or CDN is required:
 
 ```bash
-npm ci
 make dev
 ```
 
-Build the static output with `make build`. Run the strict acceptance gate with:
+Build the static output with the pinned remote theme using `make build`. Run the
+strict, reproducible acceptance gate with:
 
 ```bash
 make check
 ```
 
-The gate verifies Hugo modules, treats all Hugo path and translation warnings as
-fatal, checks Markdown source/render hygiene, and validates rendered internal links.
+The gate disables workspace replacement, verifies `go.sum`, treats all Hugo path
+and translation warnings as fatal, checks Markdown source/render hygiene, and
+validates rendered internal links. Use `make check-local` to run the same site
+checks against an in-progress sibling OINK checkout.
 
 ## Publishing caution
 
-This directory was copied from another site. Before enabling the included GitHub
-Pages workflow, verify that `origin` points to the intended `exp.pgsty.com`
-repository and that its Pages/custom-domain settings are correct. Never publish
-this checkout through the copied `pig.pgsty.com` remote.
+This checkout still has a copied `pig.pgsty.com` Git remote. Before pushing or
+enabling deployment, replace it with the verified `exp.pgsty.com` repository and
+confirm the Pages target, custom domain, and remote OINK revision. Never publish
+this site through the copied `pig.pgsty.com` remote.
+
+## License
+
+Unless otherwise noted, the original documentation text and site-specific
+content in this repository are licensed under the
+[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/)
+(CC BY 4.0). When sharing or adapting that material, credit the PG Exporter
+Contributors, link to the license and this documentation site, and indicate
+whether changes were made. The complete legal code is in [LICENSE](LICENSE).
+
+This content license does not relicense the OINK theme, PG Exporter software,
+project names or trademarks, or third-party assets. Those retain their own
+licenses and terms.

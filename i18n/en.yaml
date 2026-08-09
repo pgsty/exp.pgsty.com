@@ -1,23 +1,7 @@
-# PIG docs chrome UI strings (sidebar / search dialog / TOC).
-# Keys not listed here fall back to the Docsy theme defaults.
+# Landing-page-only strings. Documentation UI translations come from OINK.
 ui_search: Search
-pig_sidebar_nav: Documentation menu
-pig_sidebar_collapse: Collapse sidebar
-pig_sidebar_expand: Expand sidebar
-pig_drawer_open: Open navigation
-pig_drawer_close: Close navigation
-pig_theme_toggle: Toggle theme
-pig_lang_label: Language
 pig_search_nav: to navigate
 pig_search_open: to select
 pig_search_close: to close
 pig_search_empty: No results found
 pig_search_loading: Loading search index…
-pig_root_menu_label: Switch section
-pig_footer_author: Ruohang Feng
-pig_toc_hide: Hide this panel
-pig_toc_show: Show table of contents
-pig_quick_docs: Documentation
-pig_quick_blog: Blog
-pig_tags_title: Tags
-pig_published_on: Published

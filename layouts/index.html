@@ -228,10 +228,10 @@
       </div>
     </section>
   </main>
-  {{ partial "footer.html" . }}
+  {{ partial "home/footer.html" . }}
   <script src="{{ "js/landing-v3.js" | relURL }}?v={{ substr (md5 (readFile "static/js/landing-v3.js")) 0 8 }}"></script>
   {{ partial "pig/search-dialog.html" . }}
-  {{- $searchJs := slice (resources.Get "js/vendor/lunr.min.js") (resources.Get "js/pig-search.js") | resources.Concat "js/landing-search-bundle.js" | minify | fingerprint }}
+  {{- $searchJs := slice (resources.Get "js/third_party/lunr.min.js") (resources.Get "js/pig-search.js") | resources.Concat "js/landing-search-bundle.js" | minify | fingerprint }}
   <script src="{{ $searchJs.RelPermalink }}" integrity="{{ $searchJs.Data.Integrity }}" defer></script>
 </body>
 </html>

@@ -1,7 +1,0 @@
-{{ define "main" -}}
-{{/* /tags/ 总索引：标题 + 全部标签 chips（按文章数降序）。 */}}
-<div class="td-content pig-blog-index">
-  <h1>{{ .Title }}</h1>
-</div>
-{{ partial "pig/tags-filter.html" . }}
-{{ end -}}

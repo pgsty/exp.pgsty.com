@@ -2,41 +2,43 @@
 # Basics
 #=======================================#
 baseURL: https://exp.pgsty.com/
-title: PG Exporter - PostgreSQL Observability
+title: PG Exporter
 defaultContentLanguage: en
 defaultContentLanguageInSubdir: false
 enableRobotsTXT: true
 enableGitInfo: false
 hasCJKLanguage: true
-# 标签等列表页标题保留作者原始大小写（不要把 pg_duckdb 渲染成 Pg_duckdb）。
 capitalizeListTitles: false
 
-# 列表页每页条目数（博客列表、标签页等）。放宽到 60，让 /release/ 的全部版本
-# 在一页里列完，不必翻页。
 pagination:
   pagerSize: 60
 
 #=======================================#
-# Hugo Module
+# OINK theme module
 #=======================================#
 module:
   proxy: direct
   hugoVersion:
     extended: true
-    min: "0.155.0"
+    min: "0.160.1"
   imports:
-    - path: github.com/google/docsy
-      disable: false
+    - path: github.com/pgsty/oink
+  mounts:
+    # English sources and colocated .zh.md translations.
+    - source: content
+      target: content
+      sites:
+        matrix:
+          languages: [en, zh]
 
 #=======================================#
 # Languages and navigation
 #=======================================#
-# 文档正文直接挂在站点根下（/install/、/config/、/api/……），不带 /docs/ 前缀；
-# /docs/ 只是文档总览页。
+# Manuals intentionally live at the site root. /docs/ remains the overview.
 languages:
   en:
     label: English
-    locale: en
+    locale: en-US
     weight: 1
     title: PG Exporter
     params:
@@ -62,6 +64,9 @@ languages:
     params:
       description: "PG Exporter：面向 Prometheus、声明式且可扩展的 PostgreSQL 与 PgBouncer 指标导出器。"
       time_format_blog: '2006年01月02日'
+      copyright:
+        authors: '[PG Exporter Contributors](https://github.com/pgsty/pg_exporter) · 文档采用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 许可'
+        from_year: 2018
     menu:
       main:
         - identifier: docs
@@ -82,11 +87,7 @@ taxonomies:
   categories: categories
   tags: tags
 
-# 博客内容按栏目组织在 content/blog/ 下，但 URL 不带 blog 前缀：
-# content/blog/release/v1.4.1.md → /release/v1.4.1/
-# content/blog/release/_index.md    → /release/
-# :sections[1:] 丢掉第一段（blog），新开的博客栏目自动照此规则。
-# content/blog/_index.md 自身会算出 "/"，所以它在 front matter 里显式写死 url。
+# Blog sources stay below content/blog, while public URLs omit /blog/.
 permalinks:
   page:
     blog: '/:sections[1:]/:contentbasename/'
@@ -126,18 +127,12 @@ markup:
     startLevel: 2
     endLevel: 4
 
-#=======================================#
-# Outputs
-#=======================================#
+# OINK supplies Markdown/LLMS/print support. JSON remains enabled for the
+# preserved landing-page search dialog.
 outputs:
-  home: [HTML, RSS, JSON]
-  page: [HTML]
-  section: [HTML, RSS]
-
-#=======================================#
-# Services
-#=======================================#
-# 尚未为 exp.pgsty.com 配置独立统计数据流；不要复用复制来源站点的 ID。
+  home: [HTML, RSS, JSON, LLMS]
+  page: [HTML, markdown]
+  section: [HTML, RSS, print, markdown]
 
 #=======================================#
 # Site parameters
@@ -146,20 +141,21 @@ params:
   description: "PG Exporter turns declarative SQL collectors into Prometheus metrics for PostgreSQL and PgBouncer, with dynamic planning across server versions and roles."
   images:
     - img/pg-exporter-social-card.png
-  version: 1.4.1            # 最新稳定版，正文用 {{< param version >}}
-  metric_families: 600      # 默认配置暴露的指标族数量（约数）
-  collector_files: 58       # config/ 中的采集器定义文件数量
-  tagged_versions: 35       # Git 标签数量，release note 一标签一篇
+  logo: img/pg-exporter.png
+  version: 1.4.1
+  metric_families: 600
+  collector_files: 58
+  tagged_versions: 35
   copyright:
-    authors: PG Exporter Contributors
+    authors: '[PG Exporter Contributors](https://github.com/pgsty/pg_exporter) · Documentation licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)'
     from_year: 2018
-    url: https://github.com/pgsty/pg_exporter
+  content_license:
+    name: CC BY 4.0
+    url: https://creativecommons.org/licenses/by/4.0/
 
-  # 正文列宽模式：normal（1050px，默认）| wide（1300px）| full（占满可用宽）。
-  # 页面 front matter 可单页覆盖（page_width: wide），栏目可经 cascade 继承。
   page_width: normal
-  # ICP 备案号（单行页脚居中显示，链接到 beian.miit.gov.cn；留空则不渲染）。
   footer_icp: ""
+  footer_icp_url: https://beian.miit.gov.cn/
 
   archived_version: false
   url_latest_version: https://exp.pgsty.com
@@ -167,13 +163,15 @@ params:
   github_project_repo: https://github.com/pgsty/pg_exporter
   github_branch: main
 
-  # 站内搜索由项目自有的 ⌘K 弹窗实现（lunr 自托管 + 按语言索引），
-  # 必须关闭 Docsy offlineSearch：否则其 offline-search.js 在页面上找不到
-  # .td-search input 时会 $.ajax(undefined) 抓当前页 HTML 并抛错。
-  offlineSearch: false
+  # OINK owns documentation search and generates one local index per language.
+  # The landing page keeps its existing branded dialog as a page-only override.
+  offlineSearch: true
+  offlineSearchIndex: content
+  offlineSearchMaxResults: 10
   prism_syntax_highlighting: false
 
   ui:
+    quick_links: [docs, blog]
     breadcrumb_disable: false
     navbar_logo: true
     navbar_translucent_over_cover_disable: false
@@ -182,44 +180,40 @@ params:
     sidebar_menu_foldable: true
     sidebar_menu_truncate: 2000
     sidebar_cache_limit: 1000
+    sidebar_search_disable: false
     sidebar_root_enabled: true
-    ul_show: 2
-    showLightDarkModeMenu: true
-    # TOC 高亮由 pig-docs.js 的 IntersectionObserver 实现；Docsy 的
-    # Bootstrap ScrollSpy 注入路径存在属性转义 bug，本就从未生效。
-    scrollSpy:
-      disable: true
-    # ---- Fumadocs 式侧栏定制（chrome）----
-    # 搜索框下方的根节点下拉：列出 /docs/ 总览 + 所有 sidebar_root_for: self
-    # 的 section（这里就是 Blog）。
     sidebar_root_menu: true
-    # 侧栏宽度（px）：默认宽随断点 268/286，可拖拽调整并持久化；
-    # min/max 为拖拽钳制范围，可在栏目 front matter 中经 cascade 覆盖。
     sidebar_width_min: 220
     sidebar_width_max: 480
-    # 侧栏条目文字溢出策略：ellipsis（省略号，默认）| wrap（换行）。
     sidebar_item_overflow: ellipsis
+    ul_show: 2
+    showLightDarkModeMenu: true
+    page_context_menu:
+      enable: true
+      links: []
     feedback:
       enable: false
     readingtime:
       enable: false
+    scrollSpy:
+      disable: true
 
   links:
     user:
       - name: PG Exporter source
         url: https://github.com/pgsty/pg_exporter
-        icon: fab fa-github
+        icon: fa-brands fa-github
         desc: pg_exporter source repository
       - name: Pigsty
         url: https://pigsty.io
-        icon: fa fa-database
+        icon: fa-solid fa-database
         desc: Pigsty project
     developer:
       - name: Releases
         url: https://github.com/pgsty/pg_exporter/releases
-        icon: fa fa-box-archive
+        icon: fa-solid fa-box-archive
         desc: PG Exporter release artifacts
       - name: Discussions
         url: https://github.com/pgsty/pg_exporter/discussions
-        icon: fa fa-comments
+        icon: fa-solid fa-comments
         desc: PG Exporter community discussions
