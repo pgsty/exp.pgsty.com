@@ -1,67 +1,72 @@
 ---
-title: "简介"
-linkTitle: "简介"
-description: "为什么我们还需要一个新的包管理器？尤其是针对 Postgres 扩展？"
-weight: 20
+title: "项目简介"
+linkTitle: "项目简介"
+description: "pg_exporter 做什么、一次抓取如何完成动态规划，以及它的运维边界"
+weight: 10
 icon: fas fa-lightbulb
 categories: [概念]
 ---
 
-你是否曾因安装或升级 PostgreSQL 扩展而头疼？翻查过时的文档、晦涩难懂的配置脚本，或是在 GitHub 上苦寻分支与补丁？
-Postgres 丰富的扩展生态同时意味着复杂的部署流程 —— 在多发行版、多架构环境下尤为棘手。而 PIG 可以为您解决这些烦恼。
+`pg_exporter` 将 PostgreSQL 与 pgBouncer 的运行状态转换为 Prometheus 指标。与把所有查询固化在代码里的 exporter 不同，它的大部分指标面由 YAML 声明：一个采集器定义 SQL、结果列、标签、指标类型、准入条件、超时与缓存策略。
 
-这正是 **Pig** 诞生的初衷。Pig 由 Go 语言开发，致力于一站式管理 Postgres 及其 [{{< param pgext_count >}}](https://pigsty.cc/ext/list/) 个扩展。
-无论是 TimescaleDB、Citus、PGVector，还是 30+ Rust 扩展，亦或 自建 Supabase 所需的全部组件 —— Pig 统一的 CLI 让一切触手可及。
-它彻底告别源码编译与杂乱仓库，直接提供版本对齐的 RPM/DEB 包，完美兼容 Debian、Ubuntu、RedHat 等主流发行版，支持 x86 与 Arm 架构，无需猜测，无需折腾。
+这种设计同时带来两点好处：
 
-Pig 并非重复造轮子，而是充分利用系统原生包管理器（APT、YUM、DNF），严格遵循 [PGDG 官方](https://pigsty.cc/docs/repo/pgdg/) 打包规范，确保无缝集成。
-你无需在"标准做法"与"快捷方式"之间权衡；Pig 尊重现有仓库，遵循操作系统最佳实践，与现有仓库和软件包和谐共存。
-如果你的 Linux 系统和 PostgreSQL 大版本不在 [支持的列表](#linux-兼容性) 中，你还可以使用 [`pig build`](/zh/build/) 直接针对特定组合编译扩展。
+- 发布版本自带覆盖广泛、经过测试的默认指标集；
+- 本地团队无需重建二进制，就能新增、删除或特化指标。
 
-想让你的 Postgres 如虎添翼、远离繁琐？欢迎访问 [PIG 官方文档](/zh/docs/) 获取文档、指南，并查阅庞大的 [扩展列表](https://pigsty.cc/ext/list/)，
-让你的本地 Postgres 数据库一键进化为全能的多模态数据中台。
-如果说 [Postgres 的未来是无可匹敌的可扩展性](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4)，那么 Pig 就是帮你解锁它的神灯。毕竟，从没有人抱怨 "扩展太多"。
+## 数据路径
 
-## 自动化友好
+一次常规抓取会经过六个阶段：
 
-PIG 的命令体系可直接用于自动化脚本：参数风格统一、输出稳定，并在高风险操作中提供 `--plan` 预览或确认步骤，减少误操作风险。
+1. **选择目标**：PostgreSQL URL 来自 `--url`、环境变量、密钥文件或本地优先默认值。
+2. **发现事实**：exporter 获取服务器版本、恢复角色、数据库清单、扩展、Schema 与运维人员提供的标签。
+3. **动态规划**：对每个指标命名空间，选择版本范围、角色标签、自定义标签与谓词都匹配目标的采集器分支。
+4. **执行查询**：按每个采集器的超时与可选结果缓存策略执行 SQL。
+5. **转换指标**：将结果列转换为 Label、Gauge、Counter 或快照直方图指标族。
+6. **暴露结果**：通过可配置的 Prometheus 端点（默认 `/metrics`）返回内置指标与查询驱动指标。
 
+健康检查与角色路由端点读取后台探测缓存，不会为每个 HTTP 请求重新查询数据库。因此，健康检查风暴不会转化为数据库连接风暴。
 
-> 《[ANNOUNCE pig: The Postgres Extension Wizard](https://www.postgresql.org/about/news/announce-pig-the-postgres-extension-wizard-2988/)》
+## 两层指标
 
+### 内置 exporter 指标
 
---------
+Go 二进制始终能够暴露核心可用性与自监控指标，例如：
 
-## Linux 兼容性
+- `pg_up`、`pg_version` 与 `pg_in_recovery`；
+- `pg_exporter_build_info` 与 exporter 运行时间；
+- 抓取次数、失败、耗时、缓存 TTL 与逐查询统计。
 
-PIG 与 Pigsty 扩展仓库支持以下 Linux 发行版和 PostgreSQL 版本组合：
+只有在明确希望隐藏 exporter 自监控指标时才使用 `--disable-intro`；它不会删除 YAML 定义的业务指标。
 
-| OS 代码          | 厂商     | 大版本 |   小版本   | 全名                | PG 版本 |   备注   |
-|:---------------|:-------|:---:|:-------:|:------------------|:------|:------:|
-| `el7.x86_64`   | EL     |  7  |   7.9   | CentOS 7 x86      | 13-15 |  EOL   |
-| `el8.x86_64`   | EL     |  8  |  8.10   | RockyLinux 8 x86  | 14-18 | 即将 EOL |
-| `el8.aarch64`  | EL     |  8  |  8.10   | RockyLinux 8 ARM  | 14-18 | 即将 EOL |
-| `el9.x86_64`   | EL     |  9  |   9.7   | RockyLinux 9 x86  | 14-18 |   ✅    |
-| `el9.aarch64`  | EL     |  9  |   9.7   | RockyLinux 9 ARM  | 14-18 |   ✅    |
-| `el10.x86_64`  | EL     | 10  |  10.1   | RockyLinux 10 x86 | 14-18 |   ✅    |
-| `el10.aarch64` | EL     | 10  |  10.1   | RockyLinux 10 ARM | 14-18 |   ✅    |
-| `d11.x86_64`   | Debian | 11  |  11.11  | Debian 11 x86     | 14-18 |  EOL   |
-| `d11.aarch64`  | Debian | 11  |  11.11  | Debian 11 ARM     | 14-18 |  EOL   |
-| `d12.x86_64`   | Debian | 12  |  12.14  | Debian 12 x86     | 14-18 |   ✅    |
-| `d12.aarch64`  | Debian | 12  |  12.14  | Debian 12 ARM     | 14-18 |   ✅    |
-| `d13.x86_64`   | Debian | 13  |  13.6   | Debian 13 x86     | 14-18 |   ✅    |
-| `d13.aarch64`  | Debian | 13  |  13.6   | Debian 13 ARM     | 14-18 |   ✅    |
-| `u22.x86_64`   | Ubuntu | 22  | 22.04.5 | Ubuntu 22.04 x86  | 14-18 |   ✅    |
-| `u22.aarch64`  | Ubuntu | 22  | 22.04.5 | Ubuntu 22.04 ARM  | 14-18 |   ✅    |
-| `u24.x86_64`   | Ubuntu | 24  | 24.04.4 | Ubuntu 24.04 x86  | 14-18 |   ✅    |
-| `u24.aarch64`  | Ubuntu | 24  | 24.04.4 | Ubuntu 24.04 ARM  | 14-18 |   ✅    |
-| `u26.x86_64`   | Ubuntu | 26  | 26.04.0 | Ubuntu 26.04 x86  | 14-18 |   ✅    |
-| `u26.aarch64`  | Ubuntu | 26  | 26.04.0 | Ubuntu 26.04 ARM  | 14-18 |   ✅    |
-{.full-width}
+### 声明式采集器指标
 
-**说明：**
+其余指标都来自 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml)。该文件由 [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config) 下 58 个有序定义文件生成，默认覆盖复制、WAL、检查点、活动、锁、事务、数据库/对象统计、进度视图、pgBouncer 与部分扩展。
 
-- **EL** 指 RHEL 兼容发行版，包括 RHEL、CentOS、RockyLinux、AlmaLinux、OracleLinux 等
-- **EOL** 表示该操作系统已经或即将停止支持，建议升级到更新版本
-- **✅** 表示完整支持，推荐使用
-- PG 版本 14-18 表示支持 PostgreSQL 14、15、16、17、18 五个大版本
+完整清单参见[内置采集器](/zh/collectors/)，配置模型参见[采集器配置](/zh/config/)。
+
+## 失败语义
+
+失败行为同时受采集器级与进程级策略控制：
+
+- `fatal: true` 的采集器失败可以使整次抓取失败，并将目标的 `*_up` 指标重置为 0。
+- 非致命采集器失败只增加错误统计，其他采集器继续执行。
+- 未配置时查询超时默认为 100 ms；显式配置为负值可以关闭查询超时。
+- 默认采用非阻塞启动：即使数据库暂时不可达，HTTP 端点仍会启动；`--fail-fast` 会改为启动立即失败。
+- 合法热重载会原子替换活动查询集；被拒绝的重载不会破坏当前运行配置。
+
+`/explain` 回答“这个采集器为什么被选择或跳过”，`/stat` 回答“已选择的采集器表现如何”。遇到指标缺失、缓慢或报错时，应优先查看这两个端点。
+
+## pg_exporter 不是什么
+
+- 它不是 PostgreSQL 代理，不承载应用流量。
+- 它不保存时序数据；存储由 Prometheus、VictoriaMetrics 或其他兼容系统完成。
+- 它不会安装可选采集器所需的扩展。
+- SQL 写进 YAML 并不会自动变得安全；查询审查、权限、TTL、超时与基数仍由运维人员负责。
+- 角色端点报告观测到的 PostgreSQL 状态，而不是分布式共识结论。它们可作为路由输入，但 HA 策略仍属于 Patroni、负载均衡器与运维人员。
+
+## 项目状态
+
+最新稳定版本为 **v{{< param version >}}**。默认采集器包覆盖 PostgreSQL 10 至 PostgreSQL 19 分支，独立 legacy 配置包覆盖 PostgreSQL 9.1-9.6；pgBouncer 采集器覆盖支持 `SHOW` 命令的 1.8+ 至当前 1.25+ Schema。
+
+接下来可以通过[快速上手](/zh/start/)完成最小部署，或直接阅读[生产部署](/zh/deploy/)了解完整运维面。

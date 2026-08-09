@@ -2,69 +2,46 @@
 <footer class="pig-footer d-print-none">
   <div class="pig-footer__container">
     <div class="pig-footer__grid">
-      {{/* Brand block mirrors the landing footer (see layouts/index.html). */ -}}
       <div class="pig-footer__brand">
         <a href="{{ relLangURL "" }}" class="pig-footer__logo">
-          <img src="{{ "img/pig.svg" | relURL }}" alt="" width="28" height="28">
-          <span>PIG</span>
+          <img src="{{ "img/pg-exporter.png" | relURL }}" alt="" width="32" height="32">
+          <span>PG Exporter</span>
         </a>
-        <p class="pig-footer__tagline"><b class="ini ini-y">P</b>ostgres <b class="ini ini-g">I</b>nstall <b class="ini ini-i">G</b>enius<br>{{ if $zh }}<span class="pig-footer__tagline-zh">一行命令，装好扩展</span>{{ else }}One command. Extensions installed.{{ end }}</p>
-        <p class="pig-footer__origin">{{ if $zh }}PostgreSQL 与扩展的命令行包管理器，由 <a href="https://pigsty.cc/" target="_blank" rel="noopener">PIGSTY</a> 社区构建与维护。{{ else }}A command-line package manager for PostgreSQL and its extensions, built and maintained by <a href="https://pigsty.io/" target="_blank" rel="noopener">PIGSTY</a>.{{ end }}</p>
+        <p class="pig-footer__tagline">{{ if $zh }}PostgreSQL 可观测性，写成 SQL。{{ else }}PostgreSQL observability,<br>expressed in SQL.{{ end }}</p>
+        <p class="pig-footer__origin">{{ if $zh }}声明式、可扩展的 PostgreSQL 与 PgBouncer Prometheus 指标导出器，由 <a href="https://pigsty.cc/" target="_blank" rel="noopener">Pigsty</a> 社区维护。{{ else }}A declarative, extensible Prometheus exporter for PostgreSQL and PgBouncer, maintained by the <a href="https://pigsty.io/" target="_blank" rel="noopener">Pigsty</a> community.{{ end }}</p>
       </div>
-
       <div>
-        <h4 class="pig-footer__title">{{ if $zh }}资源{{ else }}Resources{{ end }}</h4>
+        <h4 class="pig-footer__title">{{ if $zh }}开始使用{{ else }}Get Started{{ end }}</h4>
         <ul class="pig-footer__links">
-          <li><a href="{{ relLangURL "install/" }}">{{ if $zh }}下载安装{{ else }}Download &amp; Install{{ end }}</a></li>
           <li><a href="{{ relLangURL "start/" }}">{{ if $zh }}快速上手{{ else }}Quick Start{{ end }}</a></li>
-          <li><a href="{{ relLangURL "blog/" }}">{{ if $zh }}博客{{ else }}Blog{{ end }}</a></li>
-          <li><a href="https://github.com/pgsty/pig/releases" target="_blank" rel="noopener">{{ if $zh }}发行版本{{ else }}Releases{{ end }}</a></li>
+          <li><a href="{{ relLangURL "install/" }}">{{ if $zh }}下载安装{{ else }}Installation{{ end }}</a></li>
+          <li><a href="{{ relLangURL "deploy/" }}">{{ if $zh }}部署运行{{ else }}Deployment{{ end }}</a></li>
+          <li><a href="{{ relLangURL "troubleshooting/" }}">{{ if $zh }}故障排查{{ else }}Troubleshooting{{ end }}</a></li>
         </ul>
       </div>
-
       <div>
-        <h4 class="pig-footer__title">{{ if $zh }}文档{{ else }}Documentation{{ end }}</h4>
+        <h4 class="pig-footer__title">{{ if $zh }}参考{{ else }}Reference{{ end }}</h4>
         <ul class="pig-footer__links">
-          <li><a href="{{ relLangURL "docs/" }}">{{ if $zh }}文档总览{{ else }}Overview{{ end }}</a></li>
-          <li><a href="{{ relLangURL "intro/" }}">{{ if $zh }}简介{{ else }}Introduction{{ end }}</a></li>
-          <li><a href="{{ relLangURL "cmd/" }}">{{ if $zh }}命令参考{{ else }}Command Reference{{ end }}</a></li>
-          <li><a href="{{ relLangURL "release/" }}">{{ if $zh }}发布说明{{ else }}Release Notes{{ end }}</a></li>
+          <li><a href="{{ relLangURL "config/" }}">{{ if $zh }}采集器配置{{ else }}Configuration{{ end }}</a></li>
+          <li><a href="{{ relLangURL "collectors/" }}">{{ if $zh }}内置采集器{{ else }}Bundled Collectors{{ end }}</a></li>
+          <li><a href="{{ relLangURL "api/" }}">HTTP API</a></li>
+          <li><a href="{{ relLangURL "compatibility/" }}">{{ if $zh }}兼容性矩阵{{ else }}Compatibility{{ end }}</a></li>
         </ul>
       </div>
-
       <div>
-        <h4 class="pig-footer__title">{{ if $zh }}社区{{ else }}Community{{ end }}</h4>
+        <h4 class="pig-footer__title">{{ if $zh }}项目{{ else }}Project{{ end }}</h4>
         <ul class="pig-footer__links">
-          <li><a href="https://github.com/pgsty/pig" target="_blank" rel="noopener">GitHub</a></li>
-          <li><a href="https://github.com/pgsty/pig/issues" target="_blank" rel="noopener">Issue</a></li>
-          <li><a href="https://pgsty.com/" target="_blank" rel="noopener">PGSTY</a></li>
-          <li><a href="{{ if $zh }}https://pigsty.cc{{ else }}https://pigsty.io{{ end }}" target="_blank" rel="noopener">Pigsty</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <h4 class="pig-footer__title">{{ if $zh }}速查{{ else }}Look Up{{ end }}</h4>
-        <ul class="pig-footer__links">
-          <li><a href="{{ relLangURL "repo/" }}">pig repo</a></li>
-          <li><a href="{{ relLangURL "ext/" }}">pig ext</a></li>
-          <li><a href="{{ relLangURL "build/" }}">pig build</a></li>
-          <li><a href="{{ relLangURL "sty/" }}">pig sty</a></li>
+          <li><a href="https://github.com/pgsty/pg_exporter" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/pgsty/pg_exporter/releases" target="_blank" rel="noopener">{{ if $zh }}发行版本{{ else }}Releases{{ end }}</a></li>
+          <li><a href="https://github.com/pgsty/pg_exporter/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/pgsty/pg_exporter/discussions" target="_blank" rel="noopener">Discussions</a></li>
         </ul>
       </div>
     </div>
-
     <div class="pig-footer__bottom">
-      {{/* 底行与文档站单行页脚（pig/footer-line.html）保持同一格式。 */ -}}
-      <span>&copy; {{ .Site.Params.copyright.from_year }}-{{ now.Year }} <a href="https://vonng.com" target="_blank" rel="noopener">{{ T "pig_footer_author" }}</a> (<a href="https://github.com/Vonng" target="_blank" rel="noopener">Vonng</a>) @ <a href="https://pgsty.com" target="_blank" rel="noopener">PGSTY</a></span>
-      {{ with .Site.Params.footer_icp -}}
-      <span class="pig-footer__icp"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ . }}</a></span>
-      {{- end }}
-      {{/* 单向语言切换：只显示「对面语言」（与 docs 单行页脚同约定）。 */ -}}
-      <span class="pig-footer__lang">
-        {{- range .Site.Home.Translations -}}
-          <a href="{{ .RelPermalink }}" lang="{{ .Language.Locale }}">{{ .Language.Label }}</a>
-        {{- end -}}
-      </span>
+      <span>&copy; {{ .Site.Params.copyright.from_year }}-{{ now.Year }} <a href="https://github.com/pgsty/pg_exporter" target="_blank" rel="noopener">PG Exporter Contributors</a> @ <a href="https://pgsty.com" target="_blank" rel="noopener">PGSTY</a></span>
+      {{ with .Site.Params.footer_icp -}}<span class="pig-footer__icp"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ . }}</a></span>{{- end }}
+      <span class="pig-footer__lang">{{- range .Site.Home.Translations -}}<a href="{{ .RelPermalink }}" lang="{{ .Language.Locale }}">{{ .Language.Label }}</a>{{- end -}}</span>
     </div>
   </div>
 </footer>

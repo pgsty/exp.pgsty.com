@@ -13,10 +13,10 @@
 {{- range .Translations }}
 <meta property="og:locale:alternate" content="{{ replace (.Language.Locale | default .Language.Lang) "-" "_" }}">
 {{- end }}
-{{- $author := "Pigsty and PIG contributors" -}}
+{{- $author := "PG Exporter contributors" -}}
 {{- with .Params.author }}{{ $author = . | markdownify | plainify }}{{ end }}
 <meta name="author" content="{{ $author }}">
-<meta name="application-name" content="PIG">
+<meta name="application-name" content="PG Exporter">
 {{- if partial "pig/is-chrome.html" . }}
 {{- /* 预绘制：首帧前恢复侧栏收起态（防闪），并抑制首帧内所有过渡动画
        （pig-docs.js 在两帧后移除 data-pig-no-anim）。 */}}

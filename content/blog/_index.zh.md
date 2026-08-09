@@ -1,24 +1,17 @@
 ---
-title: PIG 博客
+title: "PG Exporter 博客"
 url: /zh/blog/
-linkTitle: 博客
-description: 发布注记与项目动态
+linkTitle: "博客"
+description: "pg_exporter 发布注记与项目动态"
 weight: 40
 type: blog
 sidebar_root_for: self
 sidebar_root_link_self: true
-# 根下拉里已经有「博客」这一项，文档树里不必再出现一次。
 toc_root: true
-
-outputs:
-  - HTML
-  - RSS
-  - print
+outputs: [HTML, RSS, print]
 cascade:
   type: blog
-  outputs:
-    - HTML
-    - print
+  outputs: [HTML, print]
   params:
     ui:
       sidebar_menu_foldable: false
@@ -27,4 +20,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-PIG 的发布注记与项目动态 —— Pigsty 出品的 PostgreSQL 扩展包管理器。
+`pg_exporter` 的发布注记与项目动态。它是一款声明式 PostgreSQL 与 pgBouncer 指标导出器。
+
+从[完整版本归档](/zh/release/)开始，或返回[文档](/zh/docs/)。

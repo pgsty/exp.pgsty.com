@@ -1,4 +1,4 @@
-module github.com/pgsty/pig.pgsty.com
+module github.com/pgsty/exp.pgsty.com
 
 go 1.21
 

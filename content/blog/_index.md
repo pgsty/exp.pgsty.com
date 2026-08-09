@@ -1,24 +1,17 @@
 ---
-title: PIG Blog
+title: "PG Exporter Blog"
 url: /blog/
-linkTitle: Blog
-description: Release notes and project news
+linkTitle: "Blog"
+description: "Release notes and project updates for pg_exporter"
 weight: 40
 type: blog
 sidebar_root_for: self
 sidebar_root_link_self: true
-# 根下拉里已经有「博客」这一项，文档树里不必再出现一次。
 toc_root: true
-
-outputs:
-  - HTML
-  - RSS
-  - print
+outputs: [HTML, RSS, print]
 cascade:
   type: blog
-  outputs:
-    - HTML
-    - print
+  outputs: [HTML, print]
   params:
     ui:
       sidebar_menu_foldable: false
@@ -27,4 +20,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-Release notes and project news for PIG — the PostgreSQL extension package manager by Pigsty.
+Release notes and project updates for `pg_exporter`, the declarative PostgreSQL and pgBouncer metrics exporter.
+
+Start with the [complete release archive](/release/) or return to the [documentation](/docs/).

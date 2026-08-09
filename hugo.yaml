@@ -1,12 +1,12 @@
 #=======================================#
 # Basics
 #=======================================#
-baseURL: https://pig.pgsty.com/
-title: PIG - Postgres Install Genius
+baseURL: https://exp.pgsty.com/
+title: PG Exporter - PostgreSQL Observability
 defaultContentLanguage: en
 defaultContentLanguageInSubdir: false
 enableRobotsTXT: true
-enableGitInfo: true
+enableGitInfo: false
 hasCJKLanguage: true
 # 标签等列表页标题保留作者原始大小写（不要把 pg_duckdb 渲染成 Pg_duckdb）。
 capitalizeListTitles: false
@@ -31,16 +31,16 @@ module:
 #=======================================#
 # Languages and navigation
 #=======================================#
-# 文档正文直接挂在站点根下（/install/、/pg/、/ext/……），不带 /docs/ 前缀；
-# /docs/ 只是文档总览页 —— 这套 URL 布局参照姊妹站 silo.pgsty.com。
+# 文档正文直接挂在站点根下（/install/、/config/、/api/……），不带 /docs/ 前缀；
+# /docs/ 只是文档总览页。
 languages:
   en:
     label: English
     locale: en
     weight: 1
-    title: PIG
+    title: PG Exporter
     params:
-      description: "PIG: the PostgreSQL extension package manager. Install PostgreSQL 14-18 and 562 packaged extensions with one command."
+      description: "PG Exporter: a declarative, extensible PostgreSQL and PgBouncer metrics exporter for Prometheus."
       time_format_blog: 'January 02, 2006'
     menu:
       main:
@@ -58,9 +58,9 @@ languages:
     label: 简体中文
     locale: zh-CN
     weight: 2
-    title: PIG
+    title: PG Exporter
     params:
-      description: "PIG：PostgreSQL 扩展包管理器，一行命令安装 PostgreSQL 14-18 与 562 个已打包扩展。"
+      description: "PG Exporter：面向 Prometheus、声明式且可扩展的 PostgreSQL 与 PgBouncer 指标导出器。"
       time_format_blog: '2006年01月02日'
     menu:
       main:
@@ -83,7 +83,7 @@ taxonomies:
   tags: tags
 
 # 博客内容按栏目组织在 content/blog/ 下，但 URL 不带 blog 前缀：
-# content/blog/release/pig-1.6.0.md → /release/pig-1.6.0/
+# content/blog/release/v1.4.1.md → /release/v1.4.1/
 # content/blog/release/_index.md    → /release/
 # :sections[1:] 丢掉第一段（blog），新开的博客栏目自动照此规则。
 # content/blog/_index.md 自身会算出 "/"，所以它在 front matter 里显式写死 url。
@@ -137,27 +137,23 @@ outputs:
 #=======================================#
 # Services
 #=======================================#
-# Google Analytics 4：pig.pgsty.com 自己的数据流，别沿用其它站点的 ID。
-# 埋点仅生产构建注入（docsy head.html / layouts/index.html 都用 hugo.IsProduction
-# 包裹），本地 hugo server 不会加载。
-services:
-  googleAnalytics:
-    id: G-1D95QFXC80
+# 尚未为 exp.pgsty.com 配置独立统计数据流；不要复用复制来源站点的 ID。
 
 #=======================================#
 # Site parameters
 #=======================================#
 params:
-  description: "PIG is the missing package manager for the PostgreSQL ecosystem: install PostgreSQL kernels and 562 packaged extensions on EL / Debian / Ubuntu with a single 5 MB binary."
+  description: "PG Exporter turns declarative SQL collectors into Prometheus metrics for PostgreSQL and PgBouncer, with dynamic planning across server versions and roles."
   images:
-    - img/pig-social-card.png
-  version: 1.6.1            # pig 最新版本号（= internal/config.PigVersion），正文用 {{< param version >}}
-  pigsty_version: 4.5.0     # pig 内置的 Pigsty 版本（= internal/config.PigstyVersion）
-  pgext_count: 562          # Pigsty 已打包 PG 扩展数量，正文用 {{< param pgext_count >}}
+    - img/pg-exporter-social-card.png
+  version: 1.4.1            # 最新稳定版，正文用 {{< param version >}}
+  metric_families: 600      # 默认配置暴露的指标族数量（约数）
+  collector_files: 58       # config/ 中的采集器定义文件数量
+  tagged_versions: 35       # Git 标签数量，release note 一标签一篇
   copyright:
-    authors: PIGSTY & PIG Contributors
-    from_year: 2025
-    url: https://pgsty.com
+    authors: PG Exporter Contributors
+    from_year: 2018
+    url: https://github.com/pgsty/pg_exporter
 
   # 正文列宽模式：normal（1050px，默认）| wide（1300px）| full（占满可用宽）。
   # 页面 front matter 可单页覆盖（page_width: wide），栏目可经 cascade 继承。
@@ -166,9 +162,9 @@ params:
   footer_icp: ""
 
   archived_version: false
-  url_latest_version: https://pig.pgsty.com
-  github_repo: https://github.com/pgsty/pig.pgsty.com
-  github_project_repo: https://github.com/pgsty/pig
+  url_latest_version: https://exp.pgsty.com
+  github_repo: ""
+  github_project_repo: https://github.com/pgsty/pg_exporter
   github_branch: main
 
   # 站内搜索由项目自有的 ⌘K 弹窗实现（lunr 自托管 + 按语言索引），
@@ -210,20 +206,20 @@ params:
 
   links:
     user:
-      - name: PIG source
-        url: https://github.com/pgsty/pig
+      - name: PG Exporter source
+        url: https://github.com/pgsty/pg_exporter
         icon: fab fa-github
-        desc: pig source repository
+        desc: pg_exporter source repository
       - name: Pigsty
         url: https://pigsty.io
         icon: fa fa-database
         desc: Pigsty project
     developer:
       - name: Releases
-        url: https://github.com/pgsty/pig/releases
+        url: https://github.com/pgsty/pg_exporter/releases
         icon: fa fa-box-archive
-        desc: pig release artifacts
-      - name: Documentation source
-        url: https://github.com/pgsty/pig.pgsty.com
-        icon: fab fa-github
-        desc: pig documentation repository
+        desc: PG Exporter release artifacts
+      - name: Discussions
+        url: https://github.com/pgsty/pg_exporter/discussions
+        icon: fa fa-comments
+        desc: PG Exporter community discussions

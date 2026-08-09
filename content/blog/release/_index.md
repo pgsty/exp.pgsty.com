@@ -1,13 +1,13 @@
 ---
-title: Release Notes
-linkTitle: Release
-description: Release notes for every pig version
+title: "Release Notes"
+linkTitle: "Release Notes"
+description: "A bilingual release note for every pg_exporter repository tag"
 weight: 10
 icon: fa-solid fa-clipboard-list
 ---
 
-Release notes for every published `pig` version, newest first. Artifacts and checksums for
-each version live on its [GitHub release page](https://github.com/pgsty/pig/releases).
+This archive contains one article for every `pg_exporter` repository tag, newest first: **35 tagged versions** from `v0.0.1` through `v{{< param version >}}`.
 
-Already installed? `pig update` upgrades in place through the native package manager; see
-[Installation](/install/) for the other paths.
+GitHub currently has 33 formal Release objects. The two early tag-only versions, `v0.0.1` and `v0.0.5`, are preserved here as historical notes and are clearly marked inside their articles. Dates use the GitHub publication timestamp when a Release exists, otherwise the source tag timestamp, normalized to Asia/Shanghai (`UTC+08:00`).
+
+Download current artifacts from the [latest GitHub Release](https://github.com/pgsty/pg_exporter/releases/latest), or use [Installation](/install/) for package repositories and containers.

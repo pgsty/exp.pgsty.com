@@ -1,79 +1,65 @@
 ---
-title: "安装"
-linkTitle: "安装"
-description: "如何下载与安装 pig 包管理器"
+title: "安装指南"
+linkTitle: "安装指南"
+description: "通过软件包、发布压缩包、容器、Pigsty 或源码安装 pg_exporter"
 weight: 30
 icon: fas fa-download
-categories: [任务]
+categories: [参考]
 ---
 
+`pg_exporter` 可以通过 Pigsty、YUM/APT 仓库、GitHub 发布包（RPM/DEB/Tarball）、Docker 镜像或源码构建安装，按你的基础设施任选一种即可。
 
-## 脚本安装
+--------
 
-安装 `pig` 最简单的方式是运行以下安装脚本：
+## Pigsty
 
-**默认安装**（Cloudflare CDN）：
-
-```bash
-curl -fsSL https://repo.pigsty.io/pig | bash
-```
-
-**中国镜像**：
+最简单的使用 `pg_exporter` 的方式是使用 [Pigsty](https://pigsty.cc)。Pigsty 内置了基于 `pg_exporter`、VictoriaMetrics（Prometheus 兼容指标抓取与查询）和 Grafana 的 PostgreSQL 可观测性方案；部署后即可使用预置指标、规则与仪表盘。
 
 ```bash
-curl -fsSL https://repo.pigsty.cc/pig | bash
+curl -fsSL https://repo.pigsty.io/get | bash; cd ~/pigsty;
 ```
 
-该脚本会从 Pigsty [软件仓库](https://pigsty.cc/docs/repo/) 下载最新版 `pig` 的 RPM / DEB 包，并通过 `rpm` 或 `dpkg` 进行安装。
-脚本安装面向 Linux x86_64 / aarch64 的 RPM / DEB 系发行版；macOS 可使用发布压缩包中的二进制。
+--------
 
+## 发布版本
 
-## 指定版本
+您也可以直接从 [GitHub 发布页面](https://github.com/pgsty/pg_exporter/releases/latest) 下载 `pg_exporter` 软件包（`RPM`/`DEB`/Tarball）：
 
-您可以指定特定版本进行安装，将版本号作为参数传入即可：
+**v1.4.1 发布文件：**
 
-**默认安装**（Cloudflare CDN）：
+| 类型                      | 文件                                                                                                                                               |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| DEB (amd64)             | [pg-exporter_1.4.1-1_amd64.deb](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter_1.4.1-1_amd64.deb)                     |
+| DEB (arm64)             | [pg-exporter_1.4.1-1_arm64.deb](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter_1.4.1-1_arm64.deb)                     |
+| DEB (ppc64le)           | [pg-exporter_1.4.1-1_ppc64le.deb](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter_1.4.1-1_ppc64le.deb)                 |
+| RPM (aarch64)           | [pg-exporter-1.4.1-1.aarch64.rpm](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter-1.4.1-1.aarch64.rpm)                 |
+| RPM (x86_64)            | [pg-exporter-1.4.1-1.x86_64.rpm](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter-1.4.1-1.x86_64.rpm)                   |
+| RPM (ppc64le)           | [pg-exporter-1.4.1-1.ppc64le.rpm](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter-1.4.1-1.ppc64le.rpm)                 |
+| Tarball (Linux amd64)   | [pg_exporter-1.4.1.linux-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.linux-amd64.tar.gz)       |
+| Tarball (Linux arm64)   | [pg_exporter-1.4.1.linux-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.linux-arm64.tar.gz)       |
+| Tarball (Linux ppc64le) | [pg_exporter-1.4.1.linux-ppc64le.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.linux-ppc64le.tar.gz)   |
+| Tarball (macOS amd64)   | [pg_exporter-1.4.1.darwin-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.darwin-amd64.tar.gz)     |
+| Tarball (macOS arm64)   | [pg_exporter-1.4.1.darwin-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.darwin-arm64.tar.gz)     |
+| Tarball (Windows amd64) | [pg_exporter-1.4.1.windows-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.windows-amd64.tar.gz)   |
+{.full-width}
 
-```bash
-curl -fsSL https://repo.pigsty.io/pig | bash -s 1.6.0
-```
+您可以直接使用操作系统的包管理器（`rpm`/`dpkg`）安装，或者将二进制文件放入 `$PATH` 中。当前归档文件还会附带 `pg_exporter.yml`、`package/pg_exporter.default`、`package/pg_exporter.service` 与 `LICENSE`，便于按 tarball 手工部署。
 
-**中国镜像**：
+{{% alert title="RPM 包名变更" color="info" %}}
+自 `v1.4.1` 起，官方 RPM 的包名及文件名前缀由 `pg_exporter` 统一为 `pg-exporter`，与 DEB 及仓库安装命令保持一致。新 RPM 同时声明兼容并替换旧包名 `pg_exporter`，可直接从旧版升级。
+{{% /alert %}}
 
-```bash
-curl -fsSL https://repo.pigsty.cc/pig | bash -s 1.6.0
-```
+完整 SHA256 校验信息见发布页面中的 `checksums.txt`；具体版本的校验和也会在 [发布注记](/zh/release/) 中归档。
 
+--------
 
-## 发布产物下载
+## 软件仓库
 
-你也可以直接从 [GitHub Release](https://github.com/pgsty/pig/releases/tag/v1.6.0) 或 Pigsty 软件仓库下载 `pig` 安装包（`RPM`/`DEB`/ 压缩包）。当前 `v1.6.0` 发布产物使用以下仓库直链格式：
-
-- `https://repo.pigsty.io/pkg/pig/v1.6.0/<filename>`
-- `https://repo.pigsty.cc/pkg/pig/v1.6.0/<filename>`
-
-```
-v1.6.0
-├── pig_1.6.0-1_amd64.deb
-├── pig_1.6.0-1_arm64.deb
-├── pig-1.6.0-1.aarch64.rpm
-├── pig-1.6.0-1.x86_64.rpm
-├── pig-v1.6.0.linux-amd64.tar.gz
-├── pig-v1.6.0.linux-arm64.tar.gz
-├── pig-v1.6.0.darwin-amd64.tar.gz
-└── pig-v1.6.0.darwin-arm64.tar.gz
-```
-
-将其解压后，将二进制文件放入您的 PATH 系统路径中即可。
-
-
-## 仓库安装
-
-`pig` 软件位于 [`pigsty-infra`](https://pigsty.cc/docs/repo/infra/) 仓库中。你可以将该仓库添加到操作系统后，使用操作系统的包管理器进行安装：
+pg_exporter 软件包也可以在 [`pigsty-infra`](https://ext.pgsty.com/repo/infra) 仓库中获取。您可以将该仓库添加到系统中，然后使用操作系统包管理器安装：
 
 ### YUM
 
-对于 RHEL，RockyLinux，CentOS，Alma Linux，OracleLinux 等 EL 系发行版：
+适用于 RHEL、RockyLinux、CentOS、Alma Linux、OracleLinux 等 EL 系发行版：
 
 ```bash
 sudo tee /etc/yum.repos.d/pigsty-infra.repo > /dev/null <<-'EOF'
@@ -86,12 +72,12 @@ module_hotfixes=1
 EOF
 
 sudo yum makecache;
-sudo yum install -y pig
+sudo yum install -y pg-exporter
 ```
 
 ### APT
 
-对于 Debian，Ubuntu 等 DEB 系发行版：
+适用于 Debian、Ubuntu 及兼容的 Linux 发行版：
 
 ```bash
 sudo tee /etc/apt/sources.list.d/pigsty-infra.list > /dev/null <<EOF
@@ -99,44 +85,71 @@ deb [trusted=yes] https://repo.pigsty.io/apt/infra generic main
 EOF
 
 sudo apt update;
-sudo apt install -y pig
+sudo apt install -y pg-exporter
 ```
 
+--------
 
-## 更新
+## Docker
 
-若要将现有 `pig` 版本升级至最新可用版本，可以使用以下命令：
+我们在 Docker Hub 上提供了 `amd64` 和 `arm64` 架构的预构建镜像：[pgsty/pg_exporter](https://hub.docker.com/r/pgsty/pg_exporter)。
 
 ```bash
-pig update            # 将 pig 自身升级到最新版
-pig update -m         # 使用 pigsty.cc 镜像升级
-pig update -v 1.6.0   # 升级到指定版本
+# 基本用法
+docker run -d \
+  --name pg_exporter \
+  -p 9630:9630 \
+  -e PG_EXPORTER_URL="postgres://user:password@host:5432/postgres" \
+  pgsty/pg_exporter:latest
+
+# 使用自定义配置
+docker run -d \
+  --name pg_exporter \
+  -p 9630:9630 \
+  -v /path/to/pg_exporter.yml:/etc/pg_exporter.yml:ro \
+  -e PG_EXPORTER_CONFIG="/etc/pg_exporter.yml" \
+  -e PG_EXPORTER_URL="postgres://user:password@host:5432/postgres" \
+  pgsty/pg_exporter:latest
+
+# 启用自动发现
+docker run -d \
+  --name pg_exporter \
+  -p 9630:9630 \
+  -e PG_EXPORTER_URL="postgres://user:password@host:5432/postgres" \
+  -e PG_EXPORTER_AUTO_DISCOVERY="true" \
+  -e PG_EXPORTER_EXCLUDE_DATABASE="template0,template1" \
+  pgsty/pg_exporter:latest
 ```
 
-若要将现有 `pig` 的扩展数据升级至最新可用版本，可以使用以下命令：
+{{% alert title="注意" color="warning" %}}
+当前 Docker 镜像基于 `scratch`。如果您使用 `sslmode=verify-ca` 或 `verify-full` 连接远程 PostgreSQL，请显式挂载 CA 证书（例如 `sslrootcert` 或系统 CA bundle），否则 TLS 校验可能无法完成。
+{{% /alert %}}
+
+--------
+
+## 兼容性
+
+当前默认配置支持 PostgreSQL 10-19+。
+对于 EOL 旧版本 PostgreSQL，可以使用仓库内置的 `legacy/` 配置包进行兼容监控。
+
+| PostgreSQL 版本 | 支持状态                           |
+|---------------|--------------------------------|
+| 10 ~ 19+      | ✅ 完全支持（默认配置）                   |
+| 9.1 ~ 9.6     | ⚠️ 使用 `legacy/pg_exporter.yml` |
+| 9.0 及更早       | ❌ 不支持                          |
+{.full-width}
+
+启用 Legacy 配置示例：
 
 ```bash
-pig ext reload        # 将 pig 扩展数据更新至最新版本
+make conf9
+PG_EXPORTER_CONFIG=legacy/pg_exporter.yml pg_exporter
 ```
 
+pg_exporter 支持 pgBouncer 1.8+（`v1.8` 是第一个支持 `SHOW` 命令的版本）。
 
-## 卸载
-
-```bash
-apt remove -y pig     # Debian / Ubuntu 等 Debian 系统
-yum remove -y pig     # RHEL / CentOS / RockyLinux 等 EL 系发行版
-rm -rf /usr/bin/pig   # 若直接使用二进制安装，删除二进制文件即可
-```
-
-
-## 构建
-
-你也可以自行构建 `pig`。`pig` 使用 Go 语言开发，构建非常容易，源码托管在 [github.com/pgsty/pig](https://github.com/pgsty/pig)
-
-```bash
-git clone https://github.com/pgsty/pig.git; cd pig
-go mod download
-make build
-```
-
-所有 RPM / DEB 包都通过 GitHub CI/CD 流程使用 goreleaser 自动化构建。
+| pgBouncer 版本   | 支持状态   |
+|----------------|--------|
+| 1.8.x ~ 1.25+  | ✅ 完全支持 |
+| 1.8.x 之前       | ⚠️ 无指标 |
+{.full-width}

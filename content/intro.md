@@ -1,67 +1,72 @@
 ---
 title: "Introduction"
 linkTitle: "Introduction"
-description: "Why do we need yet another package manager? Especially for Postgres extensions?"
-weight: 20
+description: "What pg_exporter does, how a scrape is planned, and where its operational boundaries lie"
+weight: 10
 icon: fas fa-lightbulb
 categories: [Concept]
 ---
 
-Have you ever struggled with installing or upgrading PostgreSQL extensions? Digging through outdated documentation, cryptic configuration scripts, or searching GitHub for forks and patches?
-Postgres's rich extension ecosystem also means complex deployment processes, especially across multiple distributions and architectures. PIG can solve these headaches for you.
+`pg_exporter` turns PostgreSQL and pgBouncer runtime state into Prometheus metrics. Unlike an exporter with a fixed list of hard-coded queries, most of its metric surface is declared in YAML: a collector defines SQL, result columns, labels, metric types, eligibility rules, timeouts, and caching policy.
 
-This is exactly why **Pig** was created. Developed in Go, Pig is dedicated to one-stop management of Postgres and its [{{< param pgext_count >}} packaged extensions](https://pigsty.io/ext/list).
-Whether it's TimescaleDB, Citus, PGVector, 30+ Rust extensions, or all the components needed to self-host Supabase, Pig's unified CLI makes everything accessible.
-It completely eliminates source compilation and messy repositories, directly providing version-aligned RPM/DEB packages that perfectly support Debian, Ubuntu, RedHat, and other mainstream distributions on both x86 and Arm architectures, no guessing, no hassle.
+That design gives operators two useful properties at once:
 
-Pig isn't reinventing the wheel; it fully leverages native system package managers (APT, YUM, DNF) and strictly follows [PGDG official](https://pigsty.io/docs/repo/pgdg/) packaging standards for seamless integration.
-You do not need to choose between "the standard way" and "shortcuts". Pig respects existing repositories, follows OS best practices, and coexists harmoniously with existing repositories and packages.
-If your Linux system and PostgreSQL major version are not in the [supported list](#linux-compatibility), you can use [`pig build`](/build/) to compile extensions for your specific combination.
+- a release ships with a broad, tested default metric set;
+- local teams can add, remove, or specialize metrics without rebuilding the binary.
 
-Want to supercharge your Postgres and escape the hassle? Visit the [PIG official documentation](/docs/) for guides, and check out the extensive [extension list](https://pigsty.io/ext/list),
-turning your local Postgres database into an all-capable multi-modal data platform with one click.
-If [Postgres's future is unmatched extensibility](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4), then Pig is the magic lamp that helps you unlock it. After all, no one ever complains about "too many extensions".
+## The Data Path
 
-## Automation-Friendly
+A normal scrape passes through six stages:
 
-PIG's command system is automation-ready out of the box: consistent argument conventions, stable output behavior, `--plan` previews, and confirmation flows for high-risk operations to reduce mistakes.
+1. **Target selection** — the PostgreSQL URL comes from `--url`, environment, a secret file, or the local-first default.
+2. **Fact discovery** — the exporter learns server version, recovery role, database inventory, extensions, schemas, and operator-supplied tags.
+3. **Dynamic planning** — for each metric namespace, it selects the collector branch whose version range, role tags, custom tags, and predicates match the target.
+4. **Query execution** — selected SQL runs with per-collector timeout and optional result caching.
+5. **Metric conversion** — result columns become labels, gauges, counters, or snapshot histogram families.
+6. **Exposition** — built-in and query-driven metrics are returned through the configurable Prometheus endpoint, normally `/metrics`.
 
+Health and role-routing endpoints use a cached background-probe state rather than opening a new database query for every HTTP request. A health-check storm therefore does not become a database connection storm.
 
-> [ANNOUNCE pig: The Postgres Extension Wizard](https://www.postgresql.org/about/news/announce-pig-the-postgres-extension-wizard-2988/)
+## Two Metric Layers
 
+### Built-in exporter metrics
 
---------
+The Go binary always knows how to expose core availability and self-observation metrics such as:
 
-## Linux Compatibility
+- `pg_up`, `pg_version`, and `pg_in_recovery`;
+- `pg_exporter_build_info` and exporter uptime;
+- scrape counts, failures, durations, cache TTLs, and per-query statistics.
 
-PIG and the Pigsty extension repository support the following Linux distribution and PostgreSQL version combinations:
+Use `--disable-intro` only when you intentionally want to hide exporter self-metrics. It does not remove YAML-defined business metrics.
 
-| OS Code | Vendor | Major | Minor | Full Name | PG Versions | Notes |
-|:---|:---|:---:|:---:|:---|:---|:---:|
-| `el7.x86_64` | EL | 7 | 7.9 | CentOS 7 x86 | 13-15 | EOL |
-| `el8.x86_64` | EL | 8 | 8.10 | RockyLinux 8 x86 | 14-18 | Near EOL |
-| `el8.aarch64` | EL | 8 | 8.10 | RockyLinux 8 ARM | 14-18 | Near EOL |
-| `el9.x86_64` | EL | 9 | 9.7 | RockyLinux 9 x86 | 14-18 | ✅ |
-| `el9.aarch64` | EL | 9 | 9.7 | RockyLinux 9 ARM | 14-18 | ✅ |
-| `el10.x86_64` | EL | 10 | 10.1 | RockyLinux 10 x86 | 14-18 | ✅ |
-| `el10.aarch64` | EL | 10 | 10.1 | RockyLinux 10 ARM | 14-18 | ✅ |
-| `d11.x86_64` | Debian | 11 | 11.11 | Debian 11 x86 | 14-18 | EOL |
-| `d11.aarch64` | Debian | 11 | 11.11 | Debian 11 ARM | 14-18 | EOL |
-| `d12.x86_64` | Debian | 12 | 12.14 | Debian 12 x86 | 14-18 | ✅ |
-| `d12.aarch64` | Debian | 12 | 12.14 | Debian 12 ARM | 14-18 | ✅ |
-| `d13.x86_64` | Debian | 13 | 13.6 | Debian 13 x86 | 14-18 | ✅ |
-| `d13.aarch64` | Debian | 13 | 13.6 | Debian 13 ARM | 14-18 | ✅ |
-| `u22.x86_64` | Ubuntu | 22 | 22.04.5 | Ubuntu 22.04 x86 | 14-18 | ✅ |
-| `u22.aarch64` | Ubuntu | 22 | 22.04.5 | Ubuntu 22.04 ARM | 14-18 | ✅ |
-| `u24.x86_64` | Ubuntu | 24 | 24.04.4 | Ubuntu 24.04 x86 | 14-18 | ✅ |
-| `u24.aarch64` | Ubuntu | 24 | 24.04.4 | Ubuntu 24.04 ARM | 14-18 | ✅ |
-| `u26.x86_64` | Ubuntu | 26 | 26.04.0 | Ubuntu 26.04 x86 | 14-18 | ✅ |
-| `u26.aarch64` | Ubuntu | 26 | 26.04.0 | Ubuntu 26.04 ARM | 14-18 | ✅ |
-{.full-width}
+### Declarative collector metrics
 
-**Notes:**
+Everything else comes from [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml), which is generated from 58 ordered files under [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config). The default bundle covers replication, WAL, checkpoints, activity, locks, transactions, database/object statistics, progress views, pgBouncer, and selected extensions.
 
-- **EL** refers to RHEL-compatible distributions, including RHEL, CentOS, RockyLinux, AlmaLinux, OracleLinux, etc.
-- **EOL** indicates the operating system has reached or is about to reach end of support; upgrading to a newer version is recommended
-- **✅** indicates full support; recommended for use
-- PG versions 14-18 means support for PostgreSQL 14, 15, 16, 17, and 18 major versions
+See [Bundled Collectors](/collectors/) for the inventory and [Collector Configuration](/config/) for the schema.
+
+## Failure Semantics
+
+Failure is controlled at collector and process level:
+
+- A collector with `fatal: true` can fail the scrape and reset the target's `*_up` metric.
+- A non-fatal collector failure increments error statistics while other collectors continue.
+- A query timeout defaults to 100 ms when omitted; a negative configured timeout disables the query deadline.
+- Startup is non-blocking by default: HTTP starts even when the database is temporarily unavailable. `--fail-fast` changes this to an immediate startup failure.
+- A valid hot reload replaces the active query set atomically; a rejected reload leaves the previous configuration running.
+
+The `/explain` endpoint answers “why was this collector selected or skipped?”, while `/stat` answers “how did selected collectors perform?”. Together they are the first tools to use for missing, slow, or failing metrics.
+
+## What pg_exporter Is Not
+
+- It is not a PostgreSQL proxy and does not carry application traffic.
+- It does not store time series; Prometheus, VictoriaMetrics, or another compatible system does that.
+- It does not install extensions needed by optional collectors.
+- It does not make an expensive SQL query safe merely because it is in YAML; operators still own query review, privileges, TTL, timeout, and cardinality.
+- Its role endpoints report observed PostgreSQL state, not a distributed-consensus decision. They are useful inputs to routing, but HA policy remains with Patroni, the load balancer, and the operator.
+
+## Project Status
+
+The latest stable release is **v{{< param version >}}**. The default collector bundle covers PostgreSQL 10 through PostgreSQL 19 branches, while a separate legacy bundle covers PostgreSQL 9.1-9.6. pgBouncer collectors cover the `SHOW`-capable 1.8+ line through current 1.25+ schemas.
+
+Continue with [Getting Started](/start/) for a minimal working deployment or [Production Deployment](/deploy/) for the full operational surface.

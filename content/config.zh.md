@@ -1,0 +1,550 @@
+---
+title: "采集器配置"
+linkTitle: "配置参考"
+description: "声明式 YAML 采集器格式与执行模型的完整参考"
+weight: 90
+icon: fa-solid fa-code
+categories: [参考]
+---
+
+`pg_exporter` 的所有业务指标都由 YAML **采集器**（Collector）定义驱动：每个采集器就是一条 SQL 查询，外加它的执行条件（版本、角色、标签、谓词）与运行控制（缓存、超时）。本页是采集器定义的完整参考。
+
+配置可以是单个 YAML 文件（如默认的 `pg_exporter.yml`），也可以是包含多个 YAML 文件的目录——官方默认配置包正是由 [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config) 目录下 58 个定义文件合并而来。
+
+--------
+
+## 配置加载
+
+PG Exporter 按以下顺序搜索配置：
+
+1. 命令行参数：`--config=/path/to/config`
+2. 环境变量：`PG_EXPORTER_CONFIG=/path/to/config`
+3. 当前目录：`./pg_exporter.yml`
+4. 系统配置文件：`/etc/pg_exporter.yml`
+5. 系统配置目录：`/etc/pg_exporter/`
+
+目录模式说明：
+
+- 仅加载该目录下的 `.yml` / `.yaml` 文件（非递归）
+- 按文件名字典序合并；同名采集器以后加载者覆盖先前定义
+- 如果目录中有 YAML 文件但全部解析失败，导出器会直接返回错误而不是静默忽略
+
+--------
+
+## 采集器结构
+
+每个采集器是 YAML 配置中的一个顶级对象，具有唯一名称和多种属性：
+
+```yaml
+collector_branch_name:           # 此采集器的唯一标识符
+  name: metric_namespace         # 指标前缀（默认为分支名称）
+  desc: "采集器描述"             # 人类可读的描述
+  query: |                       # 要执行的 SQL 查询
+    SELECT column1, column2
+    FROM table
+
+  # 执行控制
+  ttl: 10                        # 缓存生存时间（秒）
+  timeout: 0.1                   # 查询超时（秒）
+  fatal: false                   # 如果为 true，失败将导致整个抓取失败
+  skip: false                    # 如果为 true，禁用此采集器
+
+  # 版本兼容性
+  min_version: 100000            # 最小 PostgreSQL 版本（包含）
+  max_version: 999999            # 最大 PostgreSQL 版本（不包含）
+
+  # 执行标签
+  tags: [cluster, primary]       # 执行条件
+
+  # 谓词查询（可选）
+  predicate_queries:
+    - name: "check_function"
+      predicate_query: |
+        SELECT EXISTS (...)
+
+  # 指标定义
+  metrics:
+    - column_name:
+        usage: GAUGE             # GAUGE、COUNTER、HISTOGRAM、LABEL 或 DISCARD
+        rename: metric_name      # 可选：重命名指标
+        description: "帮助文本"   # 指标描述
+        default: 0               # NULL 时的默认值
+        scale: 1000              # 值的缩放因子
+        bucket: [1, 10, 100]     # HISTOGRAM 列的桶上界（严格递增，自动追加 +Inf）
+```
+
+配置校验约束：
+
+- 每个 `metrics` 列表项必须且只能定义一个列映射
+- 每个采集器至少要有一个 `GAUGE` / `COUNTER` / `HISTOGRAM` 列
+- `usage` 仅支持 `GAUGE` / `COUNTER` / `HISTOGRAM` / `LABEL` / `DISCARD`
+- `HISTOGRAM` 列必须定义 `bucket`：有限、严格递增的桶上界列表，`+Inf` 桶自动追加
+- 指标名、标签名会在加载阶段进行 Prometheus 规则校验，非法配置会直接报错
+- 常量标签会在加载阶段检查冲突；它们不能与查询标签重名，也不能与内置动态标签 `datname` / `query` 冲突；配置了 `HISTOGRAM` 采集器时，`le` 为保留标签，不能用作常量标签
+- SQL 查询结果必须包含所有声明为 `LABEL` 的列；自 `v1.4.1` 起，缺少任一标签列都会使该采集器本轮采集失败，不再生成空标签或沿用旧结果，其他非致命采集器不受影响
+- 如果使用单行内联 `metrics` 写法，`description` 建议始终使用双引号包裹，避免 YAML 歧义
+
+--------
+
+## 核心配置元素
+
+### 采集器分支名称
+
+顶级键在整个配置中唯一标识一个采集器：
+
+```yaml
+pg_stat_database:  # 必须唯一
+  name: pg_db      # 实际的指标命名空间
+```
+
+### 查询定义
+
+检索指标的 SQL 查询：
+
+```yaml
+query: |
+  SELECT
+    datname,
+    numbackends,
+    xact_commit,
+    xact_rollback,
+    blks_read,
+    blks_hit
+  FROM pg_stat_database
+  WHERE datname NOT IN ('template0', 'template1')
+```
+
+### 指标类型
+
+查询结果中的每一列必须映射到一个指标类型：
+
+| 用途          | 描述                                        | 示例     |
+|-------------|-------------------------------------------|--------|
+| `GAUGE`     | 可上下波动的瞬时值                                 | 当前连接数  |
+| `COUNTER`   | 只增不减的累计值                                  | 总事务数   |
+| `HISTOGRAM` | 快照直方图，派生 `_bucket` / `_count` / `_sum` 序列 | 事务年龄分布 |
+| `LABEL`     | 用作 Prometheus 标签                          | 数据库名称  |
+| `DISCARD`   | 忽略此列                                      | 内部值    |
+{.full-width}
+
+### 直方图列（HISTOGRAM）
+
+`v1.4.0` 引入 `HISTOGRAM` 列类型：查询返回的每一行都作为一次观测，按标签组聚合为经典
+Prometheus 直方图快照，派生 `<name>_bucket`（含 `le` 标签与 `+Inf` 桶）、`<name>_count`、
+`<name>_sum` 三族序列：
+
+```yaml
+pg_xact_age:
+  name: pg_xact_age
+  desc: "开放事务年龄分布直方图"
+  query: |
+    SELECT datname,
+           greatest(0, extract(epoch FROM now() - xact_start)) AS seconds
+    FROM pg_stat_activity
+    WHERE pid <> pg_backend_pid() AND backend_type = 'client backend'
+      AND datname IS NOT NULL AND xact_start IS NOT NULL;
+  ttl: 10
+  tags: [cluster]
+  metrics:
+    - datname: {usage: LABEL, description: "数据库名称"}
+    - seconds:
+        usage: HISTOGRAM
+        bucket: [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000]
+        description: "开放事务年龄快照（秒）"
+```
+
+使用注意：
+
+- 这是 **快照** 直方图：每次抓取重建整个分布，桶计数可增可减，语义上更接近 Gauge。
+  `histogram_quantile()` 可以直接使用，但对 `_count` / `_sum` 使用 `rate()` / `increase()` 没有意义
+- SQL `NULL` 默认忽略不计入观测；显式配置 `default` 时按默认值计入
+- `scale` 在分桶前应用于观测值；与标量列一致，时间戳与布尔值不受 `scale` 影响
+- 默认配置包中的 [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/main/config/0450-pg_xact_age.yml) 采集器即为参考实现
+
+### 缓存控制（TTL）
+
+`ttl` 参数控制结果缓存：
+
+```yaml
+# 快速查询 - 最小缓存
+pg_stat_activity:
+  ttl: 1  # 缓存 1 秒
+
+# 昂贵查询 - 较长缓存
+pg_table_bloat:
+  ttl: 3600  # 缓存 1 小时
+```
+
+最佳实践：
+- 将 TTL 设置为小于您的抓取间隔
+- 对昂贵的查询使用较长的 TTL
+- TTL 为 0 表示禁用缓存
+
+### 超时控制
+
+防止查询运行时间过长：
+
+```yaml
+timeout: 0.1   # 默认 100ms
+timeout: 1.0   # 复杂查询使用 1 秒
+timeout: -1    # 禁用超时（不推荐）
+```
+
+### 版本兼容性
+
+控制哪些 PostgreSQL 版本可以运行此采集器：
+
+```yaml
+min_version: 100000  # PostgreSQL 10.0+
+max_version: 140000  # 低于 PostgreSQL 14.0
+```
+
+版本号使用 PostgreSQL 内部 `server_version_num` 规则：
+
+- `100000` 表示 10.0
+- `130200` 表示 13.2
+- `160100` 表示 16.1
+- `190000` 表示 19.0
+- `90600` 表示 9.6（Legacy 配置场景）
+
+--------
+
+## 执行模型
+
+理解一个采集器从定义到产出指标的完整路径，有助于回答"为什么这个指标没出来"：
+
+1. **规划**（建立连接或热重载时）：对每个采集器分支依次检查——目标类型（PostgreSQL / pgBouncer）、`min_version` / `max_version` 版本门槛、`tags` 与服务器角色及 exporter 标签的匹配、`skip` 开关。未通过的分支不会安装到该目标上。`curl localhost:9630/explain` 展示的正是这一步的裁决结果。
+2. **抓取**（每次 `/metrics` 请求）：对已安装的采集器——缓存在 `ttl` 内则直接返回缓存结果；否则先执行 `predicate_queries`（任一返回假则本轮跳过，`pg_exporter_query_scrape_predicate_skip_count` 计数），再在 `timeout` 限制下执行主查询，结果转为指标并写入缓存。
+3. **失败语义**：普通采集器失败只影响自身（`pg_exporter_query_scrape_error_count` 上升，本轮缺失该组指标）；标记 `fatal: true` 的采集器失败会使整次服务器抓取被判定为失败。
+
+--------
+
+## 标签系统
+
+标签控制采集器的执行时机和位置：
+
+### 内置标签
+
+| 标签                    | 描述                   |
+|-----------------------|----------------------|
+| `cluster`             | 每个 PostgreSQL 集群执行一次 |
+| `primary` / `master`  | 仅在主服务器上执行            |
+| `standby` / `replica` | 仅在从服务器上执行            |
+| `pgbouncer`           | 仅用于 pgBouncer 连接     |
+{.full-width}
+
+### 前缀标签
+
+| 前缀 | 示例 | 描述 |
+|------|------|------|
+| `dbname:` | `dbname:postgres` | 仅在特定数据库上执行 |
+| `username:` | `username:monitor` | 仅使用特定用户时执行 |
+| `extension:` | `extension:pg_stat_statements` | 仅当扩展已安装时执行 |
+| `schema:` | `schema:public` | 仅当模式存在时执行 |
+| `not:` | `not:slow` | 当导出器没有该标签时执行 |
+{.full-width}
+
+### 自定义标签
+
+向导出器传递自定义标签：
+
+```bash
+pg_exporter --tag="production,critical"
+```
+
+然后在配置中使用：
+
+```yaml
+expensive_metrics:
+  tags: [critical]  # 仅在有 'critical' 标签时运行
+```
+
+--------
+
+## 谓词查询
+
+在执行主查询之前进行条件检查：
+
+```yaml
+predicate_queries:
+  - name: "检查 pg_stat_statements"
+    predicate_query: |
+      SELECT EXISTS (
+        SELECT 1 FROM pg_extension
+        WHERE extname = 'pg_stat_statements'
+      )
+```
+
+只有当所有谓词返回 `true` 时，主查询才会执行。
+
+--------
+
+## 指标定义
+
+### 基本定义
+
+```yaml
+metrics:
+  - numbackends:
+      usage: GAUGE
+      description: "已连接的后端进程数"
+```
+
+### 高级选项
+
+```yaml
+metrics:
+  - checkpoint_write_time:
+      usage: COUNTER
+      rename: write_time        # 重命名指标
+      scale: 0.001              # 将毫秒转换为秒
+      default: 0                # NULL 时使用 0
+      description: "检查点写入时间（秒）"
+```
+
+--------
+
+## 采集器组织
+
+PG Exporter 自带预先组织好的采集器：
+
+| 范围    | 类别        | 描述            |
+|-------|-----------|---------------|
+| 0xx   | 文档        | 示例和文档         |
+| 1xx   | 基础        | 服务器信息、设置、元数据  |
+| 2xx   | 复制        | 复制、槽位、接收器     |
+| 3xx   | 持久化       | I/O、检查点、WAL   |
+| 4xx   | 活动        | 连接、锁、查询       |
+| 5xx   | 进度        | Vacuum、索引创建进度 |
+| 6xx   | 数据库       | 每数据库统计        |
+| 7xx   | 对象        | 表、索引、函数       |
+| 8xx   | 可选        | 昂贵/可选指标       |
+| 9xx   | pgBouncer | 连接池指标         |
+| 10xx+ | 扩展        | 扩展特定指标        |
+{.full-width}
+
+--------
+
+## 实际示例
+
+### 简单的 Gauge 采集器
+
+```yaml
+pg_connections:
+  desc: "当前数据库连接"
+  query: |
+    SELECT
+      count(*) as total,
+      count(*) FILTER (WHERE state = 'active') as active,
+      count(*) FILTER (WHERE state = 'idle') as idle,
+      count(*) FILTER (WHERE state = 'idle in transaction') as idle_in_transaction
+    FROM pg_stat_activity
+    WHERE pid != pg_backend_pid()
+  ttl: 1
+  metrics:
+    - total: {usage: GAUGE, description: "总连接数"}
+    - active: {usage: GAUGE, description: "活跃连接数"}
+    - idle: {usage: GAUGE, description: "空闲连接数"}
+    - idle_in_transaction: {usage: GAUGE, description: "事务中空闲连接数"}
+```
+
+### 带标签的 Counter
+
+```yaml
+pg_table_stats:
+  desc: "表统计信息"
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      n_tup_ins,
+      n_tup_upd,
+      n_tup_del,
+      n_live_tup,
+      n_dead_tup
+    FROM pg_stat_user_tables
+  ttl: 10
+  metrics:
+    - schemaname: {usage: LABEL}
+    - tablename: {usage: LABEL}
+    - n_tup_ins: {usage: COUNTER, description: "插入的元组数"}
+    - n_tup_upd: {usage: COUNTER, description: "更新的元组数"}
+    - n_tup_del: {usage: COUNTER, description: "删除的元组数"}
+    - n_live_tup: {usage: GAUGE, description: "活跃元组数"}
+    - n_dead_tup: {usage: GAUGE, description: "死亡元组数"}
+```
+
+### 版本特定采集器
+
+```yaml
+pg_wal_stats:
+  desc: "WAL 统计信息（PG 14+）"
+  min_version: 140000
+  query: |
+    SELECT
+      wal_records,
+      wal_bytes,
+      wal_buffers_full,
+      wal_write_time,
+      wal_sync_time
+    FROM pg_stat_wal
+  ttl: 10
+  tags: [cluster]
+  metrics:
+    - wal_records: {usage: COUNTER}
+    - wal_bytes: {usage: COUNTER}
+    - wal_buffers_full: {usage: COUNTER}
+    - wal_write_time: {usage: COUNTER, scale: 0.001}
+    - wal_sync_time: {usage: COUNTER, scale: 0.001}
+```
+
+### 扩展依赖采集器
+
+```yaml
+pg_stat_statements_metrics:
+  desc: "查询性能统计"
+  tags: [extension:pg_stat_statements]
+  query: |
+    SELECT
+      sum(calls) as total_calls,
+      sum(total_exec_time) as total_time,
+      sum(mean_exec_time * calls) / sum(calls) as mean_time
+    FROM pg_stat_statements
+  ttl: 60
+  metrics:
+    - total_calls: {usage: COUNTER}
+    - total_time: {usage: COUNTER, scale: 0.001}
+    - mean_time: {usage: GAUGE, scale: 0.001}
+```
+
+--------
+
+## 自定义采集器
+
+### 创建自己的指标
+
+1. 在配置目录中创建新的 YAML 文件：
+
+```yaml
+# /etc/pg_exporter/custom_metrics.yml
+app_metrics:
+  desc: "应用特定指标"
+  query: |
+    SELECT
+      (SELECT count(*) FROM users WHERE active = true) as active_users,
+      (SELECT count(*) FROM orders WHERE created_at > NOW() - '1 hour'::interval) as recent_orders,
+      (SELECT avg(processing_time) FROM jobs WHERE completed_at > NOW() - '5 minutes'::interval) as avg_job_time
+  ttl: 30
+  metrics:
+    - active_users: {usage: GAUGE, description: "当前活跃用户数"}
+    - recent_orders: {usage: GAUGE, description: "最近一小时的订单数"}
+    - avg_job_time: {usage: GAUGE, description: "平均作业处理时间"}
+```
+
+2. 测试您的采集器：
+
+```bash
+pg_exporter --explain --config=/etc/pg_exporter/
+```
+
+### 条件指标
+
+使用谓词查询实现条件指标：
+
+```yaml
+partition_metrics:
+  desc: "分区表指标"
+  predicate_queries:
+    - name: "检查是否使用了分区"
+      predicate_query: |
+        SELECT EXISTS (
+          SELECT 1 FROM pg_class
+          WHERE relkind = 'p' LIMIT 1
+        )
+  query: |
+    SELECT
+      parent.relname as parent_table,
+      count(*) as partition_count,
+      sum(pg_relation_size(child.oid)) as total_size
+    FROM pg_inherits
+    JOIN pg_class parent ON parent.oid = pg_inherits.inhparent
+    JOIN pg_class child ON child.oid = pg_inherits.inhrelid
+    WHERE parent.relkind = 'p'
+    GROUP BY parent.relname
+  ttl: 300
+  metrics:
+    - parent_table: {usage: LABEL}
+    - partition_count: {usage: GAUGE}
+    - total_size: {usage: GAUGE}
+```
+
+--------
+
+## 性能优化
+
+### 查询优化技巧
+
+1. **使用适当的 TTL 值**：
+   - 快速查询：1-10 秒
+   - 中等查询：10-60 秒
+   - 昂贵查询：300-3600 秒
+
+2. **设置合理的超时**：
+   - 默认：100ms
+   - 复杂查询：500ms-1s
+   - 生产环境中不要禁用超时
+
+3. **使用集群级标签**：
+   ```yaml
+   tags: [cluster]  # 每集群运行一次，而不是每数据库
+   ```
+
+4. **禁用昂贵的采集器**：
+   ```yaml
+   pg_table_bloat:
+     skip: true  # 如果不需要则禁用
+   ```
+
+### 监控采集器性能
+
+检查采集器执行统计：
+
+```bash
+# 查看采集器统计（命中/错误/跳过计数与耗时）
+curl http://localhost:9630/stat
+
+# 按 datname/query 维度查看每个采集器的耗时与错误
+curl -s http://localhost:9630/metrics | grep -E 'pg_exporter_query_scrape_(duration|error_count)'
+```
+
+--------
+
+## 配置故障排查
+
+### 验证配置
+
+```bash
+# 干运行 - 显示解析后的配置
+pg_exporter --dry-run
+
+# 解释 - 显示计划的查询
+pg_exporter --explain
+```
+
+### 常见问题
+
+| 问题    | 解决方案               |
+|-------|--------------------|
+| 指标缺失  | 检查标签和版本兼容性         |
+| 抓取缓慢  | 增加 TTL、添加超时、禁用昂贵查询 |
+| 内存使用高 | 减少结果集大小，使用 LIMIT   |
+| 权限错误  | 验证监控用户的查询权限        |
+{.full-width}
+
+### 调试日志
+
+启用调试日志进行故障排查：
+
+```bash
+pg_exporter --log.level=debug
+```

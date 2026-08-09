@@ -1,8 +1,8 @@
 {
-  "name": "pig.pgsty.com",
-  "version": "1.6.1",
+  "name": "exp.pgsty.com",
+  "version": "1.4.1",
   "private": true,
-  "description": "PIG documentation site",
+  "description": "Bilingual PG Exporter documentation site",
   "license": "CC-BY-4.0",
   "type": "commonjs",
   "dependencies": {
