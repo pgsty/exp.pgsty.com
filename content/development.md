@@ -14,7 +14,7 @@ The project intentionally keeps most monitoring logic in YAML and a smaller exec
 | Path | Purpose |
 |:---|:---|
 | `exporter/` | CLI parsing, URL/config loading, planning, execution, metrics, health state, HTTP handlers, tests |
-| `config/` | 58 ordered collector definition files for PostgreSQL 10-19+ and pgBouncer |
+| `config/` | 58 ordered collector definition files for PostgreSQL 10-19+ and PgBouncer |
 | `pg_exporter.yml` | Generated monolithic default config (`make conf`) |
 | `legacy/config/` | Collector definitions for PostgreSQL 9.1-9.6 |
 | `legacy/pg_exporter.yml` | Generated legacy monolithic config (`make conf9`) |
@@ -44,7 +44,7 @@ The binary is built with CGO disabled for release artifacts. `make build` is sui
 go test ./...
 go test -race ./...
 
-# Confirm all supported PostgreSQL and pgBouncer branches remain coverable,
+# Confirm all supported PostgreSQL and PgBouncer branches remain coverable,
 # and that config structure, metric names, labels, and histograms are valid.
 go test ./exporter/...
 ```

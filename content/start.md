@@ -1,21 +1,21 @@
 ---
 title: "Getting Started"
 linkTitle: "Quick Start"
-description: "Get pg_exporter running and expose PostgreSQL metrics to Prometheus in ten minutes"
+description: "Get PG Exporter running and expose PostgreSQL metrics to Prometheus in five minutes"
 weight: 20
-icon: fas fa-rocket
+icon: fa-solid fa-rocket
 categories: [Reference]
 ---
 
-This page is the shortest path: install `pg_exporter`, connect it to a PostgreSQL instance, verify metrics output, and hook it into Prometheus.
+This page is the shortest path: install **PG Exporter**, connect it to a PostgreSQL instance, verify metrics output, and hook it into Prometheus.
 
-You only need two things: a reachable PostgreSQL 10-19+ (or pgBouncer 1.8+) instance, and permission to create a user in it. For older PostgreSQL 9.1-9.6 instances, see [Compatibility](/compatibility/).
+You only need two things: a reachable PostgreSQL 10-19+ (or PgBouncer 1.8+) instance, and permission to create a user in it. For older PostgreSQL 9.1-9.6 instances, see [Compatibility](/compatibility/).
 
---------
+{{% steps %}}
 
-## Step 1: Install
+## Install {#install}
 
-On Linux amd64 you can download the binary directly (for other platforms and RPM/DEB/Docker options, see the [Installation guide](/install/)):
+On Linux amd64 you can download the binary directly. For managed packages, other platforms, containers, Pigsty, and source builds, use the [download guide](/download/).
 
 ```bash
 VERSION=$(curl -fsSL https://api.github.com/repos/pgsty/pg_exporter/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')
@@ -30,12 +30,10 @@ Confirm the installation:
 
 ```bash
 pg_exporter --version
-# pg_exporter v1.4.1 (built with go1.26.5 on linux/amd64)
+# pg_exporter v{{< param version >}} (built with go1.26.5 on linux/amd64)
 ```
 
---------
-
-## Step 2: Create a Monitoring User
+## Create a Monitoring User {#create-monitoring-user}
 
 Create a dedicated monitoring user on the target PostgreSQL. The built-in `pg_monitor` role (PostgreSQL 10+) covers all read permissions the default collectors need:
 
@@ -44,11 +42,9 @@ CREATE USER monitor WITH PASSWORD 'S3cret';
 GRANT pg_monitor TO monitor;
 ```
 
-If you are just trying it out locally as a superuser like `postgres`, you can skip this step.
+If you are just trying it out locally as a superuser such as `postgres`, you can skip this step.
 
---------
-
-## Step 3: Run and Verify
+## Run and Verify {#run-and-verify}
 
 Use `--dry-run` to confirm the configuration parses, then start for real:
 
@@ -77,9 +73,7 @@ pg_in_recovery 0     # 1 on replicas, 0 on primaries
 
 `pg_up 1` means the pipeline works — the remaining 600+ metrics (`pg_db_*`, `pg_table_*`, `pg_wal_*`, ...) all come from the declarative collector definitions in `pg_exporter.yml`. If `pg_up` is `0`, restart with `pg_exporter --log.level=debug` and inspect the connection error.
 
---------
-
-## Step 4: Hook into Prometheus
+## Hook into Prometheus {#hook-into-prometheus}
 
 Add a scrape target in `prometheus.yml`:
 
@@ -95,7 +89,7 @@ Collectors cache results per their `ttl` (most realtime collectors use `ttl: 10`
 
 That's it. For Grafana, you can reuse the PostgreSQL dashboards from [Pigsty](https://pigsty.io), or explore the [live demo](https://g.pgsty.com).
 
---------
+{{% /steps %}}
 
 ## Troubleshooting
 
@@ -109,10 +103,8 @@ That's it. For Grafana, you can reuse the PostgreSQL dashboards from [Pigsty](ht
 
 `/stat`, `/explain`, and `/reload` are management endpoints — protect them with `--web.config.file` (TLS/auth) or keep them on a trusted network in production. See the [API Reference](/api/).
 
---------
-
 ## Next Steps
 
-- Monitor **pgBouncer**, enable **auto-discovery**, deploy with **systemd / Docker / Kubernetes**: [Deployment guide](/deploy/)
+- Monitor **PgBouncer**, enable **auto-discovery**, deploy with **systemd / Docker / Kubernetes**: [Deployment guide](/deploy/)
 - Understand and customize **collectors** (GAUGE/COUNTER/HISTOGRAM, TTL, tags, version gates): [Configuration reference](/config/)
 - **Health check and primary/replica traffic routing** endpoints (`/up`, `/primary`, `/replica`): [API Reference](/api/)

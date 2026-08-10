@@ -1,0 +1,204 @@
+# OINK 按这里的顺序组装首页。下列产品数字与 data/home/metrics.yaml
+# 保持一致；后者记录了各项数字的来源约束。
+sections:
+  - hero
+  - metrics
+  - capabilities
+  - principles
+  - type: cards
+    key: delivery
+    id: download
+  - cta
+
+hero:
+  eyebrow: PostgreSQL + PgBouncer → Prometheus
+  title: PG Exporter
+  desc: '**用 SQL 表达 PostgreSQL 可观测性。** 指标定义留在 YAML 与 SQL 中；同一个导出器会按目标版本、角色与扩展自动选择合适的采集分支。'
+  note: 600+ 指标 · PostgreSQL 10–19+ · PgBouncer 1.8–1.25+
+  actions:
+    - label: 下载安装
+      url: download/
+      icon: fa-solid fa-download
+      style: primary
+    - label: 浏览文档
+      url: docs/
+      icon: fa-solid fa-book-open
+      style: ghost
+  detail:
+    label: 用五分钟接入第一个数据库
+    url: start/
+    icon: fa-solid fa-rocket
+
+metrics:
+  eyebrow: 随包交付
+  title: 开箱即用，而且每一项都可以检查
+  desc: 这里展示的是产品覆盖面，而不是宣传数字；每一项都对应当前源码树或版本归档。
+  columns: 4
+  link_label: 查看详情
+  items:
+    - value: 600+
+      label: 指标
+      desc: 位于默认合并配置中
+      icon: fa-solid fa-chart-line
+      url: collectors/
+    - value: 58
+      label: 采集器文件
+      desc: 带版本的 YAML + SQL 定义
+      icon: fa-solid fa-file-code
+      url: collectors/
+    - value: 10–19+
+      label: PostgreSQL
+      desc: 默认配置覆盖范围
+      icon: fa-solid fa-database
+      url: compatibility/
+    - value: 35
+      label: 已归档标签
+      desc: 从 v0.0.1 到 v1.4.1
+      icon: fa-solid fa-clock-rotate-left
+      url: release/
+
+capabilities:
+  eyebrow: 为什么选择 PG Exporter
+  title: 让懂数据库的人直接看见指标逻辑
+  desc: 采集行为由数据定义；运行时负责目标发现、动态规划、执行、缓存、故障隔离与 Prometheus 编码。
+  items:
+    - ref: 01 / 声明
+      title: 用 YAML + SQL 定义指标
+      url: config/
+      motto: 改采集器，不必重新编译二进制
+      bullets:
+        - 将查询列明确映射为 GAUGE、COUNTER、HISTOGRAM 与 LABEL。
+        - 为每个采集器单独设置 TTL、超时、跳过与致命错误策略。
+        - 自定义采集器可以与内置定义并列管理，按普通配置接受评审。
+      value: 指标契约始终对真正理解数据库的人保持可读。
+      visual:
+        type: code
+        title: collector.yml
+        aria_label: PG Exporter 声明式采集器示例
+        lines:
+          - { class: v, text: 'pg_example:' }
+          - { class: k, prefix: '  query: ', text: 'SELECT value FROM view' }
+          - { class: k, prefix: '  min_version: ', text: '100000' }
+          - { class: k, prefix: '  tags: ', text: '[cluster, primary]' }
+          - { class: k, prefix: '  ttl: ', text: '10' }
+          - { class: k, prefix: '  timeout: ', text: '0.1' }
+    - ref: 02 / 规划
+      title: 为每个目标选择正确查询
+      url: intro/
+      motto: 一个二进制，按目标动态执行
+      bullets:
+        - 匹配 PostgreSQL 或 PgBouncer 版本、主备角色、数据库、用户、模式与扩展事实。
+        - 用多个查询分支处理差异，不必把所有采集器冻结在最低公共版本上。
+        - 通过 `/explain` 查看每个分支为何入选、跳过或拒绝。
+      value: 兼容性判断在运行时清清楚楚，而不是埋在版本说明里。
+      visual:
+        type: code
+        title: GET /explain
+        aria_label: PG Exporter 动态规划结果
+        lines:
+          - { class: ok, prefix: '✓ ', text: 'pg_wal / primary / PG17' }
+          - { class: ok, prefix: '✓ ', text: 'pg_stat_statements / 1.11' }
+          - { class: c, prefix: '– ', text: 'pg_replica / role mismatch' }
+          - { class: c, prefix: '– ', text: 'pgbouncer / target mismatch' }
+    - ref: 03 / 运维
+      title: 导出器自身也可观察、可控制
+      url: api/
+      motto: 抓取指标只是运行时的一部分
+      bullets:
+        - 通过 `/stat` 检查每个采集器的耗时、错误、缓存状态与输出。
+        - 无需重启即可重载配置，单个采集器失败也不会抹掉其他成功结果。
+        - 用健康检查及主备端点完成探针与流量决策。
+      value: PG Exporter 不只导出数据库指标，也给出运维它所需的证据。
+      visual:
+        type: components
+        columns: 2
+        compact: true
+        aria_label: PG Exporter HTTP 端点
+        items:
+          - { icon: fa-solid fa-chart-line, title: /metrics, detail: 抓取输出, url: api/#get-metrics }
+          - { icon: fa-solid fa-heart-pulse, title: /up, detail: 目标健康, url: api/#get-up }
+          - { icon: fa-solid fa-route, title: /primary · /replica, detail: 角色路由, url: api/#流量路由 }
+          - { icon: fa-solid fa-magnifying-glass, title: /explain, detail: 规划裁决, url: api/#get-explain }
+          - { icon: fa-solid fa-gauge-high, title: /stat, detail: 运行证据, url: api/#get-stat }
+          - { icon: fa-solid fa-rotate, title: /reload, detail: 热重载, url: api/#get-reload--post-reload }
+
+principles:
+  eyebrow: 面向生产
+  title: 小巧的二进制，清晰的运行边界
+  columns: 3
+  items:
+    - icon: fa-solid fa-battery-full
+      title: 默认配置够用
+      desc: 先获得完整的 PostgreSQL 与 PgBouncer 覆盖，再只接管真正需要自定义的部分。
+    - icon: fa-solid fa-sliders
+      title: 行为精确可控
+      desc: 版本门槛、谓词、超时、缓存 TTL、失败策略与常量标签全都显式定义。
+    - icon: fa-solid fa-boxes-stacked
+      title: 部署方式自由
+      desc: 可选择 RPM/DEB、发布压缩包、容器、Pigsty 自动化或源码构建。
+
+delivery:
+  eyebrow: 下载与部署
+  title: 选择适合你运行环境的交付方式
+  desc: 每条路径运行的都是同一个 PG Exporter 与同一套声明式采集模型；区别只在于由谁负责生命周期。
+  columns: 4
+  link_label: 比较安装方式
+  items:
+    - name: Linux 软件包
+      icon: fa-solid fa-box-archive
+      meta: 长期服务首选
+      desc: 从 Pigsty APT/YUM 仓库或指定版本 RPM/DEB 安装 `pg-exporter`，同时获得 systemd 与 `/etc/default/pg_exporter`。
+      url: download/
+    - name: 发布压缩包
+      icon: fa-solid fa-file-zipper
+      meta: Linux · macOS · Windows
+      desc: 从 GitHub Release 获取固定版本的二进制、合并配置、服务示例、许可证与校验和。
+      url: download/
+    - name: 容器镜像
+      icon: fa-brands fa-docker
+      meta: amd64 · arm64
+      desc: 运行多架构 `pgsty/pg_exporter` 镜像，只挂载你需要的配置或 CA 证书。
+      url: download/
+    - name: Pigsty 或源码
+      icon: fa-solid fa-code-branch
+      meta: 完整集成或完全自定义
+      desc: 让 Pigsty 交付完整监控栈，或者使用版本标签所声明的 Go 工具链自行构建。
+      url: download/
+
+cta:
+  title: 从下载一路验证到 `pg_up 1`。
+  desc: 选择交付物，配置一个连接 URL，验证导出器，再把它加入 Prometheus 抓取目标。
+  actions:
+    - label: 下载 PG Exporter
+      url: download/
+      icon: fa-solid fa-download
+      style: primary
+    - label: 五分钟快速上手
+      url: start/
+      icon: fa-solid fa-rocket
+      style: ghost
+
+footer:
+  brand:
+    name: PG Exporter
+    tagline: 用 SQL 表达 PostgreSQL 可观测性。
+    slogan: 由 [Pigsty](https://pigsty.cc/) 社区维护的声明式 PostgreSQL 与 PgBouncer 指标导出器。
+  columns:
+    - title: 开始使用
+      links:
+        - { label: 下载安装, url: download/ }
+        - { label: 快速上手, url: start/ }
+        - { label: 安装参考, url: install/ }
+        - { label: 生产部署, url: deploy/ }
+    - title: 参考
+      links:
+        - { label: 配置参考, url: config/ }
+        - { label: 内置采集器, url: collectors/ }
+        - { label: HTTP API, url: api/ }
+        - { label: 兼容性, url: compatibility/ }
+    - title: 项目
+      links:
+        - { label: 版本归档, url: release/ }
+        - { label: GitHub 源码, url: 'https://github.com/pgsty/pg_exporter', external: true }
+        - { label: 问题反馈, url: 'https://github.com/pgsty/pg_exporter/issues', external: true }
+        - { label: 讨论区, url: 'https://github.com/pgsty/pg_exporter/discussions', external: true }

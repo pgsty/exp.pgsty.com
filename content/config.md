@@ -209,7 +209,7 @@ Version numbers follow PostgreSQL `server_version_num` rules:
 
 Understanding the full path from a collector definition to emitted metrics helps answer "why is this metric missing":
 
-1. **Planning** (on connection setup or hot reload): each collector branch is checked in turn — target type (PostgreSQL / pgBouncer), `min_version` / `max_version` gates, `tags` matching against server role and exporter tags, and the `skip` switch. Branches that fail any check are not installed on that target. `curl localhost:9630/explain` shows exactly the verdict of this step.
+1. **Planning** (on connection setup or hot reload): each collector branch is checked in turn — target type (PostgreSQL / PgBouncer), `min_version` / `max_version` gates, `tags` matching against server role and exporter tags, and the `skip` switch. Branches that fail any check are not installed on that target. `curl localhost:9630/explain` shows exactly the verdict of this step.
 2. **Scraping** (on every `/metrics` request): for each installed collector — if the cache is still within `ttl`, the cached result is returned; otherwise `predicate_queries` run first (any false verdict skips this round and bumps `pg_exporter_query_scrape_predicate_skip_count`), then the main query executes under `timeout`, and results are converted to metrics and cached.
 3. **Failure semantics**: a normal collector failure only affects itself (`pg_exporter_query_scrape_error_count` goes up, its metric group is absent this round); a failing collector marked `fatal: true` fails the whole server scrape.
 
@@ -224,7 +224,7 @@ Tags control when and where collectors execute:
 | `cluster`             | Execute once per PostgreSQL cluster |
 | `primary` / `master`  | Only on primary servers             |
 | `standby` / `replica` | Only on replica servers             |
-| `pgbouncer`           | Only for pgBouncer connections      |
+| `pgbouncer`           | Only for PgBouncer connections      |
 
 ### Prefixed Tags
 
@@ -305,7 +305,7 @@ PG Exporter ships with pre-organized collectors:
 | 6xx   | Database      | Per-database statistics         |
 | 7xx   | Objects       | Tables, indexes, functions      |
 | 8xx   | Optional      | Expensive/optional metrics      |
-| 9xx   | pgBouncer     | Connection pooler metrics       |
+| 9xx   | PgBouncer     | Connection pooler metrics       |
 | 10xx+ | Extensions    | Extension-specific metrics      |
 {.full-width}
 

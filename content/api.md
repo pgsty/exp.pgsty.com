@@ -55,7 +55,7 @@ pg_in_recovery 0
 
 # HELP pg_exporter_build_info A metric with a constant '1' value labeled with version, revision, branch, goversion, builddate, goos, and goarch from which pg_exporter was built.
 # TYPE pg_exporter_build_info gauge
-pg_exporter_build_info{version="v1.4.1",branch="main",revision="<git-sha>",builddate="<build-date>",goversion="go1.26.5",goos="linux",goarch="amd64"} 1
+pg_exporter_build_info{version="v{{< param version >}}",branch="main",revision="<git-sha>",builddate="<build-date>",goversion="go1.26.5",goos="linux",goarch="amd64"} 1
 
 # ... additional metrics
 ```
@@ -72,7 +72,7 @@ Metrics follow the Prometheus exposition format:
 
 #### Self-Monitoring Metrics
 
-Besides business metrics defined by YAML collectors, `/metrics` also exposes the exporter's own runtime metrics (disable the `pg_exporter_*` part with `--disable-intro`; the prefix follows `--namespace` and becomes `pgbouncer_` in pgBouncer mode):
+Besides business metrics defined by YAML collectors, `/metrics` also exposes the exporter's own runtime metrics (disable the `pg_exporter_*` part with `--disable-intro`; the prefix follows `--namespace` and becomes `pgbouncer_` in PgBouncer mode):
 
 | Metric | Labels | Description |
 |--------|--------|-------------|

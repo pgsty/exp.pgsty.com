@@ -13,6 +13,10 @@ capitalizeListTitles: false
 pagination:
   pagerSize: 60
 
+services:
+  googleAnalytics:
+    id: G-Y7HMTRQ6P7
+
 #=======================================#
 # OINK theme module
 #=======================================#
@@ -46,14 +50,19 @@ languages:
       time_format_blog: 'January 02, 2006'
     menu:
       main:
+        - identifier: download
+          name: Download
+          weight: 10
+          url: /download/
+          pre: <i class='fa-solid fa-download'></i>
         - identifier: docs
           name: Docs
-          weight: 10
+          weight: 20
           url: /docs/
           pre: <i class='fa-solid fa-book'></i>
         - identifier: blog
           name: Blog
-          weight: 20
+          weight: 30
           url: /blog/
           pre: <i class='fa-solid fa-blog'></i>
   zh:
@@ -69,14 +78,19 @@ languages:
         from_year: 2018
     menu:
       main:
+        - identifier: download
+          name: 下载
+          weight: 10
+          url: /zh/download/
+          pre: <i class='fa-solid fa-download'></i>
         - identifier: docs
           name: 文档
-          weight: 10
+          weight: 20
           url: /zh/docs/
           pre: <i class='fa-solid fa-book'></i>
         - identifier: blog
           name: 博客
-          weight: 20
+          weight: 30
           url: /zh/blog/
           pre: <i class='fa-solid fa-blog'></i>
 
@@ -127,10 +141,9 @@ markup:
     startLevel: 2
     endLevel: 4
 
-# OINK supplies Markdown/LLMS/print support. JSON remains enabled for the
-# preserved landing-page search dialog.
+# OINK supplies Markdown/LLMS/print support and the shared offline search.
 outputs:
-  home: [HTML, RSS, JSON, LLMS]
+  home: [HTML, RSS, LLMS]
   page: [HTML, markdown]
   section: [HTML, RSS, print, markdown]
 
@@ -163,8 +176,7 @@ params:
   github_project_repo: https://github.com/pgsty/pg_exporter
   github_branch: main
 
-  # OINK owns documentation search and generates one local index per language.
-  # The landing page keeps its existing branded dialog as a page-only override.
+  # OINK owns search everywhere and generates one local index per language.
   offlineSearch: true
   offlineSearchIndex: content
   offlineSearchMaxResults: 10

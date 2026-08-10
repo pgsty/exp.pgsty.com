@@ -8,7 +8,7 @@ icon: fa-solid fa-book
 toc_root: true
 ---
 
-`pg_exporter` 是一款面向 Prometheus 兼容监控系统的高级 PostgreSQL 与 pgBouncer 指标导出器。它将内置的可用性/角色指标与声明式 SQL 采集器引擎组合起来，让指标面可以独立于 Go 二进制持续演进。
+**PG Exporter** 是一款面向 Prometheus 兼容监控系统的高级 PostgreSQL 与 PgBouncer 指标导出器。它将内置的可用性/角色指标与声明式 SQL 采集器引擎组合起来，让指标面可以独立于 Go 二进制持续演进。
 
 本文档以最新稳定版本 **[v{{< param version >}}](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})** 为基线，作为独立的中英文手册维护；内容比原先 Pigsty 模块中的汇总页更加完整。
 
@@ -17,9 +17,10 @@ toc_root: true
 | 文档 | 适用场景 |
 |:---|:---|
 | [项目简介](/zh/intro/) | 理解架构、执行模型与产品边界 |
-| [快速上手](/zh/start/) | 用约十分钟得到可用的 exporter 与 Prometheus 抓取目标 |
-| [安装指南](/zh/install/) | 在 RPM、DEB、压缩包、Docker、Pigsty 与源码安装之间选择 |
-| [兼容性](/zh/compatibility/) | 核对 PostgreSQL、pgBouncer、操作系统、CPU、软件包与容器支持 |
+| [快速上手](/zh/start/) | 用约五分钟得到可用的 exporter 与 Prometheus 抓取目标 |
+| [下载](/zh/download/) | 选择、安装、启用并验证软件包、压缩包、容器、Pigsty 或源码构建 |
+| [安装指南](/zh/install/) | 查阅完整的软件仓库与发布产物参考 |
+| [兼容性](/zh/compatibility/) | 核对 PostgreSQL、PgBouncer、操作系统、CPU、软件包与容器支持 |
 
 ## 生产运行
 

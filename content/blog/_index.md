@@ -20,6 +20,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-Release notes and project updates for `pg_exporter`, the declarative PostgreSQL and pgBouncer metrics exporter.
+Release notes and project updates for `pg_exporter`, the declarative PostgreSQL and PgBouncer metrics exporter.
 
 Start with the [complete release archive](/release/) or return to the [documentation](/docs/).

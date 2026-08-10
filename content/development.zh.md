@@ -14,7 +14,7 @@ categories: [指南]
 | 路径 | 用途 |
 |:---|:---|
 | `exporter/` | CLI 解析、URL/配置加载、规划、执行、指标、健康状态、HTTP Handler 与测试 |
-| `config/` | 面向 PostgreSQL 10-19+ 与 pgBouncer 的 58 个有序采集器定义文件 |
+| `config/` | 面向 PostgreSQL 10-19+ 与 PgBouncer 的 58 个有序采集器定义文件 |
 | `pg_exporter.yml` | 生成的默认单体配置（`make conf`） |
 | `legacy/config/` | PostgreSQL 9.1-9.6 采集器定义 |
 | `legacy/pg_exporter.yml` | 生成的 Legacy 单体配置（`make conf9`） |
@@ -44,7 +44,7 @@ make build
 go test ./...
 go test -race ./...
 
-# 确认 PostgreSQL / pgBouncer 各版本分支仍有覆盖，
+# 确认 PostgreSQL / PgBouncer 各版本分支仍有覆盖，
 # 并验证配置结构、指标名、Label 与直方图。
 go test ./exporter/...
 ```

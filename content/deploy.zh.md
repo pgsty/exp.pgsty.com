@@ -7,7 +7,7 @@ icon: fa-solid fa-server
 categories: [参考]
 ---
 
-本页覆盖把 `pg_exporter` 放进生产环境要做的事：进程参数与环境变量、监控用户与凭据管理、systemd / Docker / Kubernetes 三种部署形态、pgBouncer 与自动发现，以及 Prometheus 侧的抓取与告警配置。
+本页覆盖把 `pg_exporter` 放进生产环境要做的事：进程参数与环境变量、监控用户与凭据管理、systemd / Docker / Kubernetes 三种部署形态、PgBouncer 与自动发现，以及 Prometheus 侧的抓取与告警配置。
 
 进程级配置有两个来源，优先级从高到低：
 
@@ -278,15 +278,15 @@ pg_exporter --auto-discovery \
 
 --------
 
-## 监控 pgBouncer
+## 监控 PgBouncer
 
-将 URL 的数据库名设为 `pgbouncer` 即可切换到 pgBouncer 模式（以此触发自动检测）：
+将 URL 的数据库名设为 `pgbouncer` 即可切换到 PgBouncer 模式（以此触发自动检测）：
 
 ```bash
 PG_EXPORTER_URL='postgres://stats_user:S3cret@localhost:6432/pgbouncer' pg_exporter
 ```
 
-pgBouncer 模式下，exporter 使用 `pgbouncer` 指标前缀，只执行 pgBouncer 专属采集器（`SHOW STATS` / `SHOW POOLS` 等）。通常的做法是为 PostgreSQL 和 pgBouncer 各跑一个 exporter 实例（不同端口）。
+PgBouncer 模式下，exporter 使用 `pgbouncer` 指标前缀，只执行 PgBouncer 专属采集器（`SHOW STATS` / `SHOW POOLS` 等）。通常的做法是为 PostgreSQL 和 PgBouncer 各跑一个 exporter 实例（不同端口）。
 
 --------
 

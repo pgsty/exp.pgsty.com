@@ -165,7 +165,7 @@ Process-level options are not reloadable. Changes to listen addresses, target UR
 
 - `pg_exporter /version` output and installation method
 - Operating system and architecture
-- PostgreSQL or pgBouncer exact version
+- PostgreSQL or PgBouncer exact version
 - Redacted target URL (retain scheme, host class, port, database, and `sslmode`)
 - Relevant collector YAML and SQL, with secrets removed
 - Debug log around the failure

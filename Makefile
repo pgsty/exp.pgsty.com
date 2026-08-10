@@ -1,10 +1,17 @@
 HUGO ?= hugo
 BIND ?= 127.0.0.1
-PORT ?= 1313
+PORT ?=
 THEME_DIR ?= ../oink
 WORKSPACE := $(CURDIR)/go.work
 
-.PHONY: dev build check check-local workspace
+.DEFAULT_GOAL := dev
+
+.PHONY: b build c check check-local d debug dev s serve workspace
+
+b: build
+c: check
+d: debug
+s: serve
 
 # Use the sibling OINK checkout for local development and migration QA. The
 # published build resolves the exact version recorded in go.mod instead.
@@ -18,14 +25,16 @@ workspace:
 	@go work edit -replace=github.com/pgsty/oink="$(THEME_DIR)"
 
 dev: workspace
-	@printf 'PG Exporter OINK preview: http://%s:%s/\n' "$(BIND)" "$(PORT)"
 	@HUGO_MODULE_WORKSPACE="$(WORKSPACE)" $(HUGO) server \
 		--cleanDestinationDir \
 		--disableFastRender \
 		--renderToMemory \
 		--printPathWarnings \
-		--bind "$(BIND)" \
-		--port "$(PORT)"
+		--bind "$(BIND)" $(if $(strip $(PORT)),--port "$(PORT)")
+
+debug: dev
+
+serve: dev
 
 build:
 	@GOWORK=off $(HUGO) build \

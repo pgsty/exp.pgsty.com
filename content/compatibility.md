@@ -1,7 +1,7 @@
 ---
 title: "Compatibility"
 linkTitle: "Compatibility"
-description: "Supported PostgreSQL and pgBouncer versions, release artifacts, architectures, and deployment constraints"
+description: "Supported PostgreSQL and PgBouncer versions, release artifacts, architectures, and deployment constraints"
 weight: 40
 icon: fa-solid fa-layer-group
 categories: [Reference]
@@ -17,12 +17,12 @@ Compatibility has three separate layers: the exporter binary must run on the hos
 | PostgreSQL 19 | Collector branches included | Default config; validate against the current pre-release/final server build |
 | PostgreSQL 9.1-9.6 | Legacy support | `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 and older | Unsupported | — |
-| pgBouncer 1.8-1.25+ | Supported | `0910`-`0940` collector files; connect to the admin database |
+| PgBouncer 1.8-1.25+ | Supported | `0910`-`0940` collector files; connect to the admin database |
 {.full-width}
 
 PostgreSQL 19-specific branches cover new recovery, lock, autovacuum-score, WAL, subscription, receiver, and slot fields. As of August 2026, PostgreSQL 19 is still in beta; the PostgreSQL project states that beta builds are for testing rather than production. Check the [current PostgreSQL beta status](https://www.postgresql.org/developer/beta/) before deploying a PG19 target.
 
-pgBouncer support starts at 1.8 because that line provides the admin `SHOW` interface used by the collectors. Version-specific branches currently cover schemas through the 1.25 line; the official [pgBouncer changelog](https://www.pgbouncer.org/changelog.html) is the source of truth for upstream releases.
+PgBouncer support starts at 1.8 because that line provides the admin `SHOW` interface used by the collectors. Version-specific branches currently cover schemas through the 1.25 line; the official [PgBouncer changelog](https://www.pgbouncer.org/changelog.html) is the source of truth for upstream releases.
 
 ## v{{< param version >}} Release Artifacts
 

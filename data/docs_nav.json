@@ -1,13 +1,14 @@
 {
   "meta": {
     "purpose": "OINK navigation for root-level PG Exporter manuals",
-    "page_count": 13,
-    "sidebar_entry_count": 12
+    "page_count": 14,
+    "sidebar_entry_count": 13
   },
   "page_by_url": {
     "/docs/": "docs",
     "/intro/": "intro",
     "/start/": "start",
+    "/download/": "download",
     "/install/": "install",
     "/compatibility/": "compatibility",
     "/deploy/": "deploy",
@@ -23,6 +24,7 @@
     "/docs/": ["/docs/"],
     "/intro/": ["/intro/"],
     "/start/": ["/start/"],
+    "/download/": ["/start/", "/download/"],
     "/install/": ["/start/", "/install/"],
     "/compatibility/": ["/start/", "/compatibility/"],
     "/deploy/": ["/deploy/"],
@@ -44,6 +46,11 @@
       "page": "start",
       "url": "/start/",
       "children": [
+        {
+          "page": "download",
+          "url": "/download/",
+          "children": []
+        },
         {
           "page": "install",
           "url": "/install/",

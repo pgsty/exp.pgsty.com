@@ -3,11 +3,11 @@ title: "项目简介"
 linkTitle: "项目简介"
 description: "pg_exporter 做什么、一次抓取如何完成动态规划，以及它的运维边界"
 weight: 10
-icon: fas fa-lightbulb
+icon: fa-solid fa-lightbulb
 categories: [概念]
 ---
 
-`pg_exporter` 将 PostgreSQL 与 pgBouncer 的运行状态转换为 Prometheus 指标。与把所有查询固化在代码里的 exporter 不同，它的大部分指标面由 YAML 声明：一个采集器定义 SQL、结果列、标签、指标类型、准入条件、超时与缓存策略。
+`pg_exporter` 将 PostgreSQL 与 PgBouncer 的运行状态转换为 Prometheus 指标。与把所有查询固化在代码里的 exporter 不同，它的大部分指标面由 YAML 声明：一个采集器定义 SQL、结果列、标签、指标类型、准入条件、超时与缓存策略。
 
 这种设计同时带来两点好处：
 
@@ -41,7 +41,7 @@ Go 二进制始终能够暴露核心可用性与自监控指标，例如：
 
 ### 声明式采集器指标
 
-其余指标都来自 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml)。该文件由 [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config) 下 58 个有序定义文件生成，默认覆盖复制、WAL、检查点、活动、锁、事务、数据库/对象统计、进度视图、pgBouncer 与部分扩展。
+其余指标都来自 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml)。该文件由 [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config) 下 58 个有序定义文件生成，默认覆盖复制、WAL、检查点、活动、锁、事务、数据库/对象统计、进度视图、PgBouncer 与部分扩展。
 
 完整清单参见[内置采集器](/zh/collectors/)，配置模型参见[采集器配置](/zh/config/)。
 
@@ -67,6 +67,6 @@ Go 二进制始终能够暴露核心可用性与自监控指标，例如：
 
 ## 项目状态
 
-最新稳定版本为 **v{{< param version >}}**。默认采集器包覆盖 PostgreSQL 10 至 PostgreSQL 19 分支，独立 legacy 配置包覆盖 PostgreSQL 9.1-9.6；pgBouncer 采集器覆盖支持 `SHOW` 命令的 1.8+ 至当前 1.25+ Schema。
+最新稳定版本为 **v{{< param version >}}**。默认采集器包覆盖 PostgreSQL 10 至 PostgreSQL 19 分支，独立 legacy 配置包覆盖 PostgreSQL 9.1-9.6；PgBouncer 采集器覆盖支持 `SHOW` 命令的 1.8+ 至当前 1.25+ Schema。
 
 接下来可以通过[快速上手](/zh/start/)完成最小部署，或直接阅读[生产部署](/zh/deploy/)了解完整运维面。

@@ -165,7 +165,7 @@ curl -i -X POST http://127.0.0.1:9630/reload
 
 - `pg_exporter /version` 输出与安装方式
 - 操作系统与体系结构
-- PostgreSQL 或 pgBouncer 精确版本
+- PostgreSQL 或 PgBouncer 精确版本
 - 脱敏目标 URL（保留协议、主机类别、端口、数据库与 `sslmode`）
 - 相关采集器 YAML 与 SQL，并移除密钥
 - 故障附近的 Debug 日志

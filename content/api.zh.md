@@ -55,7 +55,7 @@ pg_in_recovery 0
 
 # HELP pg_exporter_build_info A metric with a constant '1' value labeled with version, revision, branch, goversion, builddate, goos, and goarch from which pg_exporter was built.
 # TYPE pg_exporter_build_info gauge
-pg_exporter_build_info{version="v1.4.1",branch="main",revision="<git-sha>",builddate="<build-date>",goversion="go1.26.5",goos="linux",goarch="amd64"} 1
+pg_exporter_build_info{version="v{{< param version >}}",branch="main",revision="<git-sha>",builddate="<build-date>",goversion="go1.26.5",goos="linux",goarch="amd64"} 1
 
 # ... 更多指标
 ```
@@ -72,7 +72,7 @@ pg_exporter_build_info{version="v1.4.1",branch="main",revision="<git-sha>",build
 
 #### 自监控指标
 
-除 YAML 采集器定义的业务指标外，`/metrics` 还暴露 exporter 自身的运行指标（可用 `--disable-intro` 关闭 `pg_exporter_*` 部分；前缀随 `--namespace` 变化，pgBouncer 模式下为 `pgbouncer_`）：
+除 YAML 采集器定义的业务指标外，`/metrics` 还暴露 exporter 自身的运行指标（可用 `--disable-intro` 关闭 `pg_exporter_*` 部分；前缀随 `--namespace` 变化，PgBouncer 模式下为 `pgbouncer_`）：
 
 | 指标 | 标签 | 描述 |
 |------|------|------|

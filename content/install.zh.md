@@ -1,13 +1,13 @@
 ---
 title: "安装指南"
 linkTitle: "安装指南"
-description: "通过软件包、发布压缩包、容器、Pigsty 或源码安装 pg_exporter"
+description: "通过软件包、发布压缩包、容器、Pigsty 或源码安装 PG Exporter"
 weight: 30
-icon: fas fa-download
+icon: fa-solid fa-download
 categories: [参考]
 ---
 
-`pg_exporter` 可以通过 Pigsty、YUM/APT 仓库、GitHub 发布包（RPM/DEB/Tarball）、Docker 镜像或源码构建安装，按你的基础设施任选一种即可。
+**PG Exporter** 可以通过 Pigsty、YUM/APT 仓库、GitHub 发布包（RPM/DEB/Tarball）、Docker 镜像或源码构建安装。若需要包含选择、安装、启用与验证命令的向导，请从[下载 PG Exporter](/zh/download/)开始；本页继续作为完整制品参考。
 
 --------
 
@@ -25,22 +25,22 @@ curl -fsSL https://repo.pigsty.io/get | bash; cd ~/pigsty;
 
 您也可以直接从 [GitHub 发布页面](https://github.com/pgsty/pg_exporter/releases/latest) 下载 `pg_exporter` 软件包（`RPM`/`DEB`/Tarball）：
 
-**v1.4.1 发布文件：**
+**v{{< param version >}} 发布文件：**
 
 | 类型                      | 文件                                                                                                                                               |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| DEB (amd64)             | [pg-exporter_1.4.1-1_amd64.deb](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter_1.4.1-1_amd64.deb)                     |
-| DEB (arm64)             | [pg-exporter_1.4.1-1_arm64.deb](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter_1.4.1-1_arm64.deb)                     |
-| DEB (ppc64le)           | [pg-exporter_1.4.1-1_ppc64le.deb](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter_1.4.1-1_ppc64le.deb)                 |
-| RPM (aarch64)           | [pg-exporter-1.4.1-1.aarch64.rpm](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter-1.4.1-1.aarch64.rpm)                 |
-| RPM (x86_64)            | [pg-exporter-1.4.1-1.x86_64.rpm](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter-1.4.1-1.x86_64.rpm)                   |
-| RPM (ppc64le)           | [pg-exporter-1.4.1-1.ppc64le.rpm](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg-exporter-1.4.1-1.ppc64le.rpm)                 |
-| Tarball (Linux amd64)   | [pg_exporter-1.4.1.linux-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.linux-amd64.tar.gz)       |
-| Tarball (Linux arm64)   | [pg_exporter-1.4.1.linux-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.linux-arm64.tar.gz)       |
-| Tarball (Linux ppc64le) | [pg_exporter-1.4.1.linux-ppc64le.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.linux-ppc64le.tar.gz)   |
-| Tarball (macOS amd64)   | [pg_exporter-1.4.1.darwin-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.darwin-amd64.tar.gz)     |
-| Tarball (macOS arm64)   | [pg_exporter-1.4.1.darwin-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.darwin-arm64.tar.gz)     |
-| Tarball (Windows amd64) | [pg_exporter-1.4.1.windows-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v1.4.1/pg_exporter-1.4.1.windows-amd64.tar.gz)   |
+| DEB (amd64)             | [pg-exporter_{{< param version >}}-1_amd64.deb](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg-exporter_{{< param version >}}-1_amd64.deb)                     |
+| DEB (arm64)             | [pg-exporter_{{< param version >}}-1_arm64.deb](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg-exporter_{{< param version >}}-1_arm64.deb)                     |
+| DEB (ppc64le)           | [pg-exporter_{{< param version >}}-1_ppc64le.deb](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg-exporter_{{< param version >}}-1_ppc64le.deb)                 |
+| RPM (aarch64)           | [pg-exporter-{{< param version >}}-1.aarch64.rpm](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg-exporter-{{< param version >}}-1.aarch64.rpm)                 |
+| RPM (x86_64)            | [pg-exporter-{{< param version >}}-1.x86_64.rpm](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg-exporter-{{< param version >}}-1.x86_64.rpm)                   |
+| RPM (ppc64le)           | [pg-exporter-{{< param version >}}-1.ppc64le.rpm](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg-exporter-{{< param version >}}-1.ppc64le.rpm)                 |
+| Tarball (Linux amd64)   | [pg_exporter-{{< param version >}}.linux-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.linux-amd64.tar.gz)       |
+| Tarball (Linux arm64)   | [pg_exporter-{{< param version >}}.linux-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.linux-arm64.tar.gz)       |
+| Tarball (Linux ppc64le) | [pg_exporter-{{< param version >}}.linux-ppc64le.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.linux-ppc64le.tar.gz)   |
+| Tarball (macOS amd64)   | [pg_exporter-{{< param version >}}.darwin-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-amd64.tar.gz)     |
+| Tarball (macOS arm64)   | [pg_exporter-{{< param version >}}.darwin-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-arm64.tar.gz)     |
+| Tarball (Windows amd64) | [pg_exporter-{{< param version >}}.windows-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.windows-amd64.tar.gz)   |
 {.full-width}
 
 您可以直接使用操作系统的包管理器（`rpm`/`dpkg`）安装，或者将二进制文件放入 `$PATH` 中。当前归档文件还会附带 `pg_exporter.yml`、`package/pg_exporter.default`、`package/pg_exporter.service` 与 `LICENSE`，便于按 tarball 手工部署。
@@ -146,9 +146,9 @@ make conf9
 PG_EXPORTER_CONFIG=legacy/pg_exporter.yml pg_exporter
 ```
 
-pg_exporter 支持 pgBouncer 1.8+（`v1.8` 是第一个支持 `SHOW` 命令的版本）。
+pg_exporter 支持 PgBouncer 1.8+（`v1.8` 是第一个支持 `SHOW` 命令的版本）。
 
-| pgBouncer 版本   | 支持状态   |
+| PgBouncer 版本   | 支持状态   |
 |----------------|--------|
 | 1.8.x ~ 1.25+  | ✅ 完全支持 |
 | 1.8.x 之前       | ⚠️ 无指标 |

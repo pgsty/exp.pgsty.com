@@ -7,7 +7,7 @@ icon: fa-solid fa-shield-halved
 categories: [指南]
 ---
 
-`pg_exporter` 位于两个信任域之间：它先向 PostgreSQL 或 pgBouncer 认证，再通过 HTTP 暴露指标与管理端点。两侧必须独立加固；数据库 TLS 不会保护 HTTP 监听端口，HTTP Basic Auth 也不会降低数据库权限。
+`pg_exporter` 位于两个信任域之间：它先向 PostgreSQL 或 PgBouncer 认证，再通过 HTTP 暴露指标与管理端点。两侧必须独立加固；数据库 TLS 不会保护 HTTP 监听端口，HTTP Basic Auth 也不会降低数据库权限。
 
 ## 威胁面
 
@@ -36,7 +36,7 @@ GRANT pg_monitor TO monitor;
 
 不要为了省去权限审查而让 exporter 使用超级用户。可选自定义采集器可能需要访问自己的视图、函数或 Schema，请按对象单独授权。
 
-监控 pgBouncer 时，需要使用本地策略允许的 `stats_users` 或 `admin_users` 账户连接管理数据库。此模式下 exporter 使用管理端 `SHOW` 接口，而不是 PostgreSQL 系统目录。
+监控 PgBouncer 时，需要使用本地策略允许的 `stats_users` 或 `admin_users` 账户连接管理数据库。此模式下 exporter 使用管理端 `SHOW` 接口，而不是 PostgreSQL 系统目录。
 
 ## 不要把密码放进进程参数
 

@@ -7,7 +7,7 @@ icon: fa-solid fa-shield-halved
 categories: [Guide]
 ---
 
-`pg_exporter` sits between two trust domains: it authenticates to PostgreSQL or pgBouncer, then exposes metrics and management endpoints over HTTP. Secure both sides independently. Database TLS does not protect the HTTP listener, and HTTP Basic Auth does not reduce database privileges.
+`pg_exporter` sits between two trust domains: it authenticates to PostgreSQL or PgBouncer, then exposes metrics and management endpoints over HTTP. Secure both sides independently. Database TLS does not protect the HTTP listener, and HTTP Basic Auth does not reduce database privileges.
 
 ## Threat Surface
 
@@ -36,7 +36,7 @@ GRANT pg_monitor TO monitor;
 
 Do not run the exporter as a superuser merely to avoid reviewing permissions. Optional custom collectors may need explicit grants on their own views, functions, or schemas; grant those objects individually.
 
-For pgBouncer, connect to the admin database with an account permitted by `stats_users` or `admin_users`, depending on local policy. The exporter uses the admin `SHOW` interface rather than PostgreSQL catalog queries in that mode.
+For PgBouncer, connect to the admin database with an account permitted by `stats_users` or `admin_users`, depending on local policy. The exporter uses the admin `SHOW` interface rather than PostgreSQL catalog queries in that mode.
 
 ## Keep Passwords Out of Process Arguments
 

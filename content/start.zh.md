@@ -1,21 +1,21 @@
 ---
 title: "快速上手"
 linkTitle: "快速上手"
-description: "十分钟内启动 pg_exporter，并向 Prometheus 暴露 PostgreSQL 指标"
+description: "五分钟内启动 PG Exporter，并向 Prometheus 暴露 PostgreSQL 指标"
 weight: 20
-icon: fas fa-rocket
+icon: fa-solid fa-rocket
 categories: [参考]
 ---
 
-本页是一条最短路径：安装 `pg_exporter`，连上一个 PostgreSQL 实例，确认指标产出，接入 Prometheus。
+本页是一条最短路径：安装 **PG Exporter**，连上一个 PostgreSQL 实例，确认指标产出，接入 Prometheus。
 
-你需要准备的东西只有两样：一个可访问的 PostgreSQL 10-19+（或 pgBouncer 1.8+）实例，以及在其中创建用户的权限。更老的 PostgreSQL 9.1-9.6 实例请参阅 [兼容性说明](/zh/compatibility/)。
+你只需要准备两样东西：一个可访问的 PostgreSQL 10-19+（或 PgBouncer 1.8+）实例，以及在其中创建用户的权限。更老的 PostgreSQL 9.1-9.6 实例请参阅[兼容性说明](/zh/compatibility/)。
 
---------
+{{% steps %}}
 
-## 第 1 步：安装
+## 安装 {#安装}
 
-Linux amd64 可以直接下载二进制（其他平台与 RPM/DEB/Docker 安装方式见 [安装指南](/zh/install/)）：
+Linux amd64 可以直接下载二进制。托管软件包、其他平台、容器、Pigsty 与源码构建方式参见[下载指南](/zh/download/)。
 
 ```bash
 VERSION=$(curl -fsSL https://api.github.com/repos/pgsty/pg_exporter/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')
@@ -30,12 +30,10 @@ sudo install "pg_exporter-${VERSION}.linux-amd64/pg_exporter.yml" /etc/pg_export
 
 ```bash
 pg_exporter --version
-# pg_exporter v1.4.1 (built with go1.26.5 on linux/amd64)
+# pg_exporter v{{< param version >}} (built with go1.26.5 on linux/amd64)
 ```
 
---------
-
-## 第 2 步：创建监控用户
+## 创建监控用户 {#创建监控用户}
 
 在目标 PostgreSQL 上创建一个专用监控用户。PostgreSQL 10+ 内置的 `pg_monitor` 角色已覆盖默认采集器所需的全部读取权限：
 
@@ -44,11 +42,9 @@ CREATE USER monitor WITH PASSWORD 'S3cret';
 GRANT pg_monitor TO monitor;
 ```
 
-如果你只是在本机以 `postgres` 等超级用户试用，可以跳过这一步。
+如果只是在本机用 `postgres` 等超级用户试用，可以跳过这一步。
 
---------
-
-## 第 3 步：启动并验证
+## 启动并验证 {#启动并验证}
 
 先用 `--dry-run` 确认配置能正确解析，再正式启动：
 
@@ -77,9 +73,7 @@ pg_in_recovery 0     # 从库为 1，主库为 0
 
 `pg_up` 为 `1` 说明链路已通，其余 600+ 指标（`pg_db_*`、`pg_table_*`、`pg_wal_*`……）都来自 `pg_exporter.yml` 中的声明式采集器定义。如果 `pg_up` 为 `0`，用 `pg_exporter --log.level=debug` 重启并观察连接错误。
 
---------
-
-## 第 4 步：接入 Prometheus
+## 接入 Prometheus {#接入-prometheus}
 
 在 `prometheus.yml` 中添加抓取目标：
 
@@ -93,9 +87,9 @@ scrape_configs:
 
 采集器自带按 `ttl` 的结果缓存（例如多数实时采集器 `ttl: 10`）：只要 TTL 小于抓取间隔，每轮抓取都能拿到新数据，同时避免高频抓取压垮数据库。这也是为什么不建议把 `scrape_interval` 设得比常用 TTL 更短。
 
-到这里就完成了。Grafana 侧可以直接复用 [Pigsty](https://pigsty.cc) 的 PostgreSQL 仪表盘，或到 [在线演示](https://g.pgsty.com) 看实际效果。
+到这里就完成了。Grafana 侧可以直接复用 [Pigsty](https://pigsty.cc) 的 PostgreSQL 仪表盘，或到[在线演示](https://g.pgsty.com)查看实际效果。
 
---------
+{{% /steps %}}
 
 ## 常见问题排查
 
@@ -109,10 +103,8 @@ scrape_configs:
 
 `/stat`、`/explain`、`/reload` 属于管理端点，生产环境建议配合 `--web.config.file` 启用认证/TLS，或仅在内网开放，详见 [API 参考](/zh/api/)。
 
---------
-
 ## 下一步
 
-- 监控 **pgBouncer**、启用 **自动发现**、配置 **systemd/Docker/Kubernetes** 生产部署：[部署指南](/zh/deploy/)
+- 监控 **PgBouncer**、启用 **自动发现**、配置 **systemd/Docker/Kubernetes** 生产部署：[部署指南](/zh/deploy/)
 - 理解与定制 **采集器**（GAUGE/COUNTER/HISTOGRAM、TTL、标签、版本门槛）：[配置参考](/zh/config/)
 - **健康检查与主从流量路由** 端点（`/up`、`/primary`、`/replica`）：[API 参考](/zh/api/)

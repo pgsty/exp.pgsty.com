@@ -3,7 +3,8 @@
 This repository is the OINK-based standalone bilingual
 [PG Exporter](https://github.com/pgsty/pg_exporter) documentation site. It uses
 Hugo Extended and the reusable [OINK](https://github.com/pgsty/oink) theme, with
-English at `/` and Simplified Chinese at `/zh/`.
+English at `/` and Simplified Chinese at `/zh/`. Production builds pin OINK
+`v0.2.0` in `go.mod`.
 
 - Site: <https://exp.pgsty.com>
 - Product source: <https://github.com/pgsty/pg_exporter>
@@ -21,6 +22,7 @@ content/
   docs/_index.md              # documentation overview
   intro.md                    # architecture and execution model
   start.md                    # first working scrape
+  download.md                 # choose, install, enable, verify
   install.md                  # packages, archives, containers, source
   compatibility.md            # target and artifact matrix
   deploy.md                   # production deployment
@@ -39,28 +41,46 @@ Every English `.md` page has a `.zh.md` peer. Blog content stays under
 
 ## Theme boundary
 
-OINK owns the documentation and blog shell, navigation tree, table of contents,
-language switcher, offline search, syntax highlighting, print/Markdown outputs,
-Docsy blocks, content shortcodes, and standard footer. The site deliberately
-keeps only PG Exporter landing behavior and site-level output policy as local
-layout overrides:
+OINK owns the documentation and blog shell, composable homepage, navigation
+tree, table of contents, language switcher, offline search, syntax highlighting,
+print/Markdown outputs, content components, and footer. PG Exporter fills those
+theme surfaces through configuration and content:
 
-- `layouts/index.html` and `layouts/_partials/home/footer.html`: branded landing
-  page and its footer
-- `layouts/_partials/pig/{icon,search-dialog}.html` plus
-  `layouts/_default/index.json`: landing-only search UI and bilingual index
+- `data/home/en.yaml` and `data/home/zh.yaml`: bilingual OINK homepage sections
+- `data/home/metrics.yaml`: traceability ledger for homepage product facts
+- `assets/scss/_variables_project.scss`: supported brand design tokens
+- `assets/scss/_styles_project.scss`: narrow-screen anchor-offset correction for OINK 0.2.0
+- `layouts/404.html`: deterministic OINK-partial composition for the bilingual 404 output
 - `layouts/robots.txt`: environment-aware crawler policy
 
-The landing search reuses OINK's bundled Lunr runtime; only the PG Exporter
-dialog controller and styling remain local.
+The homepage uses OINK's linked capability boards, while the bilingual quick
+start uses its automatically numbered `steps` component. Release listings
+explicitly stay text-only so 35 version notes remain easy to scan instead of
+repeating one generic product image on every row.
+
+There is no local homepage, footer, search, or download layout. The pinned OINK
+module supplies those implementations; the sibling checkout provides the latest
+theme during local migration QA.
+
+The sole project-style rule restores the theme's own full navbar offset below
+the `md` breakpoint. OINK 0.2.0 otherwise places deep-linked manual headings
+behind its 56px sticky mobile subnav, and that offset is not exposed through
+theme configuration or homepage data.
+
+The 404 template is the sole local page layout. It composes OINK's public head,
+navbar, footer, script, and translation partials because the theme's block-only
+404 template can inherit either the document or print base during concurrent
+multilingual, multi-output builds. Keeping the complete outer frame here makes
+`404.html` deterministic without forking any theme component implementation.
 
 Because the manuals intentionally remain physical root-level content files,
 `data/docs_nav.json` supplies their hierarchy to OINK without moving them under
 `content/docs/` or overriding the theme's sidebar templates.
 
-The local `layouts/` directory should therefore remain small. Do not copy an
+The local `layouts/` directory should therefore remain minimal. Do not copy an
 OINK layout into this site merely to restyle it; prefer theme configuration,
-data-driven OINK components, and supported Sass variables first.
+data-driven homepage sections, native content components, and supported Sass
+variables first.
 
 ## Authoritative sources
 
@@ -97,24 +117,26 @@ keep the OINK checkout beside this directory:
 └── exp.pgsty.com/
 ```
 
-`make dev` creates an ignored `go.work` file that points Hugo at the sibling
-theme checkout. No Node.js toolchain or CDN is required:
+`make d` (or `make dev`) creates an ignored `go.work` file that points Hugo at
+the sibling theme checkout. It does not pin the preview port, and no Node.js
+toolchain or CDN is required:
 
 ```bash
-make dev
+make d
 ```
 
-Build the static output with the pinned remote theme using `make build`. Run the
+Build the static output with the pinned remote theme using `make b`. Run the
 strict, reproducible acceptance gate with:
 
 ```bash
-make check
+make c
 ```
 
 The gate disables workspace replacement, verifies `go.sum`, treats all Hugo path
 and translation warnings as fatal, checks Markdown source/render hygiene, and
 validates rendered internal links. Use `make check-local` to run the same site
-checks against an in-progress sibling OINK checkout.
+checks against an in-progress sibling OINK checkout. `make s` is the short form
+of the local-theme server; the long targets remain available.
 
 ## Publishing caution
 

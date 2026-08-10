@@ -213,7 +213,7 @@ max_version: 140000  # 低于 PostgreSQL 14.0
 
 理解一个采集器从定义到产出指标的完整路径，有助于回答"为什么这个指标没出来"：
 
-1. **规划**（建立连接或热重载时）：对每个采集器分支依次检查——目标类型（PostgreSQL / pgBouncer）、`min_version` / `max_version` 版本门槛、`tags` 与服务器角色及 exporter 标签的匹配、`skip` 开关。未通过的分支不会安装到该目标上。`curl localhost:9630/explain` 展示的正是这一步的裁决结果。
+1. **规划**（建立连接或热重载时）：对每个采集器分支依次检查——目标类型（PostgreSQL / PgBouncer）、`min_version` / `max_version` 版本门槛、`tags` 与服务器角色及 exporter 标签的匹配、`skip` 开关。未通过的分支不会安装到该目标上。`curl localhost:9630/explain` 展示的正是这一步的裁决结果。
 2. **抓取**（每次 `/metrics` 请求）：对已安装的采集器——缓存在 `ttl` 内则直接返回缓存结果；否则先执行 `predicate_queries`（任一返回假则本轮跳过，`pg_exporter_query_scrape_predicate_skip_count` 计数），再在 `timeout` 限制下执行主查询，结果转为指标并写入缓存。
 3. **失败语义**：普通采集器失败只影响自身（`pg_exporter_query_scrape_error_count` 上升，本轮缺失该组指标）；标记 `fatal: true` 的采集器失败会使整次服务器抓取被判定为失败。
 
@@ -230,7 +230,7 @@ max_version: 140000  # 低于 PostgreSQL 14.0
 | `cluster`             | 每个 PostgreSQL 集群执行一次 |
 | `primary` / `master`  | 仅在主服务器上执行            |
 | `standby` / `replica` | 仅在从服务器上执行            |
-| `pgbouncer`           | 仅用于 pgBouncer 连接     |
+| `pgbouncer`           | 仅用于 PgBouncer 连接     |
 {.full-width}
 
 ### 前缀标签
@@ -319,7 +319,7 @@ PG Exporter 自带预先组织好的采集器：
 | 6xx   | 数据库       | 每数据库统计        |
 | 7xx   | 对象        | 表、索引、函数       |
 | 8xx   | 可选        | 昂贵/可选指标       |
-| 9xx   | pgBouncer | 连接池指标         |
+| 9xx   | PgBouncer | 连接池指标         |
 | 10xx+ | 扩展        | 扩展特定指标        |
 {.full-width}
 

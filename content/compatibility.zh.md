@@ -1,7 +1,7 @@
 ---
 title: "兼容性"
 linkTitle: "兼容性"
-description: "支持的 PostgreSQL 与 pgBouncer 版本、发布产物、体系结构与部署约束"
+description: "支持的 PostgreSQL 与 PgBouncer 版本、发布产物、体系结构与部署约束"
 weight: 40
 icon: fa-solid fa-layer-group
 categories: [参考]
@@ -17,12 +17,12 @@ categories: [参考]
 | PostgreSQL 19 | 已包含采集器分支 | 默认配置；需要针对当前预发布/正式服务器构建进行验证 |
 | PostgreSQL 9.1-9.6 | Legacy 支持 | `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 及更早版本 | 不支持 | — |
-| pgBouncer 1.8-1.25+ | 支持 | `0910`-`0940` 采集器文件；连接管理数据库 |
+| PgBouncer 1.8-1.25+ | 支持 | `0910`-`0940` 采集器文件；连接管理数据库 |
 {.full-width}
 
 PostgreSQL 19 专用分支覆盖新的恢复、锁、自动清理评分、WAL、订阅、接收器与复制槽字段。截至 2026 年 8 月，PostgreSQL 19 仍处于 Beta；PostgreSQL 官方明确说明 Beta 构建用于测试而非生产。部署 PG19 目标前请检查[当前 PostgreSQL Beta 状态](https://www.postgresql.org/developer/beta/)。
 
-pgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管理端 `SHOW` 接口。版本分支目前覆盖到 1.25 系列；上游版本状态以 [pgBouncer Changelog](https://www.pgbouncer.org/changelog.html) 为准。
+PgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管理端 `SHOW` 接口。版本分支目前覆盖到 1.25 系列；上游版本状态以 [PgBouncer Changelog](https://www.pgbouncer.org/changelog.html) 为准。
 
 ## v{{< param version >}} 发布产物
 

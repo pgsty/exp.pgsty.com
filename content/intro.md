@@ -3,11 +3,11 @@ title: "Introduction"
 linkTitle: "Introduction"
 description: "What pg_exporter does, how a scrape is planned, and where its operational boundaries lie"
 weight: 10
-icon: fas fa-lightbulb
+icon: fa-solid fa-lightbulb
 categories: [Concept]
 ---
 
-`pg_exporter` turns PostgreSQL and pgBouncer runtime state into Prometheus metrics. Unlike an exporter with a fixed list of hard-coded queries, most of its metric surface is declared in YAML: a collector defines SQL, result columns, labels, metric types, eligibility rules, timeouts, and caching policy.
+`pg_exporter` turns PostgreSQL and PgBouncer runtime state into Prometheus metrics. Unlike an exporter with a fixed list of hard-coded queries, most of its metric surface is declared in YAML: a collector defines SQL, result columns, labels, metric types, eligibility rules, timeouts, and caching policy.
 
 That design gives operators two useful properties at once:
 
@@ -41,7 +41,7 @@ Use `--disable-intro` only when you intentionally want to hide exporter self-met
 
 ### Declarative collector metrics
 
-Everything else comes from [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml), which is generated from 58 ordered files under [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config). The default bundle covers replication, WAL, checkpoints, activity, locks, transactions, database/object statistics, progress views, pgBouncer, and selected extensions.
+Everything else comes from [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml), which is generated from 58 ordered files under [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config). The default bundle covers replication, WAL, checkpoints, activity, locks, transactions, database/object statistics, progress views, PgBouncer, and selected extensions.
 
 See [Bundled Collectors](/collectors/) for the inventory and [Collector Configuration](/config/) for the schema.
 
@@ -67,6 +67,6 @@ The `/explain` endpoint answers â€œwhy was this collector selected or skipped?â€
 
 ## Project Status
 
-The latest stable release is **v{{< param version >}}**. The default collector bundle covers PostgreSQL 10 through PostgreSQL 19 branches, while a separate legacy bundle covers PostgreSQL 9.1-9.6. pgBouncer collectors cover the `SHOW`-capable 1.8+ line through current 1.25+ schemas.
+The latest stable release is **v{{< param version >}}**. The default collector bundle covers PostgreSQL 10 through PostgreSQL 19 branches, while a separate legacy bundle covers PostgreSQL 9.1-9.6. PgBouncer collectors cover the `SHOW`-capable 1.8+ line through current 1.25+ schemas.
 
 Continue with [Getting Started](/start/) for a minimal working deployment or [Production Deployment](/deploy/) for the full operational surface.

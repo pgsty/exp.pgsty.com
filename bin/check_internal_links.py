@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate rendered PIG routes, assets, fragments, and canonical targets.
+"""Validate rendered PG Exporter routes, assets, fragments, and canonical targets.
 
 Run this after Hugo has built the site. External hosts are deliberately not
 requested: this gate proves the site's own link contract without making a local
@@ -17,7 +17,8 @@ import sys
 import urllib.parse
 
 
-SITE_HOSTS = {"pig.pgsty.com", "www.pig.pgsty.com"}
+SITE_URL = "https://exp.pgsty.com"
+SITE_HOSTS = {"exp.pgsty.com", "www.exp.pgsty.com"}
 LINK_ATTRIBUTES = {"href", "src"}
 SKIP_SCHEMES = {"data", "javascript", "mailto", "tel", "blob"}
 
@@ -64,10 +65,12 @@ def target_candidates(public: pathlib.Path, route: str) -> list[pathlib.Path]:
     route = urllib.parse.unquote(route)
     relative = route.lstrip("/")
     direct = public / relative
-    candidates = [direct]
+    candidates: list[pathlib.Path] = []
     if route.endswith("/") or direct.suffix == "":
         candidates.append(direct / "index.html")
-    if direct.suffix == "":
+    else:
+        candidates.append(direct)
+    if direct.suffix == "" and relative:
         candidates.append(public / f"{relative}.html")
     return candidates
 
@@ -83,7 +86,7 @@ def resolve_internal_url(source_route: str, raw_url: str) -> tuple[str, str] | N
     if parsed.scheme and parsed.scheme not in {"http", "https"}:
         return None
 
-    base = f"https://pig.pgsty.com{source_route}"
+    base = f"{SITE_URL}{source_route}"
     absolute = urllib.parse.urlsplit(urllib.parse.urljoin(base, raw_url))
     if absolute.hostname and absolute.hostname not in SITE_HOSTS:
         return None
@@ -114,7 +117,7 @@ def main() -> int:
             checked += 1
             route, fragment = target
             candidates = target_candidates(public, route)
-            existing = next((candidate.resolve() for candidate in candidates if candidate.exists()), None)
+            existing = next((candidate.resolve() for candidate in candidates if candidate.is_file()), None)
             if existing is None:
                 failures[f"missing target {route}"].append(source_route)
                 continue

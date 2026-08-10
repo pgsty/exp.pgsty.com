@@ -3,11 +3,11 @@ title: "Production Deployment"
 linkTitle: "Deployment"
 description: "Run pg_exporter with systemd, Docker, or Kubernetes and connect it to Prometheus"
 weight: 50
-icon: fas fa-boxes-packing
+icon: fa-solid fa-boxes-packing
 categories: [Reference]
 ---
 
-This page covers what it takes to run `pg_exporter` in production: process arguments and environment variables, monitoring user and credential management, the systemd / Docker / Kubernetes deployment forms, pgBouncer and auto-discovery, plus scrape and alerting configuration on the Prometheus side.
+This page covers what it takes to run `pg_exporter` in production: process arguments and environment variables, monitoring user and credential management, the systemd / Docker / Kubernetes deployment forms, PgBouncer and auto-discovery, plus scrape and alerting configuration on the Prometheus side.
 
 Process-level configuration comes from two sources, in decreasing precedence:
 
@@ -278,15 +278,15 @@ Behavior:
 
 --------
 
-## Monitoring pgBouncer
+## Monitoring PgBouncer
 
-Set the database name in the URL to `pgbouncer` to switch to pgBouncer mode (this is what triggers the detection):
+Set the database name in the URL to `pgbouncer` to switch to PgBouncer mode (this is what triggers the detection):
 
 ```bash
 PG_EXPORTER_URL='postgres://stats_user:S3cret@localhost:6432/pgbouncer' pg_exporter
 ```
 
-In pgBouncer mode, the exporter uses the `pgbouncer` metric prefix and runs only pgBouncer-specific collectors (`SHOW STATS` / `SHOW POOLS`, etc.). The usual pattern is one exporter instance for PostgreSQL and another for pgBouncer, on different ports.
+In PgBouncer mode, the exporter uses the `pgbouncer` metric prefix and runs only PgBouncer-specific collectors (`SHOW STATS` / `SHOW POOLS`, etc.). The usual pattern is one exporter instance for PostgreSQL and another for PgBouncer, on different ports.
 
 --------
 

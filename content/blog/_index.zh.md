@@ -20,6 +20,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-`pg_exporter` 的发布注记与项目动态。它是一款声明式 PostgreSQL 与 pgBouncer 指标导出器。
+`pg_exporter` 的发布注记与项目动态。它是一款声明式 PostgreSQL 与 PgBouncer 指标导出器。
 
 从[完整版本归档](/zh/release/)开始，或返回[文档](/zh/docs/)。

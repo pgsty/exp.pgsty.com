@@ -56,17 +56,17 @@ TAG_ONLY = {"v0.0.1", "v0.0.5"}
 
 DOCS = {
     "start": {
-        "en": ("Getting Started", "Quick Start", "Get pg_exporter running and expose PostgreSQL metrics to Prometheus in ten minutes", "fas fa-rocket"),
-        "zh": ("快速上手", "快速上手", "十分钟内启动 pg_exporter，并向 Prometheus 暴露 PostgreSQL 指标", "fas fa-rocket"),
+        "en": ("Getting Started", "Quick Start", "Get PG Exporter running and expose PostgreSQL metrics to Prometheus in five minutes", "fa-solid fa-rocket"),
+        "zh": ("快速上手", "快速上手", "五分钟内启动 PG Exporter，并向 Prometheus 暴露 PostgreSQL 指标", "fa-solid fa-rocket"),
         "weight": 20,
     },
     "install": {
-        "en": ("Installation", "Installation", "Install pg_exporter from packages, release archives, containers, Pigsty, or source", "fa-solid fa-cloud-arrow-down"),
-        "zh": ("安装指南", "安装指南", "通过软件包、发布压缩包、容器、Pigsty 或源码安装 pg_exporter", "fas fa-download"),
+        "en": ("Installation", "Installation", "Install PG Exporter from packages, release archives, containers, Pigsty, or source", "fa-solid fa-cloud-arrow-down"),
+        "zh": ("安装指南", "安装指南", "通过软件包、发布压缩包、容器、Pigsty 或源码安装 PG Exporter", "fa-solid fa-download"),
         "weight": 30,
     },
     "deploy": {
-        "en": ("Production Deployment", "Deployment", "Run pg_exporter with systemd, Docker, or Kubernetes and connect it to Prometheus", "fas fa-boxes-packing"),
+        "en": ("Production Deployment", "Deployment", "Run pg_exporter with systemd, Docker, or Kubernetes and connect it to Prometheus", "fa-solid fa-boxes-packing"),
         "zh": ("生产部署", "部署指南", "使用 systemd、Docker 或 Kubernetes 运行 pg_exporter 并接入 Prometheus", "fa-solid fa-server"),
         "weight": 50,
     },
@@ -214,12 +214,117 @@ def rewrite_links(text: str, language: str) -> str:
     return text
 
 
+def adapt_doc_body(text: str, slug: str, language: str) -> str:
+    """Apply standalone-site content contracts that an upstream sync must retain."""
+
+    text = text.replace("pgBouncer", "PgBouncer")
+    text = text.replace("docker hub", "Docker Hub")
+    text = text.replace("prebuilt docker images", "prebuilt Docker images")
+
+    if slug == "api":
+        current = VERSIONS[0][0]
+        text = text.replace(
+            f'pg_exporter_build_info{{version="{current}",',
+            'pg_exporter_build_info{version="v{{< param version >}}",',
+        )
+
+    if slug == "install":
+        old_lead = (
+            "`pg_exporter` can be installed via Pigsty, YUM/APT repositories, GitHub release packages (RPM/DEB/Tarball), Docker images, or built from source — pick whichever fits your infrastructure."
+            if language == "en"
+            else "`pg_exporter` 可以通过 Pigsty、YUM/APT 仓库、GitHub 发布包（RPM/DEB/Tarball）、Docker 镜像或源码构建安装，按你的基础设施任选一种即可。"
+        )
+        new_lead = (
+            "**PG Exporter** can be installed through Pigsty, YUM/APT repositories, GitHub release packages (RPM/DEB/Tarball), Docker images, or source. For a guided comparison with install, enable, and verification commands, start at [Download PG Exporter](/download/); this page remains the complete artifact reference."
+            if language == "en"
+            else "**PG Exporter** 可以通过 Pigsty、YUM/APT 仓库、GitHub 发布包（RPM/DEB/Tarball）、Docker 镜像或源码构建安装。若需要包含选择、安装、启用与验证命令的向导，请从[下载 PG Exporter](/zh/download/)开始；本页继续作为完整制品参考。"
+        )
+        if old_lead not in text:
+            raise ValueError(f"unexpected {language} install introduction")
+        text = text.replace(old_lead, new_lead, 1)
+
+        current = VERSIONS[0][0]
+        current_number = current.removeprefix("v")
+        release_heading = (
+            f"**{current} Release Files:**" if language == "en" else f"**{current} 发布文件：**"
+        )
+        block_start = text.find(release_heading)
+        block_end = text.find("{{% alert", block_start)
+        if block_start < 0 or block_end < 0:
+            raise ValueError(f"unexpected {language} install release table")
+        release_block = text[block_start:block_end]
+        release_block = release_block.replace(current, "v{{< param version >}}")
+        release_block = release_block.replace(current_number, "{{< param version >}}")
+        text = text[:block_start] + release_block + text[block_end:]
+
+    if slug != "start":
+        return text
+
+    headings = (
+        [
+            ("## Step 1: Install", "## Install {#install}"),
+            ("## Step 2: Create a Monitoring User", "## Create a Monitoring User {#create-monitoring-user}"),
+            ("## Step 3: Run and Verify", "## Run and Verify {#run-and-verify}"),
+            ("## Step 4: Hook into Prometheus", "## Hook into Prometheus {#hook-into-prometheus}"),
+        ]
+        if language == "en"
+        else [
+            ("## 第 1 步：安装", "## 安装 {#安装}"),
+            ("## 第 2 步：创建监控用户", "## 创建监控用户 {#创建监控用户}"),
+            ("## 第 3 步：启动并验证", "## 启动并验证 {#启动并验证}"),
+            ("## 第 4 步：接入 Prometheus", "## 接入 Prometheus {#接入-prometheus}"),
+        ]
+    )
+    for source, target in headings:
+        if source not in text:
+            raise ValueError(f"unexpected {language} start heading: {source}")
+        text = text.replace(source, target, 1)
+
+    first_heading = headings[0][1]
+    closing_heading = "## Troubleshooting" if language == "en" else "## 常见问题排查"
+    if closing_heading not in text:
+        raise ValueError(f"unexpected {language} start closing heading")
+    text = text.replace(first_heading, "{{% steps %}}\n\n" + first_heading, 1)
+    text = text.replace(closing_heading, "{{% /steps %}}\n\n" + closing_heading, 1)
+    text = re.sub(r"(?m)^-{8,}\s*\n?", "", text)
+
+    if language == "en":
+        text = text.replace(
+            "This page is the shortest path: install `pg_exporter`",
+            "This page is the shortest path: install **PG Exporter**",
+        )
+        text = text.replace(
+            "On Linux amd64 you can download the binary directly (for other platforms and RPM/DEB/Docker options, see the [Installation guide](/install/)):",
+            "On Linux amd64 you can download the binary directly. For managed packages, other platforms, containers, Pigsty, and source builds, use the [download guide](/download/).",
+        )
+        text = text.replace("superuser like `postgres`", "superuser such as `postgres`")
+    else:
+        text = text.replace(
+            "本页是一条最短路径：安装 `pg_exporter`",
+            "本页是一条最短路径：安装 **PG Exporter**",
+        )
+        text = text.replace(
+            "Linux amd64 可以直接下载二进制（其他平台与 RPM/DEB/Docker 安装方式见 [安装指南](/zh/install/)）：",
+            "Linux amd64 可以直接下载二进制。托管软件包、其他平台、容器、Pigsty 与源码构建方式参见[下载指南](/zh/download/)。",
+        )
+        text = text.replace("你需要准备的东西只有两样", "你只需要准备两样东西")
+        text = text.replace("如果你只是在本机以", "如果只是在本机用")
+        text = text.replace("请参阅 [兼容性说明]", "请参阅[兼容性说明]")
+        text = text.replace("或到 [在线演示]", "或到[在线演示]")
+        text = text.replace(") 看实际效果", ")查看实际效果")
+
+    current = VERSIONS[0][0]
+    text = text.replace(f"# pg_exporter {current} (", "# pg_exporter v{{< param version >}} (")
+    return text
+
+
 def import_docs(source: Path, output: Path, language: str) -> None:
     suffix = ".zh.md" if language == "zh" else ".md"
     for slug, meta in DOCS.items():
         title, link_title, description, icon = meta[language]
         body = strip_front_matter((source / f"{slug}.md").read_text(encoding="utf-8"))
         body = rewrite_links(body, language)
+        body = adapt_doc_body(body, slug, language)
         front_matter = (
             "---\n"
             f"title: {yaml_string(title)}\n"
@@ -242,7 +347,10 @@ def release_summaries(text: str) -> dict[str, str]:
         re.M,
     )
     for version, summary in pattern.findall(text):
-        summaries[version] = re.sub(r"\s+", " ", summary).strip()
+        summary = re.sub(r"\s+", " ", summary).strip()
+        summaries[version] = summary.replace("DockerHub", "Docker Hub").replace(
+            "dockerhub", "Docker Hub"
+        )
     return summaries
 
 
@@ -261,6 +369,25 @@ def release_sections(text: str) -> dict[str, str]:
 
 def normalize_release_body(body: str, version: str, language: str) -> str:
     body = body.replace("https://github.com/Vonng/pg_exporter", "https://github.com/pgsty/pg_exporter")
+    body = body.replace("pgBouncer", "PgBouncer")
+    body = body.replace("DockerHub", "Docker Hub").replace("dockerhub", "Docker Hub")
+    body = body.replace("Add pgbouncer mode", "Add PgBouncer mode")
+    body = body.replace("support pgbouncer v1.16", "support PgBouncer v1.16")
+    body = body.replace(
+        "Fix pgbouncer version parsing message level",
+        "Fix PgBouncer version parsing message level",
+    )
+    if version == "v0.6.0":
+        if language == "en":
+            body = body.replace(
+                "- Security Enhancement: Fix [security](https://github.com/pgsty/pg_exporter/security/dependabot?q=is%3Aclosed)\n  dependent-bot issue",
+                "- Security enhancement: update dependencies to address reported vulnerabilities",
+            )
+        else:
+            body = body.replace(
+                "- 安全增强：修复 [安全](https://github.com/pgsty/pg_exporter/security/dependabot?q=is%3Aclosed) dependabot 问题",
+                "- 安全增强：更新依赖，修复已报告的依赖漏洞",
+            )
     body = re.sub(
         rf"\n?https://github\.com/pgsty/pg_exporter/releases/tag/{re.escape(version)}\s*$",
         "",
@@ -328,7 +455,7 @@ def import_releases(source: Path, output: Path, language: str) -> None:
     for index, (version, date) in enumerate(VERSIONS, start=1):
         front_matter = (
             "---\n"
-            f"title: {yaml_string(f'pg_exporter {version}')}\n"
+            f"title: {yaml_string(f'PG Exporter {version}')}\n"
             f"linkTitle: {yaml_string(version)}\n"
             f"date: {yaml_string(date)}\n"
             'author: "Ruohang Feng"\n'

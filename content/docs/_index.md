@@ -8,7 +8,7 @@ icon: fa-solid fa-book
 toc_root: true
 ---
 
-`pg_exporter` is an advanced PostgreSQL and pgBouncer metrics exporter for Prometheus-compatible monitoring systems. It combines built-in availability and role metrics with a declarative SQL collector engine, so the metric surface can evolve independently of the Go binary.
+**PG Exporter** is an advanced PostgreSQL and PgBouncer metrics exporter for Prometheus-compatible monitoring systems. It combines built-in availability and role metrics with a declarative SQL collector engine, so the metric surface can evolve independently of the Go binary.
 
 These docs target the latest stable release, **[v{{< param version >}}](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})**. They are maintained as a standalone, bilingual manual and are deliberately more detailed than the former Pigsty module pages.
 
@@ -17,9 +17,10 @@ These docs target the latest stable release, **[v{{< param version >}}](https://
 | Guide | Use it when you need to… |
 |:---|:---|
 | [Introduction](/intro/) | Understand the architecture, execution model, and operational boundaries |
-| [Getting Started](/start/) | Get a working exporter and Prometheus target in about ten minutes |
-| [Installation](/install/) | Choose RPM, DEB, tarball, Docker, Pigsty, or source installation |
-| [Compatibility](/compatibility/) | Check PostgreSQL, pgBouncer, OS, CPU, package, and container support |
+| [Getting Started](/start/) | Get a working exporter and Prometheus target in about five minutes |
+| [Download](/download/) | Choose, install, enable, and verify a package, archive, container, Pigsty, or source build |
+| [Installation](/install/) | Look up the complete artifact and repository reference |
+| [Compatibility](/compatibility/) | Check PostgreSQL, PgBouncer, OS, CPU, package, and container support |
 
 ## Run It in Production
 
