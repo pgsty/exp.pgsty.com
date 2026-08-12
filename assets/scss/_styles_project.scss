@@ -1,4 +1,4 @@
-// OINK 0.2.0's shell resets anchor padding to 1.5rem, while its mobile
+// OINK 0.3.0's shell resets anchor padding to 1.5rem, while its mobile
 // document subnav remains sticky. Reuse the theme's full navbar offset so
 // deep-linked headings stay visible below that subnav on narrow screens.
 @media (max-width: 767.98px) {

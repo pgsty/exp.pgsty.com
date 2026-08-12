@@ -6,6 +6,8 @@ weight: 1
 type: docs
 icon: fa-solid fa-book
 toc_root: true
+search_keywords: [pg_exporter, postgres exporter, PostgreSQL monitoring, PgBouncer, Prometheus, metrics]
+search_boost: 1.6
 ---
 
 **PG Exporter** is an advanced PostgreSQL and PgBouncer metrics exporter for Prometheus-compatible monitoring systems. It combines built-in availability and role metrics with a declarative SQL collector engine, so the metric surface can evolve independently of the Go binary.
@@ -46,5 +48,7 @@ These docs target the latest stable release, **[v{{< param version >}}](https://
 - Stable-release behavior is the default contract. Unreleased `main` behavior is called out explicitly when relevant.
 - PostgreSQL 19 collector branches are included, but PostgreSQL's own release status still determines whether a target is suitable for production.
 - The English and Simplified Chinese pages are paired; use the language switcher to move between equivalent pages.
+
+Open the Command Palette from any page with {{< kbd "Ctrl" "K" >}} on Windows/Linux or {{< kbd "⌘" "K" >}} on macOS. Type `>` to browse site and page commands without loading the search index. The optional Open in ChatGPT and Open in Claude actions are external handoffs; activating one sends the current page URL, including any query string or fragment, to that service.
 
 For source code, issues, and contributions, visit [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter).

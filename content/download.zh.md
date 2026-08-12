@@ -5,6 +5,8 @@ description: "选择、安装、配置、启用并验证 PG Exporter 软件包�
 weight: 25
 icon: fa-solid fa-download
 categories: [指南]
+search_keywords: [下载, 安装, 软件包, RPM, DEB, YUM, APT, 容器, Docker, 二进制]
+search_boost: 1.5
 ---
 
 PG Exporter {{< param version >}} 提供托管式 Linux 软件包、独立 RPM/DEB、Linux/macOS/Windows 发布压缩包、多架构容器镜像、Pigsty 自动化与源码构建。选择标准应当是生命周期由谁负责，而不是功能差异：每条路径运行的都是同一个导出器与同一套声明式采集器。
@@ -38,19 +40,16 @@ PG Exporter {{< param version >}} 提供托管式 Linux 软件包、独立 RPM/D
 
 `pigsty-infra` 仓库面向常见 EL 与 Debian/Ubuntu 平台发布 `pg-exporter`。
 
-{{% tabpane text=true persist=header %}}
-{{% tab header="APT · Debian / Ubuntu" selected=true %}}
-```bash
+{{< code-group id="download-repository-packages" persist=true label="选择 Linux 包管理器" copy="all" >}}
+  {{< code-tab title="APT · Debian / Ubuntu" value="apt" lang="bash" selected=true >}}
 sudo tee /etc/apt/sources.list.d/pigsty-infra.list > /dev/null <<'EOF'
 deb [trusted=yes] https://repo.pigsty.io/apt/infra generic main
 EOF
 
 sudo apt update
 sudo apt install -y pg-exporter
-```
-{{% /tab %}}
-{{% tab header="YUM · RHEL / Rocky / Alma" %}}
-```bash
+  {{< /code-tab >}}
+  {{< code-tab title="YUM · RHEL / Rocky / Alma" value="yum" lang="bash" >}}
 sudo tee /etc/yum.repos.d/pigsty-infra.repo > /dev/null <<'EOF'
 [pigsty-infra]
 name=Pigsty Infra for $basearch
@@ -62,26 +61,39 @@ EOF
 
 sudo yum makecache
 sudo yum install -y pg-exporter
-```
-{{% /tab %}}
-{{% /tabpane %}}
+  {{< /code-tab >}}
+{{< /code-group >}}
 
 这些示例与当前 Pigsty 软件包通道保持一致。如果你的供应链制度要求签名的软件仓库元数据，应当把校验过的发布产物晋级到自有仓库，而不是在生产主机上放宽制度。
 
 ### 配置并启用服务 {#enable-service}
 
-软件包会安装：
+软件包会安装并管理以下文件结构：
 
-- `/usr/bin/pg_exporter`：可执行文件；
-- `/etc/pg_exporter.yml`：合并采集器配置，升级时保留；
-- `/etc/default/pg_exporter`：进程环境变量与参数，升级时保留；
-- `pg_exporter.service`：以 `prometheus` 用户运行的 systemd 单元。
+{{< filetree label="PG Exporter 软件包文件" >}}
+  {{< filetree/folder name="/usr" open=true >}}
+    {{< filetree/folder name="bin" open=true >}}
+      {{< filetree/file name="pg_exporter" >}}
+    {{< /filetree/folder >}}
+  {{< /filetree/folder >}}
+  {{< filetree/folder name="/etc" open=true >}}
+    {{< filetree/file name="pg_exporter.yml" >}}
+    {{< filetree/folder name="default" open=true >}}
+      {{< filetree/file name="pg_exporter" >}}
+    {{< /filetree/folder >}}
+  {{< /filetree/folder >}}
+  {{< filetree/file name="pg_exporter.service（systemd 单元）" >}}
+{{< /filetree >}}
+
+合并采集器配置与默认环境文件在升级时保留；systemd 单元以 `prometheus` 用户运行导出器。
 
 先创建[数据库监控用户](/zh/start/#创建监控用户)，再写入连接 URL：
 
 ```bash
 sudoedit /etc/default/pg_exporter
+```
 
+```bash {filename="/etc/default/pg_exporter"}
 # 在文件中设置；生产环境优先使用 .pgpass 或密钥文件。
 PG_EXPORTER_URL='postgres://monitor@127.0.0.1:5432/postgres?sslmode=disable'
 ```

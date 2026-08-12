@@ -5,6 +5,8 @@ description: "Choose, install, configure, enable, and verify PG Exporter package
 weight: 25
 icon: fa-solid fa-download
 categories: [Guide]
+search_keywords: [download, install, package, RPM, DEB, YUM, APT, container, Docker, binary]
+search_boost: 1.5
 ---
 
 PG Exporter {{< param version >}} is available as managed Linux packages, direct RPM/DEB files, release archives for Linux/macOS/Windows, a multi-architecture container image, Pigsty automation, and source. Choose by lifecycle ownership, not by feature set: every route runs the same exporter and declarative collectors.
@@ -38,19 +40,16 @@ For long-running Linux services, start with the repository package. It gives upg
 
 The `pigsty-infra` repository publishes `pg-exporter` for common EL and Debian/Ubuntu platforms.
 
-{{% tabpane text=true persist=header %}}
-{{% tab header="APT · Debian / Ubuntu" selected=true %}}
-```bash
+{{< code-group id="download-repository-packages" persist=true label="Choose a Linux package manager" copy="all" >}}
+  {{< code-tab title="APT · Debian / Ubuntu" value="apt" lang="bash" selected=true >}}
 sudo tee /etc/apt/sources.list.d/pigsty-infra.list > /dev/null <<'EOF'
 deb [trusted=yes] https://repo.pigsty.io/apt/infra generic main
 EOF
 
 sudo apt update
 sudo apt install -y pg-exporter
-```
-{{% /tab %}}
-{{% tab header="YUM · RHEL / Rocky / Alma" %}}
-```bash
+  {{< /code-tab >}}
+  {{< code-tab title="YUM · RHEL / Rocky / Alma" value="yum" lang="bash" >}}
 sudo tee /etc/yum.repos.d/pigsty-infra.repo > /dev/null <<'EOF'
 [pigsty-infra]
 name=Pigsty Infra for $basearch
@@ -62,26 +61,39 @@ EOF
 
 sudo yum makecache
 sudo yum install -y pg-exporter
-```
-{{% /tab %}}
-{{% /tabpane %}}
+  {{< /code-tab >}}
+{{< /code-group >}}
 
 The repository examples match the current Pigsty package channel. If your supply-chain policy requires signed package metadata, promote a verified release artifact into your own repository instead of weakening that policy on production hosts.
 
 ### Configure and enable the service {#enable-service}
 
-The package installs:
+The package installs this managed layout:
 
-- `/usr/bin/pg_exporter` — executable;
-- `/etc/pg_exporter.yml` — merged collector configuration, preserved on upgrades;
-- `/etc/default/pg_exporter` — process environment and options, preserved on upgrades;
-- `pg_exporter.service` — systemd unit running as the `prometheus` user.
+{{< filetree label="PG Exporter package files" >}}
+  {{< filetree/folder name="/usr" open=true >}}
+    {{< filetree/folder name="bin" open=true >}}
+      {{< filetree/file name="pg_exporter" >}}
+    {{< /filetree/folder >}}
+  {{< /filetree/folder >}}
+  {{< filetree/folder name="/etc" open=true >}}
+    {{< filetree/file name="pg_exporter.yml" >}}
+    {{< filetree/folder name="default" open=true >}}
+      {{< filetree/file name="pg_exporter" >}}
+    {{< /filetree/folder >}}
+  {{< /filetree/folder >}}
+  {{< filetree/file name="pg_exporter.service (systemd unit)" >}}
+{{< /filetree >}}
+
+The merged collector configuration and default environment file are preserved on upgrades. The systemd unit runs the exporter as the `prometheus` user.
 
 Create the [monitoring database role](/start/#create-monitoring-user), then set its connection URL:
 
 ```bash
 sudoedit /etc/default/pg_exporter
+```
 
+```bash {filename="/etc/default/pg_exporter"}
 # Set this value in the file; prefer .pgpass or a secret file in production.
 PG_EXPORTER_URL='postgres://monitor@127.0.0.1:5432/postgres?sslmode=disable'
 ```

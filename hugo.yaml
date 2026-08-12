@@ -48,22 +48,63 @@ languages:
     params:
       description: "PG Exporter: a declarative, extensible PostgreSQL and PgBouncer metrics exporter for Prometheus."
       time_format_blog: 'January 02, 2006'
+      ui:
+        command_palette:
+          commands:
+            - id: latest_release
+              title: Latest PG Exporter release
+              description: Open the newest stable release and its verified artifacts
+              url: https://github.com/pgsty/pg_exporter/releases/latest
+              icon: fa-solid fa-box-archive
+              keywords: [release, download, rpm, deb, archive, checksum]
     menu:
       main:
         - identifier: download
           name: Download
           weight: 10
-          url: /download/
+          pageRef: /download
           pre: <i class='fa-solid fa-download'></i>
         - identifier: docs
           name: Docs
           weight: 20
-          url: /docs/
+          pageRef: /docs
           pre: <i class='fa-solid fa-book'></i>
+        - identifier: docs-start
+          parent: docs
+          name: Quick Start
+          weight: 10
+          pageRef: /start
+          params:
+            icon: fa-solid fa-rocket
+            description: Export the first PostgreSQL metrics in five minutes
+        - identifier: docs-deploy
+          parent: docs
+          name: Deployment
+          weight: 20
+          pageRef: /deploy
+          params:
+            icon: fa-solid fa-server
+            description: Run securely with systemd, containers, and Prometheus
+        - identifier: docs-config
+          parent: docs
+          name: Collector Configuration
+          weight: 30
+          pageRef: /config
+          params:
+            icon: fa-solid fa-code
+            description: Define version-aware metrics with YAML and SQL
+        - identifier: docs-api
+          parent: docs
+          name: HTTP API
+          weight: 40
+          pageRef: /api
+          params:
+            icon: fa-solid fa-plug
+            description: Metrics, health, planning, statistics, and reload endpoints
         - identifier: blog
           name: Blog
           weight: 30
-          url: /blog/
+          pageRef: /blog
           pre: <i class='fa-solid fa-blog'></i>
   zh:
     label: 简体中文
@@ -76,22 +117,63 @@ languages:
       copyright:
         authors: '[PG Exporter Contributors](https://github.com/pgsty/pg_exporter) · 文档采用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 许可'
         from_year: 2018
+      ui:
+        command_palette:
+          commands:
+            - id: latest_release
+              title: 最新 PG Exporter 版本
+              description: 打开最新稳定版本及其可校验的发布产物
+              url: https://github.com/pgsty/pg_exporter/releases/latest
+              icon: fa-solid fa-box-archive
+              keywords: [发布, 下载, RPM, DEB, 压缩包, 校验和]
     menu:
       main:
         - identifier: download
           name: 下载
           weight: 10
-          url: /zh/download/
+          pageRef: /download
           pre: <i class='fa-solid fa-download'></i>
         - identifier: docs
           name: 文档
           weight: 20
-          url: /zh/docs/
+          pageRef: /docs
           pre: <i class='fa-solid fa-book'></i>
+        - identifier: docs-start
+          parent: docs
+          name: 快速上手
+          weight: 10
+          pageRef: /start
+          params:
+            icon: fa-solid fa-rocket
+            description: 用五分钟导出第一组 PostgreSQL 指标
+        - identifier: docs-deploy
+          parent: docs
+          name: 生产部署
+          weight: 20
+          pageRef: /deploy
+          params:
+            icon: fa-solid fa-server
+            description: 使用 systemd、容器与 Prometheus 安全运行
+        - identifier: docs-config
+          parent: docs
+          name: 采集器配置
+          weight: 30
+          pageRef: /config
+          params:
+            icon: fa-solid fa-code
+            description: 使用 YAML 与 SQL 定义版本感知的指标
+        - identifier: docs-api
+          parent: docs
+          name: HTTP API
+          weight: 40
+          pageRef: /api
+          params:
+            icon: fa-solid fa-plug
+            description: 指标、健康、规划、统计与重载端点
         - identifier: blog
           name: 博客
           weight: 30
-          url: /zh/blog/
+          pageRef: /blog
           pre: <i class='fa-solid fa-blog'></i>
 
 #=======================================#
@@ -172,7 +254,7 @@ params:
 
   archived_version: false
   url_latest_version: https://exp.pgsty.com
-  github_repo: ""
+  github_repo: https://github.com/pgsty/exp.pgsty.com
   github_project_repo: https://github.com/pgsty/pg_exporter
   github_branch: main
 
@@ -183,7 +265,10 @@ params:
   prism_syntax_highlighting: false
 
   ui:
-    quick_links: [docs, blog]
+    typography:
+      preset: system
+    quick_links: [download, docs, blog]
+    sidebar_icon_policy: groups
     breadcrumb_disable: false
     navbar_logo: true
     navbar_translucent_over_cover_disable: false
@@ -202,6 +287,7 @@ params:
     showLightDarkModeMenu: true
     page_context_menu:
       enable: true
+      assistant_links: true
       links: []
     feedback:
       enable: false

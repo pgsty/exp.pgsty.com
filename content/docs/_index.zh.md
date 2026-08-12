@@ -6,6 +6,8 @@ weight: 1
 type: docs
 icon: fa-solid fa-book
 toc_root: true
+search_keywords: [pg_exporter, PostgreSQL 监控, PgBouncer, Prometheus, 指标导出器, 文档]
+search_boost: 1.6
 ---
 
 **PG Exporter** 是一款面向 Prometheus 兼容监控系统的高级 PostgreSQL 与 PgBouncer 指标导出器。它将内置的可用性/角色指标与声明式 SQL 采集器引擎组合起来，让指标面可以独立于 Go 二进制持续演进。
@@ -46,5 +48,7 @@ toc_root: true
 - 默认描述稳定版本行为；涉及尚未发布的 `main` 分支行为时会明确标注。
 - 已包含 PostgreSQL 19 采集器分支，但目标是否适合生产仍以 PostgreSQL 官方发布状态为准。
 - 英文与简体中文页面成对维护，可以通过语言切换器在对应页面之间切换。
+
+在 Windows/Linux 上按 {{< kbd "Ctrl" "K" >}}，或在 macOS 上按 {{< kbd "⌘" "K" >}}，可以从任意页面打开命令面板。输入 `>` 可直接浏览站点与页面命令，无需加载搜索索引。“在 ChatGPT 中打开”与“在 Claude 中打开”属于可选的外部跳转；启用后，当前页面的完整 URL（包括查询参数与片段）会发送给相应服务。
 
 源码、Issue 与贡献入口请访问 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)。

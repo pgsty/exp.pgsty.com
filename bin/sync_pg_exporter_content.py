@@ -471,15 +471,39 @@ def import_releases(source: Path, output: Path, language: str) -> None:
         )
 
 
+def resolve_manual_dir(path: Path) -> Path:
+    """Accept either a site repository root or its pg_exporter manual directory."""
+
+    direct = path.expanduser()
+    nested = direct / "content" / "docs" / "pg_exporter"
+    for candidate in (direct, nested):
+        if all((candidate / f"{slug}.md").is_file() for slug in (*DOCS, "release")):
+            return candidate
+    raise ValueError(
+        f"cannot find pg_exporter manuals below {path}; pass either the site "
+        "repository root or content/docs/pg_exporter"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pigsty-io", type=Path, required=True, help="pigsty.io repository root")
-    parser.add_argument("--pigsty-cc", type=Path, required=True, help="pigsty.cc repository root")
+    parser.add_argument(
+        "--pigsty-io",
+        type=Path,
+        required=True,
+        help="pigsty.io repository root or pg_exporter manual directory",
+    )
+    parser.add_argument(
+        "--pigsty-cc",
+        type=Path,
+        required=True,
+        help="pigsty.cc repository root or pg_exporter manual directory",
+    )
     parser.add_argument("--output", type=Path, required=True, help="standalone site content directory")
     args = parser.parse_args()
 
-    en_source = args.pigsty_io / "content" / "docs" / "pg_exporter"
-    zh_source = args.pigsty_cc / "content" / "docs" / "pg_exporter"
+    en_source = resolve_manual_dir(args.pigsty_io)
+    zh_source = resolve_manual_dir(args.pigsty_cc)
     args.output.mkdir(parents=True, exist_ok=True)
 
     import_docs(en_source, args.output, "en")

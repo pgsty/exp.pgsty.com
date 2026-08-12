@@ -5,7 +5,7 @@ description: "One article for every tagged pg_exporter version"
 weight: 130
 icon: fa-solid fa-clipboard-list
 manualLink: /release/
-exclude_search: true
+search_exclude: true
 build:
   render: link
   list: local

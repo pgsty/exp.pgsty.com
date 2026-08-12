@@ -4,7 +4,7 @@ This repository is the OINK-based standalone bilingual
 [PG Exporter](https://github.com/pgsty/pg_exporter) documentation site. It uses
 Hugo Extended and the reusable [OINK](https://github.com/pgsty/oink) theme, with
 English at `/` and Simplified Chinese at `/zh/`. Production builds pin OINK
-`v0.2.0` in `go.mod`.
+`v0.3.0` in `go.mod`.
 
 - Site: <https://exp.pgsty.com>
 - Product source: <https://github.com/pgsty/pg_exporter>
@@ -49,21 +49,26 @@ theme surfaces through configuration and content:
 - `data/home/en.yaml` and `data/home/zh.yaml`: bilingual OINK homepage sections
 - `data/home/metrics.yaml`: traceability ledger for homepage product facts
 - `assets/scss/_variables_project.scss`: supported brand design tokens
-- `assets/scss/_styles_project.scss`: narrow-screen anchor-offset correction for OINK 0.2.0
+- `assets/scss/_styles_project.scss`: narrow-screen anchor-offset correction for OINK 0.3.0
 - `layouts/404.html`: deterministic OINK-partial composition for the bilingual 404 output
 - `layouts/robots.txt`: environment-aware crawler policy
 
-The homepage uses OINK's linked capability boards, while the bilingual quick
-start uses its automatically numbered `steps` component. Release listings
-explicitly stay text-only so 35 version notes remain easy to scan instead of
-repeating one generic product image on every row.
+The homepage uses OINK's linked capability boards and its `system` typography
+preset. The main Docs entry uses OINK's one-level navigation menu, and the
+Command Palette projects Download, Docs, and Blog from that same menu while
+adding a bilingual latest-release command and the shared page actions. The
+bilingual quick start uses the automatically numbered `steps` component; the
+download guide uses enhanced code blocks, a persistent `code-group`, and a
+`filetree` for installed paths. Release listings explicitly stay text-only so
+35 version notes remain easy to scan instead of repeating one generic product
+image on every row.
 
 There is no local homepage, footer, search, or download layout. The pinned OINK
 module supplies those implementations; the sibling checkout provides the latest
 theme during local migration QA.
 
 The sole project-style rule restores the theme's own full navbar offset below
-the `md` breakpoint. OINK 0.2.0 otherwise places deep-linked manual headings
+the `md` breakpoint. OINK 0.3.0 otherwise places deep-linked manual headings
 behind its 56px sticky mobile subnav, and that offset is not exposed through
 theme configuration or homepage data.
 
