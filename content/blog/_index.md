@@ -13,10 +13,9 @@ cascade:
   type: blog
   outputs: [HTML, print]
   params:
-    ui:
-      sidebar_menu_foldable: false
-      sidebar_menu_compact: false
-      ul_show: 3
+    sidebar_menu_foldable: false
+    sidebar_menu_compact: false
+    sidebar_expand_levels: 3
 icon: fa-solid fa-blog
 ---
 

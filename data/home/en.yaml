@@ -177,28 +177,3 @@ cta:
       url: start/
       icon: fa-solid fa-rocket
       style: ghost
-
-footer:
-  brand:
-    name: PG Exporter
-    tagline: PostgreSQL observability, expressed in SQL.
-    slogan: A declarative PostgreSQL and PgBouncer exporter maintained by the [Pigsty](https://pigsty.io/) community.
-  columns:
-    - title: Get started
-      links:
-        - { label: Download, url: download/ }
-        - { label: Quick start, url: start/ }
-        - { label: Installation reference, url: install/ }
-        - { label: Production deployment, url: deploy/ }
-    - title: Reference
-      links:
-        - { label: Configuration, url: config/ }
-        - { label: Bundled collectors, url: collectors/ }
-        - { label: HTTP API, url: api/ }
-        - { label: Compatibility, url: compatibility/ }
-    - title: Project
-      links:
-        - { label: Release archive, url: release/ }
-        - { label: GitHub source, url: 'https://github.com/pgsty/pg_exporter', external: true }
-        - { label: Issues, url: 'https://github.com/pgsty/pg_exporter/issues', external: true }
-        - { label: Discussions, url: 'https://github.com/pgsty/pg_exporter/discussions', external: true }

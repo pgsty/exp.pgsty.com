@@ -42,9 +42,8 @@ You can also download `pg_exporter` package (`RPM`/`DEB`/ Tarball) directly from
 
 You can install it directly with your OS package manager (`rpm`/`dpkg`), or just place the binary in your `$PATH`. Current tarballs also include `pg_exporter.yml`, `package/pg_exporter.default`, `package/pg_exporter.service`, and `LICENSE` for manual deployments.
 
-{{% alert title="RPM package rename" color="info" %}}
-Starting with `v1.4.1`, the official RPM package name and artifact prefix change from `pg_exporter` to `pg-exporter`, matching the DEB package and repository install commands. The new RPM also provides and obsoletes the legacy `pg_exporter` package name, allowing direct upgrades from earlier releases.
-{{% /alert %}}
+> [!NOTE] RPM package rename
+> Starting with `v1.4.1`, the official RPM package name and artifact prefix change from `pg_exporter` to `pg-exporter`, matching the DEB package and repository install commands. The new RPM also provides and obsoletes the legacy `pg_exporter` package name, allowing direct upgrades from earlier releases.
 
 Full SHA256 checksums are available in `checksums.txt` on the release page; version-specific checksums are also archived in the [release notes](/release/).
 
@@ -115,9 +114,8 @@ docker run -d \
   pgsty/pg_exporter:latest
 ```
 
-{{% alert title="Warning" color="warning" %}}
-The current Docker image is built from `scratch`. If you connect to remote PostgreSQL with `sslmode=verify-ca` or `verify-full`, mount an explicit CA certificate (`sslrootcert` or a system CA bundle), otherwise TLS verification may fail.
-{{% /alert %}}
+> [!WARNING] Warning
+> The current Docker image is built from `scratch`. If you connect to remote PostgreSQL with `sslmode=verify-ca` or `verify-full`, mount an explicit CA certificate (`sslrootcert` or a system CA bundle), otherwise TLS verification may fail.
 
 ## Compatibility
 

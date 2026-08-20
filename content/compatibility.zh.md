@@ -38,9 +38,8 @@ PgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管�
 
 发布压缩包包含二进制、合并配置、许可证、默认环境文件与 systemd 单元。macOS 与 Windows 产物适合开发或连接远端目标；软件包提供的服务集成只适用于 Linux。
 
-{{% alert title="v1.4.1 起的 RPM 包名" color="info" %}}
-官方 RPM 包名与产物前缀改为 `pg-exporter`。新包为旧的 `pg_exporter` 名称声明了 `Provides` 与 `Obsoletes`，因此可以直接升级。可执行文件与配置名仍为 `pg_exporter` 和 `/etc/pg_exporter.yml`。
-{{% /alert %}}
+> [!NOTE] v1.4.1 起的 RPM 包名
+> 官方 RPM 包名与产物前缀改为 `pg-exporter`。新包为旧的 `pg_exporter` 名称声明了 `Provides` 与 `Obsoletes`，因此可以直接升级。可执行文件与配置名仍为 `pg_exporter` 和 `/etc/pg_exporter.yml`。
 
 ## 容器约束
 

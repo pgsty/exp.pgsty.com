@@ -38,9 +38,8 @@ PgBouncer support starts at 1.8 because that line provides the admin `SHOW` inte
 
 Release archives include the binary, merged config, license, default environment file, and systemd unit. macOS and Windows artifacts are useful for development and remote targets; the packaged service integration is Linux-specific.
 
-{{% alert title="RPM name since v1.4.1" color="info" %}}
-The official RPM package and artifact prefix is `pg-exporter`. It declares `Provides` and `Obsoletes` for the former `pg_exporter` name, so direct upgrades remain possible. The executable and configuration names remain `pg_exporter` and `/etc/pg_exporter.yml`.
-{{% /alert %}}
+> [!NOTE] RPM name since v1.4.1
+> The official RPM package and artifact prefix is `pg-exporter`. It declares `Provides` and `Obsoletes` for the former `pg_exporter` name, so direct upgrades remain possible. The executable and configuration names remain `pg_exporter` and `/etc/pg_exporter.yml`.
 
 ## Container Constraints
 

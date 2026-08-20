@@ -4,7 +4,6 @@ linkTitle: "Release Notes"
 description: "A bilingual release note for every pg_exporter repository tag"
 weight: 10
 icon: fa-solid fa-clipboard-list
-default_featured: false
 ---
 
 This archive contains one article for every `pg_exporter` repository tag, newest first: **35 tagged versions** from `v0.0.1` through `v{{< param version >}}`.

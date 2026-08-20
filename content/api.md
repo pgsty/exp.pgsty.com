@@ -287,13 +287,11 @@ server reloaded
 - Modify cache TTL values
 - Add or remove collectors
 
-{{% alert title="Note" color="info" %}}
-Reload refreshes collector configuration and query plans. Process-level settings such as listen addresses and CLI arguments still require a restart.
-{{% /alert %}}
+> [!NOTE] Note
+> Reload refreshes collector configuration and query plans. Process-level settings such as listen addresses and CLI arguments still require a restart.
 
-{{% alert title="Security Advice" color="warning" %}}
-`/reload`, `/explain`, and `/stat` are management endpoints. If the exporter is reachable beyond localhost or a trusted private network, protect them with `--web.config.file` or restrict access at the reverse proxy or firewall layer.
-{{% /alert %}}
+> [!WARNING] Security Advice
+> `/reload`, `/explain`, and `/stat` are management endpoints. If the exporter is reachable beyond localhost or a trusted private network, protect them with `--web.config.file` or restrict access at the reverse proxy or firewall layer.
 
 ### GET /explain
 

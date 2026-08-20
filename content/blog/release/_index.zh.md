@@ -4,7 +4,6 @@ linkTitle: "发布注记"
 description: "pg_exporter 每个仓库标签对应一篇双语发布注记"
 weight: 10
 icon: fa-solid fa-clipboard-list
-default_featured: false
 ---
 
 这里按时间倒序收录 `pg_exporter` 的每个仓库标签：从 `v0.0.1` 到 `v{{< param version >}}`，共 **35 个标签版本**，每个版本一篇文章。

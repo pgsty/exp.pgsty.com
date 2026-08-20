@@ -196,6 +196,7 @@ permalinks:
 markup:
   goldmark:
     parser:
+      wrapStandAloneImageWithinParagraph: false
       attribute:
         block: true
       autoHeadingID: true
@@ -259,17 +260,16 @@ params:
   github_branch: main
 
   # OINK owns search everywhere and generates one local index per language.
-  offlineSearch: true
-  offlineSearchIndex: content
-  offlineSearchMaxResults: 10
-  prism_syntax_highlighting: false
+  offline_search: true
+  offline_search_index: content
+  offline_search_max_results: 10
 
   ui:
-    typography:
-      preset: system
+    blog_index_size: 60
+    typography: system
     quick_links: [download, docs, blog]
     sidebar_icon_policy: groups
-    breadcrumb_disable: false
+    breadcrumb: true
     navbar_logo: true
     navbar_translucent_over_cover_disable: false
     navbar_theme: dark
@@ -283,35 +283,14 @@ params:
     sidebar_width_min: 220
     sidebar_width_max: 480
     sidebar_item_overflow: ellipsis
-    ul_show: 2
-    showLightDarkModeMenu: true
+    sidebar_expand_levels: 2
+    dark_mode:
+      show_menu: true
     page_context_menu:
       enable: true
       assistant_links: true
       links: []
     feedback:
       enable: false
-    readingtime:
-      enable: false
-    scrollSpy:
-      disable: true
-
-  links:
-    user:
-      - name: PG Exporter source
-        url: https://github.com/pgsty/pg_exporter
-        icon: fa-brands fa-github
-        desc: pg_exporter source repository
-      - name: Pigsty
-        url: https://pigsty.io
-        icon: fa-solid fa-database
-        desc: Pigsty project
-    developer:
-      - name: Releases
-        url: https://github.com/pgsty/pg_exporter/releases
-        icon: fa-solid fa-box-archive
-        desc: PG Exporter release artifacts
-      - name: Discussions
-        url: https://github.com/pgsty/pg_exporter/discussions
-        icon: fa-solid fa-comments
-        desc: PG Exporter community discussions
+    reading_time: false
+    scroll_spy: false

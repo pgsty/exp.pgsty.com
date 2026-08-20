@@ -11,16 +11,23 @@ search_boost: 1.5
 
 PG Exporter {{< param version >}} is available as managed Linux packages, direct RPM/DEB files, release archives for Linux/macOS/Windows, a multi-architecture container image, Pigsty automation, and source. Choose by lifecycle ownership, not by feature set: every route runs the same exporter and declarative collectors.
 
-{{% alert title="Product and artifact names" color="info" %}}
-The product name is **PG Exporter**. The Linux package is `pg-exporter`; the executable, service, configuration file, and container repository retain the compatibility name `pg_exporter`.
-{{% /alert %}}
+> [!NOTE] Product and artifact names
+> The product name is **PG Exporter**. The Linux package is `pg-exporter`; the executable, service, configuration file, and container repository retain the compatibility name `pg_exporter`.
 
-{{< nav-cards cols="4" >}}
-{{< nav-card title="Linux packages" link="#repository-packages" icon="fa-solid fa-box-archive" badge="Recommended" desc="APT/YUM lifecycle, systemd unit, merged config, and /etc/default/pg_exporter." />}}
-{{< nav-card title="Release artifacts" link="#github-release-artifacts" icon="fa-solid fa-file-zipper" desc="Versioned RPM, DEB, and Linux/macOS/Windows archives with SHA256 checksums." />}}
-{{< nav-card title="Container" link="#container-image" icon="fa-brands fa-docker" desc="Pinned amd64/arm64 image for Docker, Podman, Compose, or an orchestrator." />}}
-{{< nav-card title="Pigsty or source" link="#pigsty" icon="fa-solid fa-code-branch" desc="A complete monitoring stack through Pigsty, or a tagged build you own end to end." />}}
-{{< /nav-cards >}}
+{{< cards >}}
+{{< card title="Linux packages" link="#repository-packages" icon="fa-solid fa-box-archive" badge="Recommended" >}}
+APT/YUM lifecycle, systemd unit, merged config, and /etc/default/pg_exporter.
+{{< /card >}}
+{{< card title="Release artifacts" link="#github-release-artifacts" icon="fa-solid fa-file-zipper" >}}
+Versioned RPM, DEB, and Linux/macOS/Windows archives with SHA256 checksums.
+{{< /card >}}
+{{< card title="Container" link="#container-image" icon="fa-brands fa-docker" >}}
+Pinned amd64/arm64 image for Docker, Podman, Compose, or an orchestrator.
+{{< /card >}}
+{{< card title="Pigsty or source" link="#pigsty" icon="fa-solid fa-code-branch" >}}
+A complete monitoring stack through Pigsty, or a tagged build you own end to end.
+{{< /card >}}
+{{< /cards >}}
 
 ## Choose an installation path
 
@@ -40,16 +47,20 @@ For long-running Linux services, start with the repository package. It gives upg
 
 The `pigsty-infra` repository publishes `pg-exporter` for common EL and Debian/Ubuntu platforms.
 
-{{< code-group id="download-repository-packages" persist=true label="Choose a Linux package manager" copy="all" >}}
-  {{< code-tab title="APT · Debian / Ubuntu" value="apt" lang="bash" selected=true >}}
+{{< tabs group="download-repository-packages" default="apt" label="Choose a Linux package manager" >}}
+{{< tab label="APT · Debian / Ubuntu" value="apt" >}}
+```bash {copy="all"}
 sudo tee /etc/apt/sources.list.d/pigsty-infra.list > /dev/null <<'EOF'
 deb [trusted=yes] https://repo.pigsty.io/apt/infra generic main
 EOF
 
 sudo apt update
 sudo apt install -y pg-exporter
-  {{< /code-tab >}}
-  {{< code-tab title="YUM · RHEL / Rocky / Alma" value="yum" lang="bash" >}}
+```
+{{< /tab >}}
+
+{{< tab label="YUM · RHEL / Rocky / Alma" value="yum" >}}
+```bash {copy="all"}
 sudo tee /etc/yum.repos.d/pigsty-infra.repo > /dev/null <<'EOF'
 [pigsty-infra]
 name=Pigsty Infra for $basearch
@@ -61,8 +72,9 @@ EOF
 
 sudo yum makecache
 sudo yum install -y pg-exporter
-  {{< /code-tab >}}
-{{< /code-group >}}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 The repository examples match the current Pigsty package channel. If your supply-chain policy requires signed package metadata, promote a verified release artifact into your own repository instead of weakening that policy on production hosts.
 
@@ -70,20 +82,16 @@ The repository examples match the current Pigsty package channel. If your supply
 
 The package installs this managed layout:
 
-{{< filetree label="PG Exporter package files" >}}
-  {{< filetree/folder name="/usr" open=true >}}
-    {{< filetree/folder name="bin" open=true >}}
-      {{< filetree/file name="pg_exporter" >}}
-    {{< /filetree/folder >}}
-  {{< /filetree/folder >}}
-  {{< filetree/folder name="/etc" open=true >}}
-    {{< filetree/file name="pg_exporter.yml" >}}
-    {{< filetree/folder name="default" open=true >}}
-      {{< filetree/file name="pg_exporter" >}}
-    {{< /filetree/folder >}}
-  {{< /filetree/folder >}}
-  {{< filetree/file name="pg_exporter.service (systemd unit)" >}}
-{{< /filetree >}}
+```filetree {title="PG Exporter package files"}
+- /usr/
+  - bin/
+    - pg_exporter
+- /etc/
+  - pg_exporter.yml
+  - default/
+    - pg_exporter
+- pg_exporter.service (systemd unit)
+```
 
 The merged collector configuration and default environment file are preserved on upgrades. The systemd unit runs the exporter as the `prometheus` user.
 
@@ -93,7 +101,7 @@ Create the [monitoring database role](/start/#create-monitoring-user), then set 
 sudoedit /etc/default/pg_exporter
 ```
 
-```bash {filename="/etc/default/pg_exporter"}
+```bash {title="/etc/default/pg_exporter"}
 # Set this value in the file; prefer .pgpass or a secret file in production.
 PG_EXPORTER_URL='postgres://monitor@127.0.0.1:5432/postgres?sslmode=disable'
 ```
@@ -115,8 +123,8 @@ Use `sslmode=verify-full` plus an explicit CA for remote production targets. The
 
 The [v{{< param version >}} release](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}}) contains RPM and DEB packages plus archives for Linux, macOS, and Windows. Linux supports amd64, arm64, and ppc64le; macOS supports amd64 and arm64; Windows provides amd64.
 
-{{% tabpane text=true persist=header %}}
-{{% tab header="DEB package" selected=true %}}
+{{< tabs group="deb-package-rpm-package-tar-archive" default="deb-package" >}}
+{{< tab label="DEB package" value="deb-package" >}}
 Choose `ARCH=amd64`, `arm64`, or `ppc64le` to match the release filename:
 
 ```bash
@@ -127,8 +135,8 @@ sudo apt install "./pg-exporter_${VERSION}-1_${ARCH}.deb"
 ```
 
 Continue with [service configuration](#enable-service).
-{{% /tab %}}
-{{% tab header="RPM package" %}}
+{{< /tab >}}
+{{< tab label="RPM package" value="rpm-package" >}}
 `uname -m` returns the release architecture names `x86_64`, `aarch64`, or `ppc64le` on supported systems:
 
 ```bash
@@ -139,8 +147,8 @@ sudo dnf install "./pg-exporter-${VERSION}-1.${ARCH}.rpm"
 ```
 
 Continue with [service configuration](#enable-service).
-{{% /tab %}}
-{{% tab header="Tar archive" %}}
+{{< /tab >}}
+{{< tab label="Tar archive" value="tar-archive" >}}
 Choose `OS=linux` or `darwin`; choose `ARCH=amd64`, `arm64`, or Linux `ppc64le`. Windows users download the `windows-amd64` archive and run `pg_exporter.exe` from their chosen directory.
 
 ```bash
@@ -160,8 +168,8 @@ pg_exporter --version
 ```
 
 Run it directly with `PG_EXPORTER_URL=... pg_exporter`, or adapt the included `package/pg_exporter.service` and `package/pg_exporter.default` examples to your paths.
-{{% /tab %}}
-{{% /tabpane %}}
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Verify the download
 
@@ -204,9 +212,8 @@ docker run -d \
   pgsty/pg_exporter:{{< param version >}}
 ```
 
-{{% alert title="Scratch image" color="warning" %}}
-The image contains the static exporter, merged config, and license, but no shell or operating-system CA bundle. Mount the required CA explicitly when using `sslmode=verify-ca` or `verify-full`.
-{{% /alert %}}
+> [!WARNING] Scratch image
+> The image contains the static exporter, merged config, and license, but no shell or operating-system CA bundle. Mount the required CA explicitly when using `sslmode=verify-ca` or `verify-full`.
 
 For Compose and Kubernetes examples, probes, secrets, and Prometheus wiring, continue to [Container and Kubernetes deployment](/deploy/#docker-deployment).
 

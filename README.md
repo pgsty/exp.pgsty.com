@@ -4,7 +4,7 @@ This repository is the OINK-based standalone bilingual
 [PG Exporter](https://github.com/pgsty/pg_exporter) documentation site. It uses
 Hugo Extended and the reusable [OINK](https://github.com/pgsty/oink) theme, with
 English at `/` and Simplified Chinese at `/zh/`. Production builds pin OINK
-`v0.4.1` in `go.mod`.
+`v0.5.0` in `go.mod`.
 
 - Site: <https://exp.pgsty.com>
 - Product source: <https://github.com/pgsty/pg_exporter>
@@ -47,6 +47,7 @@ print/Markdown outputs, content components, and footer. PG Exporter fills those
 theme surfaces through configuration and content:
 
 - `data/home/en.yaml` and `data/home/zh.yaml`: bilingual OINK homepage sections
+- `data/footer/en.yaml` and `data/footer/zh.yaml`: bilingual OINK footer data
 - `data/home/metrics.yaml`: traceability ledger for homepage product facts
 - `assets/scss/_variables_project.scss`: supported brand design tokens
 - `assets/scss/_styles_project.scss`: narrow-screen anchor-offset correction for the OINK shell
@@ -58,8 +59,8 @@ preset. The main Docs entry uses OINK's one-level navigation menu, and the
 Command Palette projects Download, Docs, and Blog from that same menu while
 adding a bilingual latest-release command and the shared page actions. The
 bilingual quick start uses the automatically numbered `steps` component; the
-download guide uses enhanced code blocks, a persistent `code-group`, and a
-`filetree` for installed paths. Release listings explicitly stay text-only so
+download guide uses the `tabs` component, enhanced code blocks, and a native
+`filetree` fence for installed paths. Release listings explicitly stay text-only so
 35 version notes remain easy to scan instead of repeating one generic product
 image on every row.
 
@@ -122,8 +123,8 @@ keep the OINK checkout beside this directory:
 └── exp.pgsty.com/
 ```
 
-`make d` (or `make dev`) creates an ignored `go.work` file that points Hugo at
-the sibling theme checkout. It does not pin the preview port, and no Node.js
+`make d` (or `make dev`) applies a one-command replacement that points Hugo at
+the sibling theme checkout without creating `go.work`. It does not pin the preview port, and no Node.js
 toolchain or CDN is required:
 
 ```bash
@@ -141,7 +142,7 @@ The gate disables workspace replacement, verifies `go.sum`, treats all Hugo path
 and translation warnings as fatal, checks Markdown source/render hygiene, and
 validates rendered internal links. Use `make check-local` to run the same site
 checks against an in-progress sibling OINK checkout. `make s` is the short form
-of the local-theme server; the long targets remain available.
+of the pinned production-environment preview; the long targets remain available.
 
 ## Publishing caution
 

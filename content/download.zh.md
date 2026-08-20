@@ -11,16 +11,23 @@ search_boost: 1.5
 
 PG Exporter {{< param version >}} 提供托管式 Linux 软件包、独立 RPM/DEB、Linux/macOS/Windows 发布压缩包、多架构容器镜像、Pigsty 自动化与源码构建。选择标准应当是生命周期由谁负责，而不是功能差异：每条路径运行的都是同一个导出器与同一套声明式采集器。
 
-{{% alert title="产品名与交付物名称" color="info" %}}
-产品名称写作 **PG Exporter**。Linux 软件包名是 `pg-exporter`；可执行文件、服务、配置文件与容器仓库继续保留兼容名称 `pg_exporter`。
-{{% /alert %}}
+> [!NOTE] 产品名与交付物名称
+> 产品名称写作 **PG Exporter**。Linux 软件包名是 `pg-exporter`；可执行文件、服务、配置文件与容器仓库继续保留兼容名称 `pg_exporter`。
 
-{{< nav-cards cols="4" >}}
-{{< nav-card title="Linux 软件包" link="#repository-packages" icon="fa-solid fa-box-archive" badge="推荐" desc="APT/YUM 生命周期、systemd 单元、合并配置与 /etc/default/pg_exporter。" />}}
-{{< nav-card title="发布产物" link="#github-release-artifacts" icon="fa-solid fa-file-zipper" desc="带 SHA256 校验和的固定版本 RPM、DEB 及 Linux/macOS/Windows 压缩包。" />}}
-{{< nav-card title="容器镜像" link="#container-image" icon="fa-brands fa-docker" desc="适用于 Docker、Podman、Compose 或编排平台的固定版本 amd64/arm64 镜像。" />}}
-{{< nav-card title="Pigsty 或源码" link="#pigsty" icon="fa-solid fa-code-branch" desc="由 Pigsty 交付完整监控栈，或自行负责一个指定标签的完整构建。" />}}
-{{< /nav-cards >}}
+{{< cards >}}
+{{< card title="Linux 软件包" link="#repository-packages" icon="fa-solid fa-box-archive" badge="推荐" >}}
+APT/YUM 生命周期、systemd 单元、合并配置与 /etc/default/pg_exporter。
+{{< /card >}}
+{{< card title="发布产物" link="#github-release-artifacts" icon="fa-solid fa-file-zipper" >}}
+带 SHA256 校验和的固定版本 RPM、DEB 及 Linux/macOS/Windows 压缩包。
+{{< /card >}}
+{{< card title="容器镜像" link="#container-image" icon="fa-brands fa-docker" >}}
+适用于 Docker、Podman、Compose 或编排平台的固定版本 amd64/arm64 镜像。
+{{< /card >}}
+{{< card title="Pigsty 或源码" link="#pigsty" icon="fa-solid fa-code-branch" >}}
+由 Pigsty 交付完整监控栈，或自行负责一个指定标签的完整构建。
+{{< /card >}}
+{{< /cards >}}
 
 ## 选择安装路径
 
@@ -40,16 +47,20 @@ PG Exporter {{< param version >}} 提供托管式 Linux 软件包、独立 RPM/D
 
 `pigsty-infra` 仓库面向常见 EL 与 Debian/Ubuntu 平台发布 `pg-exporter`。
 
-{{< code-group id="download-repository-packages" persist=true label="选择 Linux 包管理器" copy="all" >}}
-  {{< code-tab title="APT · Debian / Ubuntu" value="apt" lang="bash" selected=true >}}
+{{< tabs group="download-repository-packages" default="apt" label="选择 Linux 包管理器" >}}
+{{< tab label="APT · Debian / Ubuntu" value="apt" >}}
+```bash {copy="all"}
 sudo tee /etc/apt/sources.list.d/pigsty-infra.list > /dev/null <<'EOF'
 deb [trusted=yes] https://repo.pigsty.io/apt/infra generic main
 EOF
 
 sudo apt update
 sudo apt install -y pg-exporter
-  {{< /code-tab >}}
-  {{< code-tab title="YUM · RHEL / Rocky / Alma" value="yum" lang="bash" >}}
+```
+{{< /tab >}}
+
+{{< tab label="YUM · RHEL / Rocky / Alma" value="yum" >}}
+```bash {copy="all"}
 sudo tee /etc/yum.repos.d/pigsty-infra.repo > /dev/null <<'EOF'
 [pigsty-infra]
 name=Pigsty Infra for $basearch
@@ -61,8 +72,9 @@ EOF
 
 sudo yum makecache
 sudo yum install -y pg-exporter
-  {{< /code-tab >}}
-{{< /code-group >}}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 这些示例与当前 Pigsty 软件包通道保持一致。如果你的供应链制度要求签名的软件仓库元数据，应当把校验过的发布产物晋级到自有仓库，而不是在生产主机上放宽制度。
 
@@ -70,20 +82,16 @@ sudo yum install -y pg-exporter
 
 软件包会安装并管理以下文件结构：
 
-{{< filetree label="PG Exporter 软件包文件" >}}
-  {{< filetree/folder name="/usr" open=true >}}
-    {{< filetree/folder name="bin" open=true >}}
-      {{< filetree/file name="pg_exporter" >}}
-    {{< /filetree/folder >}}
-  {{< /filetree/folder >}}
-  {{< filetree/folder name="/etc" open=true >}}
-    {{< filetree/file name="pg_exporter.yml" >}}
-    {{< filetree/folder name="default" open=true >}}
-      {{< filetree/file name="pg_exporter" >}}
-    {{< /filetree/folder >}}
-  {{< /filetree/folder >}}
-  {{< filetree/file name="pg_exporter.service（systemd 单元）" >}}
-{{< /filetree >}}
+```filetree {title="PG Exporter 软件包文件"}
+- /usr/
+  - bin/
+    - pg_exporter
+- /etc/
+  - pg_exporter.yml
+  - default/
+    - pg_exporter
+- pg_exporter.service（systemd 单元）
+```
 
 合并采集器配置与默认环境文件在升级时保留；systemd 单元以 `prometheus` 用户运行导出器。
 
@@ -93,7 +101,7 @@ sudo yum install -y pg-exporter
 sudoedit /etc/default/pg_exporter
 ```
 
-```bash {filename="/etc/default/pg_exporter"}
+```bash {title="/etc/default/pg_exporter"}
 # 在文件中设置；生产环境优先使用 .pgpass 或密钥文件。
 PG_EXPORTER_URL='postgres://monitor@127.0.0.1:5432/postgres?sslmode=disable'
 ```
@@ -115,8 +123,8 @@ curl -fsS http://127.0.0.1:9630/metrics | grep '^pg_up '
 
 [v{{< param version >}} 版本](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})包含 RPM、DEB，以及 Linux、macOS、Windows 压缩包。Linux 支持 amd64、arm64、ppc64le；macOS 支持 amd64、arm64；Windows 提供 amd64。
 
-{{% tabpane text=true persist=header %}}
-{{% tab header="DEB 软件包" selected=true %}}
+{{< tabs group="deb-rpm-tar" default="deb" >}}
+{{< tab label="DEB 软件包" value="deb" >}}
 根据发布文件名选择 `ARCH=amd64`、`arm64` 或 `ppc64le`：
 
 ```bash
@@ -127,8 +135,8 @@ sudo apt install "./pg-exporter_${VERSION}-1_${ARCH}.deb"
 ```
 
 然后继续[配置服务](#enable-service)。
-{{% /tab %}}
-{{% tab header="RPM 软件包" %}}
+{{< /tab >}}
+{{< tab label="RPM 软件包" value="rpm" >}}
 在受支持平台上，`uname -m` 会返回发布产物使用的 `x86_64`、`aarch64` 或 `ppc64le`：
 
 ```bash
@@ -139,8 +147,8 @@ sudo dnf install "./pg-exporter-${VERSION}-1.${ARCH}.rpm"
 ```
 
 然后继续[配置服务](#enable-service)。
-{{% /tab %}}
-{{% tab header="Tar 压缩包" %}}
+{{< /tab >}}
+{{< tab label="Tar 压缩包" value="tar" >}}
 `OS` 可选 `linux` 或 `darwin`；`ARCH` 可选 `amd64`、`arm64` 或仅 Linux 支持的 `ppc64le`。Windows 用户下载 `windows-amd64` 压缩包，并从自选目录运行 `pg_exporter.exe`。
 
 ```bash
@@ -160,8 +168,8 @@ pg_exporter --version
 ```
 
 你可以用 `PG_EXPORTER_URL=... pg_exporter` 直接运行，或按自己的路径调整压缩包内的 `package/pg_exporter.service` 与 `package/pg_exporter.default` 示例。
-{{% /tab %}}
-{{% /tabpane %}}
+{{< /tab >}}
+{{< /tabs >}}
 
 ### 校验下载文件
 
@@ -204,9 +212,8 @@ docker run -d \
   pgsty/pg_exporter:{{< param version >}}
 ```
 
-{{% alert title="Scratch 镜像" color="warning" %}}
-镜像只包含静态导出器、合并配置与许可证，没有 Shell 或操作系统 CA 包。使用 `sslmode=verify-ca` 或 `verify-full` 时必须明确挂载所需 CA。
-{{% /alert %}}
+> [!WARNING] Scratch 镜像
+> 镜像只包含静态导出器、合并配置与许可证，没有 Shell 或操作系统 CA 包。使用 `sslmode=verify-ca` 或 `verify-full` 时必须明确挂载所需 CA。
 
 Compose、Kubernetes、探针、密钥与 Prometheus 接线示例见[容器与 Kubernetes 部署](/zh/deploy/#docker-部署)。
 

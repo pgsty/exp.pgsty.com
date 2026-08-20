@@ -102,10 +102,9 @@ chmod 600 ~/.pgpass
 PG_EXPORTER_URL='postgres://monitor@localhost:5432/postgres'
 ```
 
-{{% alert title="RPM/DEB package installs" color="info" %}}
-Packaged services run as the `prometheus` system user. Since v1.4.0 its HOME points to `/var/lib/prometheus` (where libpq looks up `~/.pgpass`), but the package does **not** create that directory. Before using `.pgpass`, run:
-`install -d -o prometheus -g prometheus /var/lib/prometheus`
-{{% /alert %}}
+> [!NOTE] RPM/DEB package installs
+> Packaged services run as the `prometheus` system user. Since v1.4.0 its HOME points to `/var/lib/prometheus` (where libpq looks up `~/.pgpass`), but the package does **not** create that directory. Before using `.pgpass`, run:
+> `install -d -o prometheus -g prometheus /var/lib/prometheus`
 
 ### TLS for the Database Connection
 
@@ -200,9 +199,8 @@ services:
       - postgres
 ```
 
-{{% alert title="Note" color="warning" %}}
-The official image is built from `scratch` and contains no system CA certificates. When connecting to remote PostgreSQL with `sslmode=verify-ca` / `verify-full`, mount a CA certificate explicitly and point `sslrootcert` at it, or TLS verification cannot complete.
-{{% /alert %}}
+> [!WARNING] Note
+> The official image is built from `scratch` and contains no system CA certificates. When connecting to remote PostgreSQL with `sslmode=verify-ca` / `verify-full`, mount a CA certificate explicitly and point `sslrootcert` at it, or TLS verification cannot complete.
 
 --------
 

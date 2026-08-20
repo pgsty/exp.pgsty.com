@@ -177,28 +177,3 @@ cta:
       url: start/
       icon: fa-solid fa-rocket
       style: ghost
-
-footer:
-  brand:
-    name: PG Exporter
-    tagline: 用 SQL 表达 PostgreSQL 可观测性。
-    slogan: 由 [Pigsty](https://pigsty.cc/) 社区维护的声明式 PostgreSQL 与 PgBouncer 指标导出器。
-  columns:
-    - title: 开始使用
-      links:
-        - { label: 下载安装, url: download/ }
-        - { label: 快速上手, url: start/ }
-        - { label: 安装参考, url: install/ }
-        - { label: 生产部署, url: deploy/ }
-    - title: 参考
-      links:
-        - { label: 配置参考, url: config/ }
-        - { label: 内置采集器, url: collectors/ }
-        - { label: HTTP API, url: api/ }
-        - { label: 兼容性, url: compatibility/ }
-    - title: 项目
-      links:
-        - { label: 版本归档, url: release/ }
-        - { label: GitHub 源码, url: 'https://github.com/pgsty/pg_exporter', external: true }
-        - { label: 问题反馈, url: 'https://github.com/pgsty/pg_exporter/issues', external: true }
-        - { label: 讨论区, url: 'https://github.com/pgsty/pg_exporter/discussions', external: true }
