@@ -1,0 +1,93 @@
+# /zh/download/ 页面：一个 hero、安装矩阵，以及接下来去哪。矩阵本身不在这里描述——
+# download 区块读取 data/download/pg-exporter.yaml，因此与版本绑定的命令、链接与
+# 校验和只有一个来源；这些路径自己就说清楚了，前面不需要再摆一段散文对比。
+#
+# hero 中唯一与版本相关的事实记录在 data/home/metrics.yaml，
+# 请与 hugo.yaml 中的 params.version 一同更新。
+sections:
+  - hero
+  - type: download
+    partial: pgx/content-section
+  - type: cards
+    key: next
+  - cta
+
+hero:
+  eyebrow: 下载矩阵
+  title: 安装 PG Exporter
+  desc: '**六条交付路径，同一个导出器。** 每条路径运行的都是同一个二进制与同一套声明式采集器，因此选择标准是这台主机的生命周期由谁负责，而不是功能差异。'
+  note: v1.4.1 · Linux · macOS · Windows · amd64 / arm64 / ppc64le
+  note_icon: fa-solid fa-box-archive
+  align: center
+  title_size: 3.4rem
+  actions:
+    - label: 最新 GitHub 版本
+      url: 'https://github.com/pgsty/pg_exporter/releases/latest'
+      icon: fa-brands fa-github
+      style: primary
+      external: true
+    - label: 安装参考
+      url: install/
+      icon: fa-solid fa-cloud-arrow-down
+      style: ghost
+  detail:
+    label: 第一次用？五分钟导出第一组指标
+    url: start/
+    icon: fa-solid fa-rocket
+
+download:
+  eyebrow: 安装矩阵
+  title: 挑选与主机匹配的路径
+  desc: '命令、链接与摘要都直接来自发布记录，不会与它们指向的产物脱节。Linux 软件包名是 `pg-exporter`；可执行文件、服务、配置文件与容器仓库继续保留兼容名称 `pg_exporter`。'
+  keys: [pg-exporter]
+
+next:
+  eyebrow: 接下来
+  title: 从这里继续
+  columns: 3
+  link_label: 阅读
+  items:
+    - title: 生产部署
+      meta: 运维
+      icon: fa-solid fa-server
+      desc: 凭据、TLS、HTTP 暴露面、systemd 与容器重启策略、探针以及自动发现。
+      url: deploy/
+    - title: 采集器配置
+      meta: 配置
+      icon: fa-solid fa-code
+      desc: 用 YAML 与 SQL 定义版本感知的指标，并按采集器设置 TTL、超时、跳过与致命行为。
+      url: config/
+    - title: HTTP API
+      meta: 观测
+      icon: fa-solid fa-plug
+      desc: '`/metrics`、`/up`、`/explain`、`/stat`、`/reload` 以及主从流量路由端点。'
+      url: api/
+    - title: 安装参考
+      meta: 参考
+      icon: fa-solid fa-cloud-arrow-down
+      desc: 完整的产物矩阵、仓库结构与逐文件的发布清单。
+      url: install/
+    - title: 兼容性矩阵
+      meta: 参考
+      icon: fa-solid fa-table-list
+      desc: PostgreSQL 10–19+、PgBouncer 1.8–1.25+，以及 9.x 分支上的差异。
+      url: compatibility/
+    - title: 发布归档
+      meta: 历史
+      icon: fa-solid fa-clock-rotate-left
+      desc: 每个标签一篇双语发布说明，从 v0.0.1 到今天，附产物与升级注意事项。
+      url: release/
+
+cta:
+  title: 指标已经跑起来了？
+  desc: 用 Pigsty 把规则、仪表盘与 PostgreSQL 发行版一并带上，或者直接阅读源码。
+  actions:
+    - label: 快速上手
+      url: start/
+      icon: fa-solid fa-rocket
+      style: primary
+    - label: pgsty/pg_exporter
+      url: 'https://github.com/pgsty/pg_exporter'
+      icon: fa-brands fa-github
+      style: ghost
+      external: true

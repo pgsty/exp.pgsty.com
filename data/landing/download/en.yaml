@@ -1,0 +1,95 @@
+# The /download/ page: a hero, the install matrix, and where to go next. The
+# matrix is not described here -- the `download` section reads
+# data/download/pg-exporter.yaml, so version-bound commands, links, and asset
+# checksums have exactly one source, and the routes explain themselves without
+# a prose comparison in front of them.
+#
+# The one version-derived fact in the hero is tracked in data/home/metrics.yaml;
+# update that ledger with params.version in hugo.yaml.
+sections:
+  - hero
+  - type: download
+    partial: pgx/content-section
+  - type: cards
+    key: next
+  - cta
+
+hero:
+  eyebrow: Download matrix
+  title: Install PG Exporter
+  desc: '**Six delivery routes, one exporter.** Every route runs the same binary and the same declarative collectors, so choose by who owns the lifecycle on that host — not by feature set.'
+  note: v1.4.1 · Linux · macOS · Windows · amd64 / arm64 / ppc64le
+  note_icon: fa-solid fa-box-archive
+  align: center
+  title_size: 3.4rem
+  actions:
+    - label: Latest GitHub release
+      url: 'https://github.com/pgsty/pg_exporter/releases/latest'
+      icon: fa-brands fa-github
+      style: primary
+      external: true
+    - label: Installation reference
+      url: install/
+      icon: fa-solid fa-cloud-arrow-down
+      style: ghost
+  detail:
+    label: New here? Export your first metrics in five minutes
+    url: start/
+    icon: fa-solid fa-rocket
+
+download:
+  eyebrow: Install matrix
+  title: Pick the route that matches the host
+  desc: 'Commands, links, and digests all come from the release record, so they cannot drift from the artifacts they name. The Linux package is `pg-exporter`; the executable, the service, the configuration file, and the container repository keep the compatibility name `pg_exporter`.'
+  keys: [pg-exporter]
+
+next:
+  eyebrow: Then what
+  title: Where to go from here
+  columns: 3
+  link_label: Read
+  items:
+    - title: Production deployment
+      meta: Operate
+      icon: fa-solid fa-server
+      desc: Credentials, TLS, HTTP exposure, systemd and container restart policy, probes, and auto-discovery.
+      url: deploy/
+    - title: Collector configuration
+      meta: Configure
+      icon: fa-solid fa-code
+      desc: Define version-aware metrics in YAML and SQL, with per-collector TTL, timeout, skip, and fatal behaviour.
+      url: config/
+    - title: HTTP API
+      meta: Inspect
+      icon: fa-solid fa-plug
+      desc: '`/metrics`, `/up`, `/explain`, `/stat`, `/reload`, and the primary/replica routing endpoints.'
+      url: api/
+    - title: Installation reference
+      meta: Reference
+      icon: fa-solid fa-cloud-arrow-down
+      desc: The complete artifact matrix, repository layout, and per-file release table.
+      url: install/
+    - title: Compatibility matrix
+      meta: Reference
+      icon: fa-solid fa-table-list
+      desc: PostgreSQL 10–19+, PgBouncer 1.8–1.25+, and what changes on the 9.x branch.
+      url: compatibility/
+    - title: Release archive
+      meta: History
+      icon: fa-solid fa-clock-rotate-left
+      desc: One bilingual note for every tag, from v0.0.1 to today, with its artifacts and upgrade notes.
+      url: release/
+
+cta:
+  title: Metrics flowing?
+  desc: Bring the rest of the stack — rules, dashboards, and a PostgreSQL distribution — with Pigsty, or read the source.
+  actions:
+    - label: Quick start
+      url: start/
+      icon: fa-solid fa-rocket
+      style: primary
+    - label: pgsty/pg_exporter
+      url: 'https://github.com/pgsty/pg_exporter'
+      icon: fa-brands fa-github
+      style: ghost
+      external: true

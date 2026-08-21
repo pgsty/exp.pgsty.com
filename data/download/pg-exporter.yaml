@@ -1,0 +1,229 @@
+# PG Exporter install channels, consumed by the download landing section and by
+# the `download` shortcode. `version` is deliberately absent so the record
+# follows params.version in hugo.yaml, and `tag` defaults to v{version}.
+#
+# Only pinned channels interpolate ${version} and ${tag}; the rolling repository
+# and Pigsty channels stay bound to a moving target on purpose.
+repo: pgsty/pg_exporter
+published: true
+channels:
+  - id: packages
+    kind: rolling
+    title: Linux packages
+    title_zh: Linux 软件包
+    icon: fa-solid fa-box-archive
+    note: >-
+      The recommended route for long-lived Linux hosts: APT/YUM upgrades, a
+      systemd unit, the merged collector configuration, and
+      `/etc/default/pg_exporter` arrive as one managed unit.
+    note_zh: >-
+      长期运行的 Linux 主机推荐这条路径：APT/YUM 升级、systemd 单元、合并后的采集器配置与
+      `/etc/default/pg_exporter` 作为一个受管整体交付。
+    steps:
+      - title: APT · Debian / Ubuntu
+        title_zh: APT · Debian / Ubuntu
+        lang: bash
+        code: |
+          sudo tee /etc/apt/sources.list.d/pigsty-infra.list > /dev/null <<'EOF'
+          deb [trusted=yes] https://repo.pigsty.io/apt/infra generic main
+          EOF
+
+          sudo apt update
+          sudo apt install -y pg-exporter
+      - title: YUM · RHEL / Rocky / Alma
+        title_zh: YUM · RHEL / Rocky / Alma
+        lang: bash
+        code: |
+          sudo tee /etc/yum.repos.d/pigsty-infra.repo > /dev/null <<'EOF'
+          [pigsty-infra]
+          name=Pigsty Infra for $basearch
+          baseurl=https://repo.pigsty.io/yum/infra/$basearch
+          enabled=1
+          gpgcheck=0
+          module_hotfixes=1
+          EOF
+
+          sudo yum makecache
+          sudo yum install -y pg-exporter
+      - title: Point it at a database and start it
+        title_zh: 指向数据库并启动服务
+        lang: bash
+        code: |
+          # PG_EXPORTER_URL='postgres://monitor@127.0.0.1:5432/postgres?sslmode=disable'
+          sudoedit /etc/default/pg_exporter
+
+          sudo systemctl enable --now pg_exporter
+          curl -fsS http://127.0.0.1:9630/up
+
+  - id: artifacts
+    kind: pinned
+    title: RPM / DEB
+    title_zh: RPM / DEB
+    icon: fa-solid fa-file-zipper
+    url: https://github.com/pgsty/pg_exporter/releases/tag/${tag}
+    note: >-
+      Pinned packages for an offline or promotion-gated pipeline. They install
+      the same systemd unit and defaults as the repository packages.
+    note_zh: >-
+      适用于离线交付或需要逐级晋级的流水线，安装的 systemd 单元与默认参数与仓库软件包完全一致。
+    steps:
+      - title: DEB · amd64 / arm64 / ppc64le
+        title_zh: DEB · amd64 / arm64 / ppc64le
+        lang: bash
+        code: |
+          ARCH=amd64
+          curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/${tag}/pg-exporter_${version}-1_$ARCH.deb"
+          sudo apt install "./pg-exporter_${version}-1_$ARCH.deb"
+      - title: RPM · x86_64 / aarch64 / ppc64le
+        title_zh: RPM · x86_64 / aarch64 / ppc64le
+        lang: bash
+        code: |
+          ARCH=$(uname -m)
+          curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/${tag}/pg-exporter-${version}-1.$ARCH.rpm"
+          sudo dnf install "./pg-exporter-${version}-1.$ARCH.rpm"
+
+  - id: archive
+    kind: pinned
+    title: Archive
+    title_zh: 压缩包
+    icon: fa-solid fa-box-open
+    note: >-
+      Installer-free binaries for CI, macOS, Windows, and hosts where you own
+      the service definition. Linux covers amd64, arm64, and ppc64le; macOS
+      covers amd64 and arm64; Windows ships amd64.
+    note_zh: >-
+      免安装器的二进制，适合 CI、macOS、Windows 以及由你自己定义服务的主机。Linux 提供
+      amd64、arm64 与 ppc64le，macOS 提供 amd64 与 arm64，Windows 提供 amd64。
+    steps:
+      - title: Extract and install
+        title_zh: 解压并安装
+        lang: bash
+        code: |
+          OS=linux ARCH=amd64
+          ARCHIVE="pg_exporter-${version}.$OS-$ARCH.tar.gz"
+
+          curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/${tag}/$ARCHIVE"
+          mkdir -p stage && tar -xzf "$ARCHIVE" -C stage
+          sudo install -m 0755 stage/pg_exporter /usr/local/bin/pg_exporter
+          sudo install -m 0644 stage/pg_exporter.yml /etc/pg_exporter.yml
+
+          pg_exporter --version
+      - title: Verify before you promote it
+        title_zh: 晋级前先校验
+        lang: bash
+        code: |
+          curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/${tag}/checksums.txt"
+          sha256sum -c checksums.txt --ignore-missing
+
+  - id: container
+    kind: pinned
+    title: Container
+    title_zh: 容器
+    icon: fa-brands fa-docker
+    url: https://hub.docker.com/r/pgsty/pg_exporter
+    note: >-
+      A multi-architecture amd64/arm64 image. It is a scratch image: it carries
+      the static binary, the merged config, and the license, but no shell and no
+      operating-system CA bundle, so mount a CA explicitly for `verify-full`.
+    note_zh: >-
+      多架构 amd64/arm64 镜像。它基于 scratch 构建，只包含静态二进制、合并配置与许可证，
+      没有 shell 也没有系统 CA 证书；使用 `verify-full` 时请显式挂载 CA。
+    steps:
+      - title: Run a pinned image
+        title_zh: 运行固定版本镜像
+        lang: bash
+        code: |
+          docker run -d \
+            --name pg_exporter \
+            --restart unless-stopped \
+            -p 127.0.0.1:9630:9630 \
+            -e PG_EXPORTER_URL='postgres://monitor:S3cret@postgres:5432/postgres' \
+            pgsty/pg_exporter:${version}
+
+          curl -fsS http://127.0.0.1:9630/up
+      - title: Mount a secret and a custom collector file
+        title_zh: 挂载密钥与自定义采集器文件
+        lang: bash
+        code: |
+          docker run -d \
+            --name pg_exporter \
+            --restart unless-stopped \
+            -p 127.0.0.1:9630:9630 \
+            -e PG_EXPORTER_URL_FILE=/run/secrets/pgurl \
+            -v ./pgurl:/run/secrets/pgurl:ro \
+            -v ./pg_exporter.yml:/etc/pg_exporter.yml:ro \
+            pgsty/pg_exporter:${version}
+
+  - id: pigsty
+    kind: rolling
+    title: Pigsty
+    title_zh: Pigsty
+    icon: fa-solid fa-diagram-project
+    url: https://pigsty.io/docs/setup/install/
+    note: >-
+      The integrated route: PG Exporter arrives with a PostgreSQL distribution,
+      Prometheus-compatible storage, recording and alerting rules, and Grafana
+      dashboards. The bootstrap only obtains Pigsty -- choose an inventory
+      before running it against any host.
+    note_zh: >-
+      集成路径：PG Exporter 随 PostgreSQL 发行版、Prometheus 兼容存储、记录与告警规则以及
+      Grafana 仪表盘一同交付。引导脚本只负责取得 Pigsty，请先选定清单再对主机执行。
+    steps:
+      - title: Obtain Pigsty
+        title_zh: 获取 Pigsty
+        lang: bash
+        code: |
+          curl -fsSL https://repo.pigsty.io/get | bash
+          cd ~/pigsty
+
+  - id: source
+    kind: pinned
+    title: Source
+    title_zh: 源码
+    icon: fa-solid fa-code-branch
+    url: https://github.com/pgsty/pg_exporter
+    note: >-
+      For auditing, development, and custom build flags. A source build creates
+      no service account and registers no system service; reproduce those
+      controls deliberately if you need them.
+    note_zh: >-
+      适用于审计、二次开发与自定义构建参数。源码构建不会创建服务账号，也不会注册系统服务；
+      如果需要这些控制，请自行显式实现。
+    steps:
+      - title: Build the exact release tag
+        title_zh: 构建指定发布标签
+        lang: bash
+        code: |
+          git clone https://github.com/pgsty/pg_exporter.git
+          cd pg_exporter
+          git checkout "${tag}"
+          make build
+
+          ./pg_exporter --version
+          PG_EXPORTER_URL='postgres://monitor@127.0.0.1:5432/postgres' ./pg_exporter --dry-run
+
+  - id: assets
+    kind: pinned
+    title: All artifacts
+    title_zh: 全部产物
+    icon: fa-solid fa-fingerprint
+    url: https://github.com/pgsty/pg_exporter/releases/tag/${tag}
+    note: >-
+      Every file published with the release, with its SHA-256 digest. On macOS
+      compare `shasum -a 256 <file>` against the entry for that file.
+    note_zh: >-
+      发布中的每个文件及其 SHA-256 摘要。在 macOS 上使用 `shasum -a 256 <文件>`
+      与对应条目比对。
+    checksums: |
+      7648f1852f12a17c5ecc9c2f6aed1888f443d6e650c5001f9c8a05d7e4822f13  pg-exporter-1.4.1-1.aarch64.rpm
+      09037731e2d4bd22dcabb9a386f381c67a782a05a0f9ed54517312d7ea8e6631  pg-exporter-1.4.1-1.ppc64le.rpm
+      8dbf85ff6adc4b46b225b3a1e3be5a4a61130118eabee499865a88d04a3e1a93  pg-exporter-1.4.1-1.x86_64.rpm
+      cbe06eb161421a160d07b8c757864919d2ce1717b402630906235c471e411f38  pg-exporter_1.4.1-1_amd64.deb
+      36bc07ef2e3189b2acef06cf602ec9800ad6dc8b619ab5b2bfa5f900d9975cff  pg-exporter_1.4.1-1_arm64.deb
+      8228e6a9b73d68aafedf6b4ed795636b9528c254052709086de4fa5084707aad  pg-exporter_1.4.1-1_ppc64le.deb
+      e6de4c890af8d1c54b4a597e9fd02329e9caa543604c8406270a7a3c842d76f4  pg_exporter-1.4.1.darwin-amd64.tar.gz
+      6fe0b19398983587fbe5e9a31dd8de0aeaf03b6b91a6fe22fc71f63ba703a79f  pg_exporter-1.4.1.darwin-arm64.tar.gz
+      f2f952dbcf1ae09027bcee4ea4921d2b34f9f58ffbc7e3a2d42113f2cc94a340  pg_exporter-1.4.1.linux-amd64.tar.gz
+      e111974a12175d5f65c4ee0fb888604e6b343d893476ef4e88264a4c9601e8b4  pg_exporter-1.4.1.linux-arm64.tar.gz
+      7b8679de0d58373f5f570c0560125fb465f91e7a4d71223699e81c9ca6b84469  pg_exporter-1.4.1.linux-ppc64le.tar.gz
+      93c0231fbd3eae45604b0c723cf413b2bec5e0cfa652912b12fdf400f1761db4  pg_exporter-1.4.1.windows-amd64.tar.gz

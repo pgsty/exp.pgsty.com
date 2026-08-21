@@ -12,3 +12,8 @@ postgres_range: "10-19+"
 
 # Git tags represented by one release-note post per language.
 tagged_versions: 35
+
+# The current stable release, named in the /download/ hero. Landing data cannot
+# interpolate params.version, so bump this together with `params.version` in
+# hugo.yaml and the checksums in data/download/pg-exporter.yaml.
+release_version: "v1.4.1"
