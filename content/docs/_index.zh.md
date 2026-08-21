@@ -14,33 +14,30 @@ search_boost: 1.6
 
 本文档以最新稳定版本 **[v{{< param version >}}](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})** 为基线，作为独立的中英文手册维护；内容比原先 Pigsty 模块中的汇总页更加完整。
 
-## 从这里开始
+## 从这里开始 {#start-here}
 
-| 文档 | 适用场景 |
-|:---|:---|
-| [项目简介](/zh/intro/) | 理解架构、执行模型与产品边界 |
-| [快速上手](/zh/start/) | 用约五分钟得到可用的 exporter 与 Prometheus 抓取目标 |
-| [下载](/zh/download/) | 选择、安装、启用并验证软件包、压缩包、容器、Pigsty 或源码构建 |
-| [安装指南](/zh/install/) | 查阅完整的软件仓库与发布产物参考 |
-| [兼容性](/zh/compatibility/) | 核对 PostgreSQL、PgBouncer、操作系统、CPU、软件包与容器支持 |
+- [项目简介](/zh/intro/) — 理解架构、执行模型与产品边界。
+- [快速上手](/zh/start/) — 用约五分钟得到可用的 exporter 与 Prometheus 抓取目标。
+- [下载](/zh/download/) — 选择、安装、启用并验证软件包、压缩包、容器、Pigsty 或源码构建。
+- [安装指南](/zh/install/) — 查阅完整的软件仓库与发布产物参考。
+- [兼容性](/zh/compatibility/) — 核对 PostgreSQL、PgBouncer、操作系统、CPU、软件包与容器支持。
+{.cards}
 
-## 生产运行
+## 生产运行 {#run-it-in-production}
 
-| 文档 | 覆盖内容 |
-|:---|:---|
-| [生产部署](/zh/deploy/) | 参数、环境变量、systemd、Docker、Kubernetes、自动发现、抓取与告警 |
-| [安全指南](/zh/security/) | 数据库最小权限、密钥、TLS、HTTP 认证与网络暴露面 |
-| [故障排查](/zh/troubleshooting/) | 以症状为入口，使用日志、`/up`、`/explain`、`/stat` 与配置校验定位问题 |
+- [生产部署](/zh/deploy/) — 参数、环境变量、systemd、Docker、Kubernetes、自动发现、抓取与告警。
+- [安全指南](/zh/security/) — 数据库最小权限、密钥、TLS、HTTP 认证与网络暴露面。
+- [故障排查](/zh/troubleshooting/) — 以症状为入口，使用日志、`/up`、`/explain`、`/stat` 与配置校验定位问题。
+{.cards}
 
-## 理解与扩展
+## 理解与扩展 {#understand-and-extend-it}
 
-| 参考 | 覆盖内容 |
-|:---|:---|
-| [采集器配置](/zh/config/) | 完整 YAML 模型：查询、标签、谓词、TTL、超时、Label、Counter、Gauge 与快照直方图 |
-| [内置采集器](/zh/collectors/) | 58 个定义文件、采集器分组、前置条件、开销与基数控制 |
-| [HTTP API](/zh/api/) | 指标、健康检查、角色路由、重载、解释、统计、版本与首页端点 |
-| [开发指南](/zh/development/) | 构建、测试、修改采集器、重建合并配置与发布产物 |
-| [发布注记](/zh/release/) | 每个标签版本一篇中英文文章，按时间倒序排列 |
+- [采集器配置](/zh/config/) — 完整 YAML 模型：查询、标签、谓词、TTL、超时、Label、Counter、Gauge 与快照直方图。
+- [内置采集器](/zh/collectors/) — 58 个定义文件、采集器分组、前置条件、开销与基数控制。
+- [HTTP API](/zh/api/) — 指标、健康检查、角色路由、重载、解释、统计、版本与首页端点。
+- [开发指南](/zh/development/) — 构建、测试、修改采集器、重建合并配置与发布产物。
+- [发布注记](/zh/release/) — 每个标签版本一篇中英文文章，按时间倒序排列。
+{.cards}
 
 ## 文档口径
 

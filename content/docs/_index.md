@@ -14,33 +14,30 @@ search_boost: 1.6
 
 These docs target the latest stable release, **[v{{< param version >}}](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})**. They are maintained as a standalone, bilingual manual and are deliberately more detailed than the former Pigsty module pages.
 
-## Start Here
+## Start Here {#start-here}
 
-| Guide | Use it when you need to… |
-|:---|:---|
-| [Introduction](/intro/) | Understand the architecture, execution model, and operational boundaries |
-| [Getting Started](/start/) | Get a working exporter and Prometheus target in about five minutes |
-| [Download](/download/) | Choose, install, enable, and verify a package, archive, container, Pigsty, or source build |
-| [Installation](/install/) | Look up the complete artifact and repository reference |
-| [Compatibility](/compatibility/) | Check PostgreSQL, PgBouncer, OS, CPU, package, and container support |
+- [Introduction](/intro/) — Understand the architecture, execution model, and operational boundaries.
+- [Quick Start](/start/) — Get a working exporter and Prometheus target in about five minutes.
+- [Download](/download/) — Choose, install, enable, and verify a package, archive, container, Pigsty, or source build.
+- [Installation](/install/) — Look up the complete artifact and repository reference.
+- [Compatibility](/compatibility/) — Check PostgreSQL, PgBouncer, OS, CPU, package, and container support.
+{.cards}
 
-## Run It in Production
+## Run It in Production {#run-it-in-production}
 
-| Guide | What it covers |
-|:---|:---|
-| [Production Deployment](/deploy/) | Flags, environment variables, systemd, Docker, Kubernetes, discovery, scraping, and alerting |
-| [Security](/security/) | Least-privilege database access, secrets, TLS, HTTP authentication, and network exposure |
-| [Troubleshooting](/troubleshooting/) | A symptom-driven runbook using logs, `/up`, `/explain`, `/stat`, and config validation |
+- [Production Deployment](/deploy/) — Flags, environment variables, systemd, Docker, Kubernetes, discovery, scraping, and alerting.
+- [Security](/security/) — Least-privilege database access, secrets, TLS, HTTP authentication, and network exposure.
+- [Troubleshooting](/troubleshooting/) — A symptom-driven runbook using logs, `/up`, `/explain`, `/stat`, and config validation.
+{.cards}
 
-## Understand and Extend It
+## Understand and Extend It {#understand-and-extend-it}
 
-| Reference | What it covers |
-|:---|:---|
-| [Collector Configuration](/config/) | The complete YAML schema: queries, tags, predicates, TTL, timeout, labels, counters, gauges, and snapshot histograms |
-| [Bundled Collectors](/collectors/) | All 58 definition files, collector groups, prerequisites, cost, and cardinality considerations |
-| [HTTP API](/api/) | Metrics, health, role-routing, reload, explain, statistics, version, and landing endpoints |
-| [Development](/development/) | Build, test, change collectors, regenerate merged configs, and understand release artifacts |
-| [Release Notes](/release/) | One bilingual article per tagged version, newest first |
+- [Collector Configuration](/config/) — The complete YAML schema: queries, tags, predicates, TTL, timeout, labels, counters, gauges, and snapshot histograms.
+- [Bundled Collectors](/collectors/) — All 58 definition files, collector groups, prerequisites, cost, and cardinality considerations.
+- [HTTP API](/api/) — Metrics, health, role-routing, reload, explain, statistics, version, and landing endpoints.
+- [Development](/development/) — Build, test, change collectors, regenerate merged configs, and understand release artifacts.
+- [Release Notes](/release/) — One bilingual article per tagged version, newest first.
+{.cards}
 
 ## Documentation Contract
 
