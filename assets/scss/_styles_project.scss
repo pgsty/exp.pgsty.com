@@ -6,3 +6,16 @@
     scroll-padding-top: var(--td-scroll-padding-top);
   }
 }
+
+// Two landing surfaces set a Font Awesome glyph flush against the text beside
+// it, so the two collide at every size: the download tab bar between a channel
+// icon and its name, and a step card between its generated counter and the step
+// icon. Both gaps are presentational and belong to this site's use of those
+// components.
+.td-landing-download-tabs .nav-link > i {
+  margin-inline-end: 0.45em;
+}
+
+.td-landing-landing-steps > li > i {
+  margin-inline-start: 0.5em;
+}
