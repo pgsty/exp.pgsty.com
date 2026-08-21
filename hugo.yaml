@@ -60,12 +60,12 @@ languages:
       main:
         - identifier: download
           name: Download
-          weight: 10
+          weight: 30
           pageRef: /download
           pre: <i class='fa-solid fa-download'></i>
         - identifier: docs
           name: Docs
-          weight: 20
+          weight: 10
           pageRef: /docs
           pre: <i class='fa-solid fa-book'></i>
         - identifier: docs-start
@@ -102,7 +102,7 @@ languages:
             description: Metrics, health, planning, statistics, and reload endpoints
         - identifier: blog
           name: Blog
-          weight: 30
+          weight: 20
           pageRef: /blog
           pre: <i class='fa-solid fa-blog'></i>
   zh:
@@ -128,12 +128,12 @@ languages:
       main:
         - identifier: download
           name: 下载
-          weight: 10
+          weight: 30
           pageRef: /download
           pre: <i class='fa-solid fa-download'></i>
         - identifier: docs
           name: 文档
-          weight: 20
+          weight: 10
           pageRef: /docs
           pre: <i class='fa-solid fa-book'></i>
         - identifier: docs-start
@@ -170,7 +170,7 @@ languages:
             description: 指标、健康、规划、统计与重载端点
         - identifier: blog
           name: 博客
-          weight: 30
+          weight: 20
           pageRef: /blog
           pre: <i class='fa-solid fa-blog'></i>
 
@@ -251,6 +251,28 @@ params:
     name: CC BY 4.0
     url: https://creativecommons.org/licenses/by/4.0/
 
+  # Page comments through GitHub Discussions on this documentation repository.
+  # The Announcements category only accepts discussions created by the giscus
+  # app, so a thread exists for a page once someone comments on it. Reading a
+  # page loads nothing from giscus.app: the frame is lazy and only pages that
+  # render a page end -- documentation, blog, and section indexes, never the
+  # landing pages -- carry it at all. Front matter `comments: false` opts a
+  # page out.
+  comments:
+    enable: true
+    type: giscus
+    giscus:
+      repo: pgsty/exp.pgsty.com
+      repoId: R_kgDOTzFgEA
+      category: Announcements
+      categoryId: DIC_kwDOTzFgEM4DD37v
+      # One discussion per page path, so an English page and its Chinese peer
+      # keep separate threads.
+      mapping: pathname
+      reactionsEnabled: 1
+      inputPosition: top
+      loading: lazy
+
   page_width: normal
   footer_icp: ""
   footer_icp_url: https://beian.miit.gov.cn/
@@ -273,7 +295,7 @@ params:
     # other two reachable without leaving the page.
     blog_index_toggle: true
     typography: system
-    quick_links: [download, docs, blog]
+    quick_links: [docs, blog, download]
     sidebar_icon_policy: groups
     breadcrumb: true
     navbar_logo: true
