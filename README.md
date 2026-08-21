@@ -4,7 +4,7 @@ This repository is the OINK-based standalone bilingual
 [PG Exporter](https://github.com/pgsty/pg_exporter) documentation site. It uses
 Hugo Extended and the reusable [OINK](https://github.com/pgsty/oink) theme, with
 English at `/` and Simplified Chinese at `/zh/`. Production builds pin OINK
-`v0.5.0` in `go.mod`.
+`v0.6.0` in `go.mod`.
 
 - Site: <https://exp.pgsty.com>
 - Product source: <https://github.com/pgsty/pg_exporter>
@@ -21,8 +21,8 @@ overview; the actual pages are `/start/`, `/install/`, `/deploy/`, `/config/`,
 content/
   docs/_index.md              # documentation overview
   intro.md                    # architecture and execution model
-  start.md                    # first working scrape
-  download.md                 # choose, install, enable, verify
+  start.md                    # landing page: first working scrape
+  download.md                 # landing page: choose, install, enable, verify
   install.md                  # packages, archives, containers, source
   compatibility.md            # target and artifact matrix
   deploy.md                   # production deployment
@@ -32,8 +32,15 @@ content/
   collectors.md               # all 58 bundled definition files
   api.md                      # HTTP API
   development.md              # build, test, collector, release workflow
+  authors/vonng/_index.md     # author taxonomy profile, with its portrait
   blog/release/vX.Y.Z.md      # one post per Git tag
 ```
+
+`/start/` and `/download/` are OINK landing pages rather than manual pages:
+their front matter carries `layout: landing` plus a `landing:` key, and the
+sections come from `data/landing/<key>/<lang>.yaml`. Their Markdown bodies are
+never rendered; they exist because OINK's offline index skips a page with no
+raw content, and both pages are navigation entries readers search for.
 
 Every English `.md` page has a `.zh.md` peer. Blog content stays under
 `content/blog/`, but its public URL drops the `blog` component: for example,
@@ -47,31 +54,65 @@ print/Markdown outputs, content components, and footer. PG Exporter fills those
 theme surfaces through configuration and content:
 
 - `data/home/en.yaml` and `data/home/zh.yaml`: bilingual OINK homepage sections
+- `data/landing/download/{en,zh}.yaml` and `data/landing/start/{en,zh}.yaml`: the two landing pages
+- `data/download/pg-exporter.yaml`: the install channels and release assets both landing pages and the `download` shortcode read
 - `data/footer/en.yaml` and `data/footer/zh.yaml`: bilingual OINK footer data
-- `data/home/metrics.yaml`: traceability ledger for homepage product facts
+- `data/home/metrics.yaml`: traceability ledger for product facts repeated in page data
 - `assets/scss/_variables_project.scss`: supported brand design tokens
-- `assets/scss/_styles_project.scss`: narrow-screen anchor-offset correction for the OINK shell
+- `assets/scss/_styles_project.scss`: narrow-screen anchor-offset correction, and one gap between a download tab's glyph and its label
+- `layouts/_partials/pgx/content-section.html`: content scope for landing sections that carry authored content
 - `layouts/404.html`: deterministic OINK-partial composition for the bilingual 404 output
 - `layouts/robots.txt`: environment-aware crawler policy
 
 The homepage uses OINK's linked capability boards and its `system` typography
-preset. The main Docs entry uses OINK's one-level navigation menu, and the
-Command Palette projects Download, Docs, and Blog from that same menu while
-adding a bilingual latest-release command and the shared page actions. The
-bilingual quick start uses the automatically numbered `steps` component; the
-download guide uses the `tabs` component, enhanced code blocks, and a native
-`filetree` fence for installed paths. Release listings explicitly stay text-only so
-35 version notes remain easy to scan instead of repeating one generic product
-image on every row.
+preset, and its hero carries the generated architecture diagram (see below).
+The main Docs entry uses OINK's one-level navigation menu, and the Command
+Palette projects Download, Docs, and Blog from that same menu while adding a
+bilingual latest-release command and the shared page actions. The documentation
+overview uses the native `{.cards}` link-list form; the manuals use the `tabs`
+component, enhanced code blocks, and native `filetree` fences.
+
+`/download/` and `/start/` are composed from OINK's landing sections, so neither
+page needs a bespoke template, stylesheet, or runtime. `/download/` is
+deliberately short — hero, install matrix, where to go next — because the matrix
+already answers the question the page exists for; it is the theme's `download`
+section reading `data/download/pg-exporter.yaml`, which is also where the
+release assets table and its SHA-256 digests come from. `/start/` is the longer
+one: an overview `steps` row, four `markdown` procedure sections carrying the
+fragment ids other pages link to, a `code-plate` showing a healthy first scrape,
+and a `faq` for the four common failures.
+
+Page comments come from GitHub Discussions on this repository through giscus,
+in the Announcements category, with one thread per page path so an English page
+and its Chinese peer stay separate. They render wherever OINK renders a page end
+— documentation, blog, and section indexes — and therefore not on the three
+landing pages; front matter `comments: false` opts a page out. The frame is
+lazy, so reading a page requests nothing from `giscus.app` until the reader
+reaches the end of it.
+
+The blog declares the `authors` taxonomy, a page-end share bar, and reading
+time. The release archive publishes the compact `blog_index: table` form with
+the reader-side toggle enabled, and the whole section reads immersively:
+`featured_image: hero`, no sidebar, a `toc_style: flow` rail with no term
+clouds. Each note carries `release_url` and closes with `{{< release-card >}}`,
+so its links are derived from that one URL rather than hand-written.
 
 There is no local homepage, footer, search, or download layout. The pinned OINK
 module supplies those implementations; the sibling checkout provides the latest
 theme during local migration QA.
 
-The sole project-style rule restores the theme's own full navbar offset below
-the `md` breakpoint. The OINK shell otherwise places deep-linked manual headings
-behind its 56px sticky mobile subnav, and that offset is not exposed through
-theme configuration or homepage data.
+Two project-style rules exist. The first restores the theme's own full navbar
+offset below the `md` breakpoint, because the OINK shell otherwise places
+deep-linked manual headings behind its 56px sticky mobile subnav. The second
+adds the missing gap between a download tab's Font Awesome glyph and the channel
+name it precedes. Neither is exposed through theme configuration.
+
+`layouts/_partials/pgx/content-section.html` is a landing-section wrapper, not a
+copy of one. OINK styles its content components — the enhanced code block above
+all — under `.td-content`, which the landing shell does not establish, so a
+`markdown`, `download`, or `faq` section renders those components unframed. The
+wrapper emits that scope and then calls the theme's own section partial;
+landing data selects it with `partial: pgx/content-section`.
 
 The 404 template is the sole local page layout. It composes OINK's public head,
 navbar, footer, script, and translation partials because the theme's block-only
@@ -111,6 +152,26 @@ python3 bin/sync_pg_exporter_content.py \
 The standalone pages in this repository add architecture, compatibility,
 security, troubleshooting, collector inventory, development, and release-history
 corrections. Do not overwrite them with old content from the former demo site.
+`start` is not imported: the Quick Start is a site-authored landing page.
+
+## Generated images
+
+```bash
+python3 bin/build_architecture_diagram.py
+```
+
+This writes the four homepage hero diagrams — English and Chinese, light and
+dark — to `static/img/architecture*.svg`. The OINK hero paints its media as two
+CSS background images, one per colour scheme, so a bilingual site needs four
+files; the geometry, the palettes, and both languages' copy live in the script
+so they cannot drift. Its facts come from the `pg_exporter` source tree
+(`exporter/arg.go`, `patroni.go`, `pgbackrest.go`): PostgreSQL over libpq,
+PgBouncer through its admin console, Patroni through its own Prometheus
+endpoint, pgBackRest by running the local CLI, all merged on `:9630/metrics`.
+
+`static/img/release-banner.svg` is the editable source for the release
+archive's hero and social image; `release-banner.webp` beside it is the
+rendered result.
 
 ## Local development
 
