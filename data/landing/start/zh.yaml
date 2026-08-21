@@ -1,0 +1,246 @@
+# /zh/start/ 页面，由 OINK 的落地页区块组合而成。
+#
+# 四个流程区块使用显式 id —— install、create-monitoring-user、run-and-verify、
+# hook-into-prometheus —— 因为其他页面通过锚点链接到它们。中文页刻意沿用同一组 id，
+# 这样跨语言链接不必重写。
+sections:
+  - hero
+  - type: steps
+    key: outline
+  - type: markdown
+    partial: pgx/content-section
+    key: install
+    id: install
+  - type: markdown
+    partial: pgx/content-section
+    key: monitoring-user
+    id: create-monitoring-user
+  - type: markdown
+    partial: pgx/content-section
+    key: run
+    id: run-and-verify
+  - type: code-plate
+    key: output
+  - type: markdown
+    partial: pgx/content-section
+    key: prometheus
+    id: hook-into-prometheus
+  - type: faq
+    partial: pgx/content-section
+    key: troubleshoot
+  - type: cards
+    key: next
+  - cta
+
+hero:
+  eyebrow: 快速上手
+  title: 五分钟拿到第一组指标
+  desc: '**安装、连接、验证、抓取。** 一个静态二进制读取一个 PostgreSQL 实例，并在 `:9630` 上应答。没有代理要部署，没有 sidecar 要调度，也不需要编译任何东西。'
+  note: 你只需要一个可达的 PostgreSQL 10–19+（或 PgBouncer 1.8+）实例，以及在其中创建角色的权限
+  note_icon: fa-solid fa-circle-check
+  align: center
+  title_size: 3.2rem
+  actions:
+    - label: 全部安装路径
+      url: download/
+      icon: fa-solid fa-download
+      style: primary
+    - label: HTTP API
+      url: api/
+      icon: fa-solid fa-plug
+      style: ghost
+  detail:
+    label: 还在用 PostgreSQL 9.1–9.6？先看兼容性矩阵
+    url: compatibility/
+    icon: fa-solid fa-table-list
+
+outline:
+  eyebrow: 整条路径
+  title: 五条命令，按顺序执行
+  desc: 每一条都能独立验证，因此出错时你立刻知道该看链路的哪一半。
+  items:
+    - title: 安装二进制
+      icon: fa-solid fa-box-archive
+      desc: 长期运行的主机用仓库软件包，其他场景用发布压缩包。
+      cmd:
+        code: sudo apt install -y pg-exporter
+    - title: 创建监控角色
+      icon: fa-solid fa-user-shield
+      desc: '`pg_monitor` 自 PostgreSQL 10 起是内置角色，已覆盖默认采集器需要的全部读取权限。'
+      cmd:
+        code: GRANT pg_monitor TO monitor;
+    - title: 指向数据库
+      icon: fa-solid fa-plug
+      desc: 连接串可以来自命令行参数、环境变量或密钥文件，但不该只留在你迟早会忘记的 shell 历史里。
+      cmd:
+        code: export PG_EXPORTER_URL='postgres://monitor:S3cret@localhost:5432/postgres'
+    - title: 先解析，再运行
+      icon: fa-solid fa-play
+      desc: '`--dry-run` 打印合并后的采集器集合并退出；不带它则会监听 `:9630`。'
+      cmd:
+        code: pg_exporter --dry-run && pg_exporter
+    - title: 确认并抓取
+      icon: fa-solid fa-fire
+      desc: '`pg_up 1` 说明每一层都正常。只有到这一步，这个目标才该被写进 Prometheus 任务。'
+      cmd:
+        code: curl -s localhost:9630/metrics | grep '^pg_up '
+
+install:
+  eyebrow: 第 01 步
+  title: 安装
+  desc: 在 Linux amd64 上，发布压缩包是最短路径。托管软件包、其他平台、容器、Pigsty 与源码构建请使用[下载页面](/zh/download/)。
+  body: |
+    ```bash {copy="all"}
+    VERSION=$(curl -fsSL https://api.github.com/repos/pgsty/pg_exporter/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')
+    wget "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/pg_exporter-${VERSION}.linux-amd64.tar.gz"
+    mkdir -p "pg_exporter-${VERSION}.linux-amd64"
+    tar -xf "pg_exporter-${VERSION}.linux-amd64.tar.gz" -C "pg_exporter-${VERSION}.linux-amd64"
+    sudo install "pg_exporter-${VERSION}.linux-amd64/pg_exporter" /usr/bin/
+    sudo install "pg_exporter-${VERSION}.linux-amd64/pg_exporter.yml" /etc/pg_exporter.yml
+    ```
+
+    确认安装结果：
+
+    ```bash
+    pg_exporter --version
+    ```
+
+    > [!TIP] 长期保留的主机请优先用软件包
+    > RPM/DEB 路径额外提供升级路径、文件归属、`/etc/default/pg_exporter`，以及以 `prometheus` 用户运行的 systemd 单元。压缩包只给你二进制，服务定义要你自己负责。
+
+monitoring-user:
+  eyebrow: 第 02 步
+  title: 创建监控用户
+  desc: 在目标实例上创建一个专用的最小权限角色。自 PostgreSQL 10 起内置的 `pg_monitor` 角色授予默认采集器需要的全部读取权限——仅此而已。
+  body: |
+    ```sql {copy="all"}
+    CREATE USER monitor WITH PASSWORD 'S3cret';
+    GRANT pg_monitor TO monitor;
+    ```
+
+    只是用 `postgres` 这类超级用户在本地试一试？可以跳过这一步——但不要把这个捷径带到别人也能访问的主机上。
+
+run:
+  eyebrow: 第 03 步
+  title: 启动并验证
+  desc: 先解析配置，再真正启动。两条命令读取同一个连接串，因此拼写错误会在任何端口开始监听之前就暴露出来。
+  body: |
+    ```bash {copy="all"}
+    export PG_EXPORTER_URL='postgres://monitor:S3cret@localhost:5432/postgres'
+
+    pg_exporter --dry-run     # 打印解析后的采集器配置并退出
+    pg_exporter               # 正式启动，默认监听 :9630
+    ```
+
+    完全不提供 URL 时，`pg_exporter` 会回退到本地优先的默认值 `postgresql:///?sslmode=disable`，适合与 PostgreSQL 同机运行。完整优先级 —— `--url` › `PG_EXPORTER_URL` › `PGURL` › `PG_EXPORTER_URL_FILE` › 默认值 —— 记录在[生产部署](/zh/deploy/)中。
+
+    在另一个终端拉取指标：
+
+    ```bash
+    curl -s http://localhost:9630/metrics | grep -E '^pg_(up|version|in_recovery) '
+    ```
+
+output:
+  eyebrow: 健康的目标长什么样
+  aria_label: 'curl -s localhost:9630/metrics'
+  desc: '`pg_up 1` 说明整条链路已经打通——余下 600+ 指标（`pg_db_*`、`pg_table_*`、`pg_wal_*` ……）全部来自 `pg_exporter.yml` 中的声明式采集器定义。如果 `pg_up` 是 `0`，用 `--log.level=debug` 重启并阅读连接错误。'
+  lang: prometheus
+  code: |
+    pg_up 1              # 目标可达时为 1，否则为 0
+    pg_in_recovery 0     # 从库为 1，主库为 0
+    pg_version 170000    # server_version_num 形式的版本号
+
+prometheus:
+  eyebrow: 第 04 步
+  title: 接入 Prometheus
+  desc: 添加一个抓取目标即可。导出器是拉取模型且不持有队列，其他部分不需要任何改动。
+  body: |
+    ```yaml {title="prometheus.yml" copy="all"}
+    scrape_configs:
+      - job_name: 'postgresql'
+        scrape_interval: 15s
+        static_configs:
+          - targets: ['localhost:9630']
+    ```
+
+    采集器会按各自的 `ttl` 缓存结果——大多数实时采集器使用 `ttl: 10`。只要 TTL 小于抓取间隔，每次抓取都能拿到新鲜数据，而高频抓取也不可能把数据库压垮。这也是不建议把 `scrape_interval` 设得低于常见 TTL 的原因。
+
+    整条路径到此结束。Grafana 方面可以直接复用 [Pigsty](https://pigsty.cc) 的 PostgreSQL 仪表盘，或者访问[在线演示](https://g.pgsty.com)。
+
+troubleshoot:
+  eyebrow: 如果不对劲
+  title: 四种症状，答案分别在哪里
+  desc: 导出器不仅暴露数据库指标，也暴露运维它自身所需的证据。先用 `/explain` 与 `/stat`，再去翻日志。
+  style: accordion
+  link_label: 阅读 API 参考
+  items:
+    - question: '`pg_up 0` —— 连接失败'
+      answer: |
+        用 `pg_exporter --log.level=debug` 重启，并阅读它打印的错误。原因几乎总是三者之一：连接串指向了错误的主机、数据库或用户；`pg_hba.conf` 规则不允许监控角色从该地址接入；或者网络根本到不了那个端口。
+    - question: 有些指标始终不出现
+      answer: |
+        直接问导出器。`curl localhost:9630/explain` 会打印每个采集器的规划结论——哪个分支被选中，哪个因为版本门限、角色不匹配、标签或谓词失败而被跳过。
+      url: api/#get-explain
+    - question: 某个采集器持续失败
+      answer: |
+        `curl localhost:9630/stat` 返回按采集器统计的错误计数、耗时与缓存状态。非致命采集器的失败是隔离的：其余采集器照常上报，因此单条查询出问题不会让整个目标下线。
+      url: api/#get-stat
+    - question: 抓取变慢了
+      answer: |
+        在 `/stat` 中找到最慢的采集器，然后要么调高它的 `ttl` 让结果跨抓取复用，要么在不需要时设置 `skip: true`。采集成本属于配置，而不是二进制的固有属性。
+      url: config/
+    - question: 管理端点可以直接暴露吗？
+      answer: |
+        `/stat`、`/explain` 与 `/reload` 会描述并控制导出器本身。生产环境请用 `--web.config.file` 配置 TLS 与认证，或者把监听地址限制在可信网络内。
+      url: deploy/
+
+next:
+  eyebrow: 接下来
+  title: 推向生产
+  columns: 3
+  link_label: 阅读
+  items:
+    - title: 生产部署
+      meta: 运维
+      icon: fa-solid fa-server
+      desc: PgBouncer 目标、自动发现、凭据与 TLS，以及 systemd、Docker 与 Kubernetes。
+      url: deploy/
+    - title: 采集器配置
+      meta: 配置
+      icon: fa-solid fa-code
+      desc: GAUGE、COUNTER、HISTOGRAM 与 LABEL 语义，以及 TTL、标签与版本门限。
+      url: config/
+    - title: HTTP API
+      meta: 观测
+      icon: fa-solid fa-plug
+      desc: 通过 `/up`、`/primary` 与 `/replica` 做健康检查与主从流量路由。
+      url: api/
+    - title: 内置采集器
+      meta: 参考
+      icon: fa-solid fa-file-code
+      desc: 逐个说明这 58 个定义文件到底测量了什么。
+      url: collectors/
+    - title: 安全实践
+      meta: 加固
+      icon: fa-solid fa-shield-halved
+      desc: 最小权限角色、密钥处理、两跳 TLS，以及导出器从不读取什么。
+      url: security/
+    - title: 故障排查
+      meta: 诊断
+      icon: fa-solid fa-stethoscope
+      desc: 更完整的故障模式清单，以及识别每一种故障所用的端点。
+      url: troubleshooting/
+
+cta:
+  title: 端到端跑通了？
+  desc: 把记录规则、告警与 Grafana 仪表盘一并带上，或者看看采集器本身是怎么写的。
+  actions:
+    - label: 配置采集器
+      url: config/
+      icon: fa-solid fa-code
+      style: primary
+    - label: 在线演示
+      url: 'https://g.pgsty.com'
+      icon: fa-solid fa-chart-line
+      style: ghost
+      external: true

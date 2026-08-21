@@ -1,0 +1,247 @@
+# The /start/ page, composed from OINK's landing sections.
+#
+# The four procedure sections carry explicit ids -- install,
+# create-monitoring-user, run-and-verify, hook-into-prometheus -- because other
+# pages link to them by fragment. The Chinese peer uses the same ids on purpose,
+# so a cross-language link never has to be rewritten.
+sections:
+  - hero
+  - type: steps
+    key: outline
+  - type: markdown
+    partial: pgx/content-section
+    key: install
+    id: install
+  - type: markdown
+    partial: pgx/content-section
+    key: monitoring-user
+    id: create-monitoring-user
+  - type: markdown
+    partial: pgx/content-section
+    key: run
+    id: run-and-verify
+  - type: code-plate
+    key: output
+  - type: markdown
+    partial: pgx/content-section
+    key: prometheus
+    id: hook-into-prometheus
+  - type: faq
+    partial: pgx/content-section
+    key: troubleshoot
+  - type: cards
+    key: next
+  - cta
+
+hero:
+  eyebrow: Quick start
+  title: First metrics in five minutes
+  desc: '**Install, connect, verify, scrape.** One static binary reads one PostgreSQL instance and answers on `:9630`. There is no agent to deploy, no sidecar to schedule, and nothing to compile.'
+  note: You need a reachable PostgreSQL 10–19+ (or PgBouncer 1.8+) and permission to create a role in it
+  note_icon: fa-solid fa-circle-check
+  align: center
+  title_size: 3.2rem
+  actions:
+    - label: Every install route
+      url: download/
+      icon: fa-solid fa-download
+      style: primary
+    - label: HTTP API
+      url: api/
+      icon: fa-solid fa-plug
+      style: ghost
+  detail:
+    label: Still on PostgreSQL 9.1–9.6? Check the compatibility matrix first
+    url: compatibility/
+    icon: fa-solid fa-table-list
+
+outline:
+  eyebrow: The whole path
+  title: Five commands, in order
+  desc: Each one is independently verifiable, so a failure tells you which half of the pipeline to look at.
+  items:
+    - title: Install the binary
+      icon: fa-solid fa-box-archive
+      desc: A repository package on a long-lived host, or the release archive anywhere else.
+      cmd:
+        code: sudo apt install -y pg-exporter
+    - title: Create a monitoring role
+      icon: fa-solid fa-user-shield
+      desc: '`pg_monitor` is a built-in role since PostgreSQL 10 and covers every read the default collectors make.'
+      cmd:
+        code: GRANT pg_monitor TO monitor;
+    - title: Point it at the database
+      icon: fa-solid fa-plug
+      desc: The URL may come from a flag, the environment, or a secret file — never from a shell history you will forget.
+      cmd:
+        code: export PG_EXPORTER_URL='postgres://monitor:S3cret@localhost:5432/postgres'
+    - title: Parse, then run
+      icon: fa-solid fa-play
+      desc: '`--dry-run` prints the merged collector set and exits; without it the exporter listens on `:9630`.'
+      cmd:
+        code: pg_exporter --dry-run && pg_exporter
+    - title: Confirm and scrape
+      icon: fa-solid fa-fire
+      desc: '`pg_up 1` means every layer works. Only then does the target belong in a Prometheus job.'
+      cmd:
+        code: curl -s localhost:9630/metrics | grep '^pg_up '
+
+install:
+  eyebrow: Step 01
+  title: Install
+  desc: On Linux amd64 the release archive is the shortest path. For managed packages, other platforms, containers, Pigsty, and source builds, use the [download page](/download/).
+  body: |
+    ```bash {copy="all"}
+    VERSION=$(curl -fsSL https://api.github.com/repos/pgsty/pg_exporter/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')
+    wget "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/pg_exporter-${VERSION}.linux-amd64.tar.gz"
+    mkdir -p "pg_exporter-${VERSION}.linux-amd64"
+    tar -xf "pg_exporter-${VERSION}.linux-amd64.tar.gz" -C "pg_exporter-${VERSION}.linux-amd64"
+    sudo install "pg_exporter-${VERSION}.linux-amd64/pg_exporter" /usr/bin/
+    sudo install "pg_exporter-${VERSION}.linux-amd64/pg_exporter.yml" /etc/pg_exporter.yml
+    ```
+
+    Confirm the installation:
+
+    ```bash
+    pg_exporter --version
+    ```
+
+    > [!TIP] Prefer a package on a host you will keep
+    > The RPM/DEB route adds an upgrade path, file ownership, `/etc/default/pg_exporter`, and a systemd unit that runs as the `prometheus` user. The archive gives you the binary and leaves the service definition to you.
+
+monitoring-user:
+  eyebrow: Step 02
+  title: Create a monitoring user
+  desc: A dedicated least-privilege role on the target instance. The built-in `pg_monitor` role, available since PostgreSQL 10, grants every read the default collectors need — and nothing else.
+  body: |
+    ```sql {copy="all"}
+    CREATE USER monitor WITH PASSWORD 'S3cret';
+    GRANT pg_monitor TO monitor;
+    ```
+
+    Trying it out locally as a superuser such as `postgres`? Skip this step — but do not carry that shortcut into a host anyone else can reach.
+
+run:
+  eyebrow: Step 03
+  title: Run and verify
+  desc: Parse the configuration first, then start for real. Both commands read the same URL, so a typo fails before anything listens on a port.
+  body: |
+    ```bash {copy="all"}
+    export PG_EXPORTER_URL='postgres://monitor:S3cret@localhost:5432/postgres'
+
+    pg_exporter --dry-run     # print the parsed collector config, then exit
+    pg_exporter               # start for real, listening on :9630 by default
+    ```
+
+    With no URL at all, `pg_exporter` falls back to the local-first default `postgresql:///?sslmode=disable`, which fits running on the same host as PostgreSQL. The full precedence — `--url` › `PG_EXPORTER_URL` › `PGURL` › `PG_EXPORTER_URL_FILE` › default — is documented in the [deployment guide](/deploy/).
+
+    Pull the metrics from another terminal:
+
+    ```bash
+    curl -s http://localhost:9630/metrics | grep -E '^pg_(up|version|in_recovery) '
+    ```
+
+output:
+  eyebrow: What a healthy target looks like
+  aria_label: 'curl -s localhost:9630/metrics'
+  desc: '`pg_up 1` means the whole pipeline works — the remaining 600+ metrics (`pg_db_*`, `pg_table_*`, `pg_wal_*`, …) all come from the declarative collector definitions in `pg_exporter.yml`. If `pg_up` is `0`, restart with `--log.level=debug` and read the connection error.'
+  lang: prometheus
+  code: |
+    pg_up 1              # 1 when the target is reachable, 0 otherwise
+    pg_version 170000    # version in server_version_num format
+    pg_in_recovery 0     # 1 on replicas, 0 on primaries
+
+prometheus:
+  eyebrow: Step 04
+  title: Hook into Prometheus
+  desc: Add one scrape target. The exporter is pull-based and holds no queue, so nothing else has to change.
+  body: |
+    ```yaml {title="prometheus.yml" copy="all"}
+    scrape_configs:
+      - job_name: 'postgresql'
+        scrape_interval: 15s
+        static_configs:
+          - targets: ['localhost:9630']
+    ```
+
+    Collectors cache their results for their own `ttl` — most realtime collectors use `ttl: 10`. As long as the TTL stays below the scrape interval, every scrape gets fresh data while high-frequency scraping can never overwhelm the database. That is also why setting `scrape_interval` below the common TTLs is not recommended.
+
+    That is the whole path. For Grafana, reuse the PostgreSQL dashboards from [Pigsty](https://pigsty.io), or explore the [live demo](https://g.pgsty.com).
+
+troubleshoot:
+  eyebrow: If something is off
+  title: Four symptoms, and where the answer lives
+  desc: The exporter exposes the evidence needed to operate it, not just the database metrics it emits. Reach for `/explain` and `/stat` before reaching for the logs.
+  style: accordion
+  link_label: Read the API reference
+  items:
+    - question: '`pg_up 0` — the connection fails'
+      answer: |
+        Restart with `pg_exporter --log.level=debug` and read the error it prints. It is almost always one of three things: a URL that names the wrong host, database, or user; a `pg_hba.conf` rule that does not admit the monitoring role from that address; or a network path that never reaches the port.
+    - question: Some metrics never appear
+      answer: |
+        Ask the exporter why. `curl localhost:9630/explain` prints every collector's planning verdict — which branch was selected, which was skipped for a version gate, a role mismatch, a tag, or a failed predicate.
+      url: api/#get-explain
+    - question: One collector keeps failing
+      answer: |
+        `curl localhost:9630/stat` returns per-collector error counters, durations, and cache state. A non-fatal collector fails in isolation: its siblings keep reporting, which is why a single broken query never takes the target down.
+      url: api/#get-stat
+    - question: Scrapes are slow
+      answer: |
+        Find the slow collector in `/stat`, then either raise its `ttl` so its result is reused across scrapes or set `skip: true` if you do not need it. Collector cost is configuration, not a property of the binary.
+      url: config/
+    - question: Are the management endpoints safe to expose?
+      answer: |
+        `/stat`, `/explain`, and `/reload` describe and control the exporter. In production, protect them with `--web.config.file` for TLS and authentication, or keep the listener on a trusted network.
+      url: deploy/
+
+next:
+  eyebrow: Then what
+  title: Take it to production
+  columns: 3
+  link_label: Read
+  items:
+    - title: Production deployment
+      meta: Operate
+      icon: fa-solid fa-server
+      desc: PgBouncer targets, auto-discovery, credentials and TLS, systemd, Docker, and Kubernetes.
+      url: deploy/
+    - title: Collector configuration
+      meta: Configure
+      icon: fa-solid fa-code
+      desc: GAUGE, COUNTER, HISTOGRAM and LABEL semantics, TTL, tags, and version gates.
+      url: config/
+    - title: HTTP API
+      meta: Inspect
+      icon: fa-solid fa-plug
+      desc: Health checks and primary/replica traffic routing through `/up`, `/primary`, and `/replica`.
+      url: api/
+    - title: Bundled collectors
+      meta: Reference
+      icon: fa-solid fa-file-code
+      desc: What the 58 shipped definition files actually measure, collector by collector.
+      url: collectors/
+    - title: Security posture
+      meta: Harden
+      icon: fa-solid fa-shield-halved
+      desc: Least-privilege roles, secret handling, TLS on both hops, and what the exporter never reads.
+      url: security/
+    - title: Troubleshooting
+      meta: Diagnose
+      icon: fa-solid fa-stethoscope
+      desc: A longer catalogue of failure modes, with the endpoint that identifies each one.
+      url: troubleshooting/
+
+cta:
+  title: Working end to end?
+  desc: Bring the rest of the stack — recording rules, alerts, and Grafana dashboards — or read how the collectors are written.
+  actions:
+    - label: Configure collectors
+      url: config/
+      icon: fa-solid fa-code
+      style: primary
+    - label: Live demo
+      url: 'https://g.pgsty.com'
+      icon: fa-solid fa-chart-line
+      style: ghost
+      external: true
