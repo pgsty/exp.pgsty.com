@@ -24,10 +24,14 @@ hero:
       url: docs/
       icon: fa-solid fa-book-open
       style: ghost
-  detail:
-    label: 用五分钟接入第一个数据库
-    url: start/
-    icon: fa-solid fa-rocket
+  image:
+    light: img/architecture-zh-light.svg
+    dark: img/architecture-zh-dark.svg
+    alt: 'PG Exporter 架构图：PostgreSQL、PgBouncer、Patroni 与 pgBackRest 由同一个 PG Exporter 进程采集，合并后通过 :9630/metrics 供 Prometheus 与 VictoriaMetrics 抓取'
+  media:
+    ratio: minmax(0, 1fr) minmax(340px, 0.94fr)
+    max_width: 500px
+    hide_below: md
 
 metrics:
   eyebrow: 随包交付
@@ -87,7 +91,7 @@ capabilities:
       url: intro/
       motto: 一个二进制，按目标动态执行
       bullets:
-        - 匹配 PostgreSQL 或 PgBouncer 版本、主备角色、数据库、用户、模式与扩展事实。
+        - 匹配 PostgreSQL / PgBouncer 版本、主备角色、数据库与扩展。
         - 用多个查询分支处理差异，不必把所有采集器冻结在最低公共版本上。
         - 通过 `/explain` 查看每个分支为何入选、跳过或拒绝。
       value: 兼容性判断在运行时清清楚楚，而不是埋在版本说明里。

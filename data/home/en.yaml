@@ -24,10 +24,14 @@ hero:
       url: docs/
       icon: fa-solid fa-book-open
       style: ghost
-  detail:
-    label: Start with one database in five minutes
-    url: start/
-    icon: fa-solid fa-rocket
+  image:
+    light: img/architecture-light.svg
+    dark: img/architecture-dark.svg
+    alt: 'PG Exporter architecture: PostgreSQL, PgBouncer, Patroni, and pgBackRest collected by one PG Exporter process that serves merged metrics on :9630/metrics to Prometheus and VictoriaMetrics'
+  media:
+    ratio: minmax(0, 1fr) minmax(340px, 0.94fr)
+    max_width: 500px
+    hide_below: md
 
 metrics:
   eyebrow: Shipped surface
@@ -59,18 +63,18 @@ metrics:
 
 capabilities:
   eyebrow: Why PG Exporter
-  title: Put metric logic where database engineers can inspect it
-  desc: Collector behavior is data. The runtime handles target discovery, planning, execution, caching, failure isolation, and Prometheus encoding.
+  title: Metric logic database engineers can read
+  desc: Collector behavior is data. The runtime owns discovery, planning, caching, failure isolation, and encoding.
   items:
     - ref: 01 / DECLARE
-      title: Define metrics with YAML + SQL
+      title: Define metrics in YAML + SQL
       url: config/
       motto: Change the collector, not the binary
       bullets:
-        - Map query columns to GAUGE, COUNTER, HISTOGRAM, and LABEL semantics.
-        - Set per-collector TTL, timeout, skip, and fatal behavior explicitly.
-        - Keep custom collectors beside the shipped definitions and review them as configuration.
-      value: The metric contract stays readable to the people who understand the database.
+        - Map columns to GAUGE, COUNTER, HISTOGRAM, and LABEL.
+        - Set TTL, timeout, skip, and fatal behavior per collector.
+        - Keep custom collectors beside the shipped ones.
+      value: The metric contract stays readable to the database team.
       visual:
         type: code
         title: collector.yml
@@ -83,14 +87,14 @@ capabilities:
           - { class: k, prefix: '  ttl: ', text: '10' }
           - { class: k, prefix: '  timeout: ', text: '0.1' }
     - ref: 02 / PLAN
-      title: Select the right query for each target
+      title: The right query per target
       url: intro/
       motto: One binary, target-aware execution
       bullets:
-        - Match PostgreSQL or PgBouncer version, recovery role, database, user, schema, and extension facts.
-        - Use multiple query branches instead of freezing a collector at the oldest common denominator.
-        - Ask `/explain` why every branch was selected, skipped, or rejected.
-      value: Compatibility decisions are explicit at runtime instead of buried in release notes.
+        - Match version, recovery role, database, user, and extensions.
+        - Branch a collector instead of freezing it at the oldest version.
+        - Ask `/explain` why a branch was chosen or skipped.
+      value: Compatibility is decided at runtime, not in release notes.
       visual:
         type: code
         title: GET /explain
@@ -101,14 +105,14 @@ capabilities:
           - { class: c, prefix: '– ', text: 'pg_replica / role mismatch' }
           - { class: c, prefix: '– ', text: 'pgbouncer / target mismatch' }
     - ref: 03 / OPERATE
-      title: Observe and control the exporter itself
+      title: Observe the exporter itself
       url: api/
       motto: Scrapes are only one part of the runtime
       bullets:
-        - Inspect per-collector duration, errors, cache state, and output through `/stat`.
-        - Reload configuration without a process restart and keep independent collector failures isolated.
-        - Use health and primary/replica endpoints for probes and traffic decisions.
-      value: The exporter exposes the evidence needed to operate it, not just the database metrics it emits.
+        - See duration, errors, and cache state in `/stat`.
+        - Reload configuration without restarting the process.
+        - Use health and primary/replica endpoints for probes.
+      value: The exporter exposes the evidence needed to operate it.
       visual:
         type: components
         columns: 2
