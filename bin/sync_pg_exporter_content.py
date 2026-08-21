@@ -54,12 +54,10 @@ VERSIONS = [
 
 TAG_ONLY = {"v0.0.1", "v0.0.5"}
 
+# `start` is deliberately absent: /start/ is a site-authored OINK landing page
+# composed from data/landing/start/<lang>.yaml, so importing the upstream manual
+# page would overwrite its front matter with a docs page.
 DOCS = {
-    "start": {
-        "en": ("Getting Started", "Quick Start", "Get PG Exporter running and expose PostgreSQL metrics to Prometheus in five minutes", "fa-solid fa-rocket"),
-        "zh": ("快速上手", "快速上手", "五分钟内启动 PG Exporter，并向 Prometheus 暴露 PostgreSQL 指标", "fa-solid fa-rocket"),
-        "weight": 20,
-    },
     "install": {
         "en": ("Installation", "Installation", "Install PG Exporter from packages, release archives, containers, Pigsty, or source", "fa-solid fa-cloud-arrow-down"),
         "zh": ("安装指南", "安装指南", "通过软件包、发布压缩包、容器、Pigsty 或源码安装 PG Exporter", "fa-solid fa-download"),
@@ -416,19 +414,15 @@ def normalize_release_body(body: str, version: str, language: str) -> str:
             if language == "zh"
             else "> This is an early repository tag without a separate GitHub Release object. This archival note is based on the tag commit and historical release summary."
         )
-        resources = (
-            f"## 版本资源\n\n- [查看 `{version}` 标签源码](https://github.com/pgsty/pg_exporter/tree/{version})"
-            if language == "zh"
-            else f"## Release resources\n\n- [Browse the `{version}` source tag](https://github.com/pgsty/pg_exporter/tree/{version})"
-        )
-        body = note + "\n\n" + body + "\n\n" + resources
-    else:
-        resources = (
-            f"## 版本资源\n\n- [GitHub Release](https://github.com/pgsty/pg_exporter/releases/tag/{version})\n- [查看 `{version}` 标签源码](https://github.com/pgsty/pg_exporter/tree/{version})"
-            if language == "zh"
-            else f"## Release resources\n\n- [GitHub Release](https://github.com/pgsty/pg_exporter/releases/tag/{version})\n- [Browse the `{version}` source tag](https://github.com/pgsty/pg_exporter/tree/{version})"
-        )
-        body = body + "\n\n" + resources
+        body = note + "\n\n" + body
+
+    # OINK's release card derives the release page, both source archives, and the
+    # repository from the `release_url` in front matter, so a note carries no
+    # hand-written resource list that could drift away from the tag it names.
+    # It closes the note rather than opening it: a blog index row summarises a
+    # post from its rendered text, and a leading card would fill that summary
+    # with its own link labels instead of the release's prose.
+    body = body.rstrip() + "\n\n{{< release-card >}}"
     return body.rstrip() + "\n"
 
 
@@ -458,11 +452,12 @@ def import_releases(source: Path, output: Path, language: str) -> None:
             f"title: {yaml_string(f'PG Exporter {version}')}\n"
             f"linkTitle: {yaml_string(version)}\n"
             f"date: {yaml_string(date)}\n"
-            'author: "Ruohang Feng"\n'
+            "authors: [Vonng]\n"
             f"description: {yaml_string(summaries[version])}\n"
             "categories: [release]\n"
             "tags: [Release, pg_exporter]\n"
             f"weight: {index * 10}\n"
+            f"release_url: https://github.com/pgsty/pg_exporter/releases/tag/{version}\n"
             "---\n\n"
         )
         body = normalize_release_body(sections[version], version, language)

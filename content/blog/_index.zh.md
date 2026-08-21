@@ -12,6 +12,10 @@ outputs: [HTML, RSS, print]
 cascade:
   type: blog
   outputs: [HTML, print]
+  reading_time: true
+  # 页尾分享条，只在博客生效。每一项都是普通的意图链接，仅携带本页永久链接与标题，
+  # 没有 SDK、没有 iframe、没有第三方脚本、没有分享计数，外加一个本地复制按钮。
+  share: [x, linkedin, reddit, hackernews, telegram, weibo, email, copy]
   params:
     sidebar_menu_foldable: false
     sidebar_menu_compact: false

@@ -47,7 +47,6 @@ languages:
     title: PG Exporter
     params:
       description: "PG Exporter: a declarative, extensible PostgreSQL and PgBouncer metrics exporter for Prometheus."
-      time_format_blog: 'January 02, 2006'
       ui:
         command_palette:
           commands:
@@ -113,7 +112,6 @@ languages:
     title: PG Exporter
     params:
       description: "PG Exporter：面向 Prometheus、声明式且可扩展的 PostgreSQL 与 PgBouncer 指标导出器。"
-      time_format_blog: '2006年01月02日'
       copyright:
         authors: '[PG Exporter Contributors](https://github.com/pgsty/pg_exporter) · 文档采用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 许可'
         from_year: 2018
@@ -182,6 +180,10 @@ languages:
 taxonomies:
   categories: categories
   tags: tags
+  # Declaring the author taxonomy is the whole switch: OINK turns the blog
+  # article head into portraits and linked names, makes each term page an
+  # author profile, and emits one <dc:creator> per author in the feed.
+  author: authors
 
 # Blog sources stay below content/blog, while public URLs omit /blog/.
 permalinks:
@@ -266,6 +268,10 @@ params:
 
   ui:
     blog_index_size: 60
+    # Let a reader cycle a blog index through rows, cards, and the compact
+    # table. The release archive publishes the table form; the toggle keeps the
+    # other two reachable without leaving the page.
+    blog_index_toggle: true
     typography: system
     quick_links: [download, docs, blog]
     sidebar_icon_policy: groups
