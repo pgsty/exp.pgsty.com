@@ -4,7 +4,7 @@ This repository is the OINK-based standalone bilingual
 [PG Exporter](https://github.com/pgsty/pg_exporter) documentation site. It uses
 Hugo Extended and the reusable [OINK](https://github.com/pgsty/oink) theme, with
 English at `/` and Simplified Chinese at `/zh/`. Production builds pin OINK
-`v0.6.0` in `go.mod`.
+to the exact version in `go.mod`.
 
 - Site: <https://exp.pgsty.com>
 - Product source: <https://github.com/pgsty/pg_exporter>

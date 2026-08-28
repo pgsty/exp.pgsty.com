@@ -29,7 +29,7 @@ hero:
     dark: img/architecture-dark.svg
     alt: 'PG Exporter architecture: PostgreSQL, PgBouncer, Patroni, and pgBackRest collected by one PG Exporter process that serves merged metrics on :9630/metrics to Prometheus and VictoriaMetrics'
   media:
-    ratio: minmax(0, 1fr) minmax(340px, 0.94fr)
+    ratio: 1fr 0.94fr
     max_width: 500px
     hide_below: md
 

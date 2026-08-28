@@ -26,7 +26,7 @@ categories: [指南]
 
 ## 工具链
 
-当前 `go.mod` 声明 Go **1.26.5**。常规开发构建：
+当前 `go.mod` 声明 Go **1.27.0**。常规开发构建：
 
 ```bash
 git clone https://github.com/pgsty/pg_exporter.git

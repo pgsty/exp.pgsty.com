@@ -29,7 +29,7 @@ hero:
     dark: img/architecture-zh-dark.svg
     alt: 'PG Exporter 架构图：PostgreSQL、PgBouncer、Patroni 与 pgBackRest 由同一个 PG Exporter 进程采集，合并后通过 :9630/metrics 供 Prometheus 与 VictoriaMetrics 抓取'
   media:
-    ratio: minmax(0, 1fr) minmax(340px, 0.94fr)
+    ratio: 1fr 0.94fr
     max_width: 500px
     hide_below: md
 

@@ -26,7 +26,7 @@ The project intentionally keeps most monitoring logic in YAML and a smaller exec
 
 ## Toolchain
 
-The current `go.mod` declares Go **1.26.5**. For a normal development build:
+The current `go.mod` declares Go **1.27.0**. For a normal development build:
 
 ```bash
 git clone https://github.com/pgsty/pg_exporter.git
