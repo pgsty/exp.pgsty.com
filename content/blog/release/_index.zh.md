@@ -10,12 +10,12 @@ blog_index: table
 # 整个板块采用沉浸式阅读：由板块配图铺开的通栏封面、无侧边栏，以及不带术语云的
 # 随文目录栏。索引页自己携带这些键（cascade 从不作用于声明它的页面），
 # 并把同一套配方传给下面的每一篇注记。
-images: [img/release-banner.webp]
+images: [img/pg_exporter-release.webp]
 featured_image: hero
 sidebar_enabled: false
 toc_taxonomies: false
 cascade:
-  images: [img/release-banner.webp]
+  images: [img/pg_exporter-release.webp]
   featured_image: hero
   toc_style: flow
   toc_taxonomies: false

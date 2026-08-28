@@ -18,7 +18,7 @@ The project intentionally keeps most monitoring logic in YAML and a smaller exec
 | `pg_exporter.yml` | Generated monolithic default config (`make conf`) |
 | `legacy/config/` | Collector definitions for PostgreSQL 9.1-9.6 |
 | `legacy/pg_exporter.yml` | Generated legacy monolithic config (`make conf9`) |
-| `docs/design/` | Authoritative design notes such as snapshot histogram semantics |
+| [Design Records](/design/) | Canonical rationale, rejected alternatives, invariants, and dated release boundaries |
 | `monitor/` | Grafana dashboards and database initialization helper |
 | `package/` | systemd environment/unit files and package scripts |
 | `.goreleaser.yml` | Cross-platform archives, RPM/DEB packages, checksums, Docker images, and GitHub Release |
@@ -70,6 +70,8 @@ make goreleaser-build
 9. Update [Bundled Collectors](/collectors/) and release notes when the public metric surface changes.
 
 Use [`config/0000-doc.yml`](https://github.com/pgsty/pg_exporter/blob/main/config/0000-doc.yml) as the executable schema reference.
+
+Architectural rationale belongs in the bilingual [Design Records](/design/), not in a new source-repository `docs/design/` directory. A design article explains why and records its status; current behavior still comes from the source tree, manuals, and stable release artifacts.
 
 ### Column rules
 

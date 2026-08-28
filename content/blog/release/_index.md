@@ -11,12 +11,12 @@ blog_index: table
 # image, no sidebar, and a term-cloud-free flow rail. The index carries the
 # keys itself -- a cascade never applies to the page declaring it -- and passes
 # the same recipe to every note below it.
-images: [img/release-banner.webp]
+images: [img/pg_exporter-release.webp]
 featured_image: hero
 sidebar_enabled: false
 toc_taxonomies: false
 cascade:
-  images: [img/release-banner.webp]
+  images: [img/pg_exporter-release.webp]
   featured_image: hero
   toc_style: flow
   toc_taxonomies: false

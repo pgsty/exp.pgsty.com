@@ -105,6 +105,22 @@ languages:
           weight: 20
           pageRef: /blog
           pre: <i class='fa-solid fa-blog'></i>
+        - identifier: blog-design
+          parent: blog
+          name: Design Records
+          weight: 10
+          pageRef: /blog/design
+          params:
+            icon: fa-solid fa-pen-ruler
+            description: Decisions, alternatives, invariants, and release boundaries
+        - identifier: blog-release
+          parent: blog
+          name: Release Notes
+          weight: 20
+          pageRef: /blog/release
+          params:
+            icon: fa-solid fa-clipboard-list
+            description: One bilingual article for every repository tag
   zh:
     label: 简体中文
     locale: zh-CN
@@ -173,6 +189,22 @@ languages:
           weight: 20
           pageRef: /blog
           pre: <i class='fa-solid fa-blog'></i>
+        - identifier: blog-design
+          parent: blog
+          name: 设计归档
+          weight: 10
+          pageRef: /blog/design
+          params:
+            icon: fa-solid fa-pen-ruler
+            description: 决策、备选方案、不变量与发布边界
+        - identifier: blog-release
+          parent: blog
+          name: 发布注记
+          weight: 20
+          pageRef: /blog/release
+          params:
+            icon: fa-solid fa-clipboard-list
+            description: 每个仓库标签对应一篇双语文章
 
 #=======================================#
 # Taxonomies and blog URLs

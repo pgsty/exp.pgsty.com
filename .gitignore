@@ -11,7 +11,5 @@ npm-debug.log*
 scripts/**/__pycache__/
 *.py[cod]
 
-CLAUDE.md
-AGENTS.md
 .codex/
 .claude/

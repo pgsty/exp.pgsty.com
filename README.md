@@ -33,6 +33,7 @@ content/
   api.md                      # HTTP API
   development.md              # build, test, collector, release workflow
   authors/vonng/_index.md     # author taxonomy profile, with its portrait
+  blog/design/*.md            # bilingual, dated design and decision records
   blog/release/vX.Y.Z.md      # one post per Git tag
 ```
 
@@ -44,7 +45,9 @@ raw content, and both pages are navigation entries readers search for.
 
 Every English `.md` page has a `.zh.md` peer. Blog content stays under
 `content/blog/`, but its public URL drops the `blog` component: for example,
-`content/blog/release/v1.4.1.md` publishes at `/release/v1.4.1/`.
+`content/blog/release/v1.4.1.md` publishes at `/release/v1.4.1/`, while
+`content/blog/design/snapshot-histograms.md` publishes at
+`/design/snapshot-histograms/`.
 
 ## Theme boundary
 
@@ -91,11 +94,19 @@ lazy, so reading a page requests nothing from `giscus.app` until the reader
 reaches the end of it.
 
 The blog declares the `authors` taxonomy, a page-end share bar, and reading
-time. The release archive publishes the compact `blog_index: table` form with
+time. The Design archive keeps dated rationale, rejected alternatives,
+invariants, and explicit implementation/release boundaries; it is the canonical
+replacement for source-repository `docs/design/` files. The release archive
+publishes the compact `blog_index: table` form with
 the reader-side toggle enabled, and the whole section reads immersively:
 `featured_image: hero`, no sidebar, a `toc_style: flow` rail with no term
 clouds. Each note carries `release_url` and closes with `{{< release-card >}}`,
 so its links are derived from that one URL rather than hand-written.
+
+The Blog, Design, and Release front matter cascades provide section-specific
+fallback images (`pg_exporter.webp`, `pg_exporter-design.webp`, and
+`pg_exporter-release.webp`). A page-bundle featured image or an explicit
+page-level `images` value still wins, while `images: []` opts one page out.
 
 There is no local homepage, footer, search, or download layout. The pinned OINK
 module supplies those implementations; the sibling checkout provides the latest
@@ -138,6 +149,13 @@ stable release artifacts. The original module manuals are maintained at:
 - English: `~/pgsty/pigsty.io/content/docs/pg_exporter`
 - Chinese: `~/pgsty/pigsty.cc/content/docs/pg_exporter`
 
+The [Design Records](https://exp.pgsty.com/design/) are authoritative for why a
+decision was made and what alternatives were rejected. Their visible status
+blocks prevent an implemented-but-unreleased or superseded design from
+overriding current manuals and release artifacts. New design guidance is
+written here in bilingual form; the source repository keeps only short links
+to the canonical article.
+
 Use `bin/sync_pg_exporter_content.py` to import the five upstream manual pages,
 rewrite their links for this standalone site, and split the combined release
 history into one bilingual article per Git tag:
@@ -169,9 +187,9 @@ so they cannot drift. Its facts come from the `pg_exporter` source tree
 PgBouncer through its admin console, Patroni through its own Prometheus
 endpoint, pgBackRest by running the local CLI, all merged on `:9630/metrics`.
 
-`static/img/release-banner.svg` is the editable source for the release
-archive's hero and social image; `release-banner.webp` beside it is the
-rendered result.
+The three site-owned Blog fallback images are checked-in WebP assets under
+`static/img/`: `pg_exporter.webp`, `pg_exporter-design.webp`, and
+`pg_exporter-release.webp`.
 
 ## Local development
 

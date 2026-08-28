@@ -18,7 +18,7 @@ categories: [指南]
 | `pg_exporter.yml` | 生成的默认单体配置（`make conf`） |
 | `legacy/config/` | PostgreSQL 9.1-9.6 采集器定义 |
 | `legacy/pg_exporter.yml` | 生成的 Legacy 单体配置（`make conf9`） |
-| `docs/design/` | 快照直方图语义等权威设计说明 |
+| [设计归档](/zh/design/) | 权威设计理由、被否决方案、不变量与带日期的发布边界 |
 | `monitor/` | Grafana 仪表盘与数据库初始化辅助脚本 |
 | `package/` | systemd 环境/单元文件与软件包脚本 |
 | `.goreleaser.yml` | 跨平台压缩包、RPM/DEB、校验和、Docker 镜像与 GitHub Release |
@@ -70,6 +70,8 @@ make goreleaser-build
 9. 公共指标面变化时更新[内置采集器](/zh/collectors/)与发布注记。
 
 可执行 Schema 参考为 [`config/0000-doc.yml`](https://github.com/pgsty/pg_exporter/blob/main/config/0000-doc.yml)。
+
+架构理由应直接写入双语[设计归档](/zh/design/)，不得在源码仓重新建立 `docs/design/`。设计文章解释“为什么”并记录自身状态；当前行为仍以源码、使用手册与稳定版产物为准。
 
 ### 列规则
 
