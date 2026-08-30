@@ -2,7 +2,7 @@
 title: "PG Exporter Blog"
 url: /blog/
 linkTitle: "Blog"
-description: "Design records, release notes, and project updates for pg_exporter"
+description: "Original articles, design records, release notes, and project updates for pg_exporter"
 weight: 40
 type: blog
 sidebar_root_for: self
@@ -26,6 +26,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-Design records, release notes, and project updates for `pg_exporter`, the declarative PostgreSQL and PgBouncer metrics exporter.
+Original long-form articles, design records, release notes, and project updates for `pg_exporter`, the declarative PostgreSQL and PgBouncer metrics exporter.
 
-Read the [Design Records](/design/) for architectural reasoning and rejected alternatives, or scan the [complete release archive](/release/) for shipped changes. Current product behavior remains in the [documentation](/docs/).
+Read the [original articles](/article/) in full, including their original figures; use the [Design Records](/design/) for architectural reasoning and rejected alternatives, or scan the [complete release archive](/release/) for shipped changes. Current product behavior remains in the [documentation](/docs/).

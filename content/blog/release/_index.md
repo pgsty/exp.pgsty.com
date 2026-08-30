@@ -2,7 +2,7 @@
 title: "Release Notes"
 linkTitle: "Release Notes"
 description: "A bilingual release note for every pg_exporter repository tag"
-weight: 10
+weight: 30
 icon: fa-solid fa-clipboard-list
 # The archive publishes the compact table form: 35 notes are for scanning, not
 # paging. `blog_index_toggle` keeps the row and card forms one control away.

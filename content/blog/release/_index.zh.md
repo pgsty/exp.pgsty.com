@@ -2,7 +2,7 @@
 title: "发布注记"
 linkTitle: "发布注记"
 description: "pg_exporter 每个仓库标签对应一篇双语发布注记"
-weight: 10
+weight: 30
 icon: fa-solid fa-clipboard-list
 # 归档采用紧凑表格形式：35 篇注记是用来扫读的，不是用来翻页的。
 # blog_index_toggle 让行列表与卡片形式仍然只差一次点击。

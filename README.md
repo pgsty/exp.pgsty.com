@@ -33,6 +33,7 @@ content/
   api.md                      # HTTP API
   development.md              # build, test, collector, release workflow
   authors/vonng/_index.md     # author taxonomy profile, with its portrait
+  blog/article/<slug>/        # original-language articles plus bundled media
   blog/design/*.md            # bilingual, dated design and decision records
   blog/release/vX.Y.Z.md      # one post per Git tag
 ```
@@ -94,7 +95,9 @@ lazy, so reading a page requests nothing from `giscus.app` until the reader
 reaches the end of it.
 
 The blog declares the `authors` taxonomy, a page-end share bar, and reading
-time. The Design archive keeps dated rationale, rejected alternatives,
+time. The Article archive republishes the original long-form PostgreSQL monitoring
+and operations articles with their publication dates, complete text, authorship,
+featured images, and inline media intact. The Design archive keeps dated rationale, rejected alternatives,
 invariants, and explicit implementation/release boundaries; it is the canonical
 replacement for source-repository `docs/design/` files. The release archive
 publishes the compact `blog_index: table` form with
