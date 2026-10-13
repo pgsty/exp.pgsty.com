@@ -1,5 +1,5 @@
 ---
-title: "让PG停摆一周的大会：PGCon.Dev 2024 参会记"
+title: "暂停代码提交的一周：PGCon.Dev 2024 参会记"
 linkTitle: "PGCon.Dev 2024 参会记"
 date: 2024-06-17
 authors: [vonng]
@@ -8,14 +8,15 @@ summary: >
 tags: [PostgreSQL, PG生态]
 ---
 
-PGCon.Dev 的前身是 PGCon —— 最知名的 PostgreSQL Hacker 年度聚会，也可以说是决定 PostgreSQL 未来的一场会。从 2007 年成立以来，一直都是在加拿大渥太华举办至今。
-这次会议有些特殊，原来的主办者 Dan 交班给下一届大会组织者，举办地点也转移到了温哥华市的 SFU 港区活动中心，算是新班组开门红第一次大会，自然更为隆重。
+本文是 2024 年 6 月的参会记录，职务、软件包数量和技术提案均按当时情况叙述。
+
+PGCon.Dev 的前身 PGCon 从 2007 年至 2023 年在加拿大渥太华举办，是 PostgreSQL 开发者讨论项目方向的年度聚会。2024 年，新的组织团队接替 Dan Langille，将会场移至温哥华的 SFU 港区活动中心。
 
 ---------
 
 ## 全都来参会了，谁还在写代码？
 
-有多隆重呢？PG 核心组的 Peter Eisentraut 在会后做了一个统计，在这次 PGCon.Dev 期间 PostgreSQL 一次代码提交都没有发生，出现了[二十年来持续时间最长的停摆](https://peter.eisentraut.org/blog/2024/06/04/how-engaging-was-pgconfdev-really) —— 整整六天半！为啥，因为开发者全都来参会啦！
+Peter Eisentraut 在会后统计发现，大会前后相邻的两次 PostgreSQL 代码提交间隔六天十二小时四十九分钟，是[二十多年来最长的一次提交间隔](https://peter.eisentraut.org/blog/2024/06/04/how-engaging-was-pgconfdev-really)。开发者们在线下也有许多事情可聊。
 
 ![intro.jpg](intro.jpg)
 
@@ -23,7 +24,7 @@ PGCon.Dev 的前身是 PGCon —— 最知名的 PostgreSQL Hacker 年度聚会�
 
 虽然我已经拥抱 PostgreSQL 十年了，但线下现场参加全球 PG Hacker 们的会议还是第一次，所以我非常感谢组织团队为组织这次活动所做的工作。
 
-PGCon.Dev 2024 已经于5月31日晚正式结束，理论上本文章本应在大会闭幕时写就，不过在紧接着探索温哥华与班夫国家公园的旅途中，我确实在高密度的旅途中把这件事不厚道地搁置了 那么今天就补上参会的见闻与记录吧。
+PGCon.Dev 2024 于 5 月 31 日闭幕。这篇文章本该当时写完，却被紧接着的温哥华和班夫国家公园之行耽搁了。今天补上参会的见闻与记录。
 
 ------
 
@@ -31,22 +32,22 @@ PGCon.Dev 2024 已经于5月31日晚正式结束，理论上本文章本应在�
 
 大会的第零天是领导层会议，我注册了下午的 Extension Ecosystem Summit 扩展生态峰会。
 
-说起来，这个扩展生态峰会也许跟我还有点关系。两个月前我写了一篇文章《[PostgreSQL正在吞噬数据库世界](https://vonng.com/pg/pg-eat-db-world)》，主题是 PostgreSQL 的繁荣扩展生态是其独一无二的特点与成功的关键要素。
-写完后将其翻译成了英文《[Postgres is eating the database world](https://vonng.com/en/pg/pg-eat-db-world)》发到了 [Medium](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4) 与 [HackNews](https://news.ycombinator.com/item?id=39759539) 上，总共有几十万的阅览量，基本应该覆盖了整个 PG 社区。
+说起来，这个扩展生态峰会也许跟我还有点关系。两个月前我写了一篇文章《[PostgreSQL正在吞噬数据库世界](https://vonng.com/pg/pg-eat-db-world)》，主题是 PostgreSQL 的繁荣扩展生态是它的重要特点。
+写完后将其翻译成了英文《[Postgres is eating the database world](https://vonng.com/en/pg/pg-eat-db-world)》发到了 [Medium](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4) 与 [Hacker News](https://news.ycombinator.com/item?id=39759539) 上，总共有几十万的阅览量，基本应该覆盖了整个 PG 社区。
 
 [![ecosystem.jpg](ecosystem.jpg)](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4)
 
 此前，扩展机制的重要性并没有达成共识，即使在 PG 社区与一些资深成员的眼中，关于扩展他们只是觉得 PostGIS 和 PGVector 好像很不错 —— 前者是地理空间数据库的事实标准，后者是AI领域当红炸子鸡 —— 向量数据库的砸盘掀桌者。
 但 PG 生态中强大的扩展绝不仅仅只有这两个，在抛出了这个极为繁荣的 PG 扩展生态 Landscape 后，立即引起了社区成员的极大兴趣与关注，很快关于PG扩展的讨论发酵了起来。
 
-在这次扩展峰会之前，PG 社区已经举办了[六次迷你扩展峰会](https://www.eventbrite.com/e/postgres-extension-ecosystem-mini-summit-tickets-851127263557)对此事进行了密集的讨论，六位主讲嘉宾兼主持人在最近两个月中，从不同的角度介绍了关于扩展生态的建设工作，并阐述了对 PG 扩展生态发展的愿景，[会议的视频回放](https://www.youtube.com/playlist?list=PL11N188AYb_aT6ulbJfrQJJziWb012jG3)可以在 Youtube 上看到。
+在这次扩展峰会之前，PG 社区已经举办了[六次迷你扩展峰会](https://www.eventbrite.com/e/postgres-extension-ecosystem-mini-summit-tickets-851127263557)对此事进行了密集的讨论，六位主讲嘉宾兼主持人在最近两个月中，从不同的角度介绍了关于扩展生态的建设工作，并阐述了对 PG 扩展生态发展的愿景，[会议的视频回放](https://www.youtube.com/playlist?list=PL11N188AYb_aT6ulbJfrQJJziWb012jG3)可以在 YouTube 上看到。
 
 在这次大会中，有许多与扩展生态，可扩展性有关的议题，甚至还有一个专门的扩展峰会，也许确实是有点关系的。这场扩展峰会分了上下两场，每场都有几个 Topic，大家挑选感兴趣的主题参与。
-我挑了 David Wheeler 的 Binary Packing 主题分会参与讨论，另外四个参与者是 PGDG Yum 仓库维护者 Devrim，Debian 仓库维护者大法师 Tomasz Rybak，以及 Neon 的 PG 主要贡献者 Andreas Scherbaum。都是些老前辈，好在我也算是 YUM/APT 仓库的建设者/维护者，能实质参与到讨论中。
+我挑了 David Wheeler 的 Binary Packaging 主题分会参与讨论，其他参与者包括 PGDG Yum 仓库维护者 Devrim，Debian 仓库维护者大法师 Tomasz Rybak，以及 Neon 的 PG 主要贡献者 Andreas Scherbaum。都是些老前辈，好在我也算是 YUM/APT 仓库的建设者/维护者，能实质参与到讨论中。
 
 ![extension-summit.jpg](extension-summit.jpg)
 
-在上半场，来自 Temob 的 David 一直想做一个 PGXN v2，作为 PG 生态扩展分发的标准，搞一些 OCI 构建扩展的花活。当然，现有事实标准的维护者 Devrim 和 Tomasz 肯定是不乐意的。我支持这两位老爷子，毕竟我做的是 PG 发行版，内核组的活儿跟我直接关系不大，但 YUM/APT 仓库的负责人跟我的关系最紧密，RPM / Deb 包分发扩展已经是一种相当成熟可靠的方式了，整 OCI 这些我个人觉得意义不大。
+在上半场，来自 Tembo 的 David 一直想做一个 PGXN v2，作为 PG 生态扩展分发的标准，搞一些 OCI 构建扩展的花活。当然，现有事实标准的维护者 Devrim 和 Tomasz 肯定是不乐意的。我支持这两位老爷子，毕竟我做的是 PG 发行版，内核组的活儿跟我直接关系不大，但 YUM/APT 仓库的负责人跟我的关系最紧密，RPM / Deb 包分发扩展已经是一种相当成熟可靠的方式了，整 OCI 这些我个人觉得意义不大。
 
 下半场，我参加了 Omnigres 创始人 Yurii Rashkovskii 主持的 Extension in Core 分会场，讨论了关于扩展目录结构，元数据，命名冲突，版本控制，二进制分发的一些想法。并且和负责 PG RPM 仓库的 Devrim 老爷子聊了很多关于扩展的问题。
 
@@ -60,11 +61,11 @@ PGCon.Dev 最核心的部分当然是大会议题，在  [PG大会2024开幕](ht
 
 5月28号 / 周二举行了 PostgreSQL 开发者与领导层闭门会议，以及  [PGCon.Dev 扩展生态峰会](https://mp.weixin.qq.com/s/C0YyE52KbLLbnG1C2FqGRg)。大会正式的议程在周三，也就是 29 号开始。
 
-开场由 [Jonathan Katz](https://jkatz05.com/) 与 [Melanie Plageman](https://postgresql.life/post/melanie_plageman/) 主持，前者是 PG 核心组七人之一，AWS RDS 的首席产品经理；后者是新近成为 PG 提交者，来自微软的罕有的女性PG开发者。当然，开幕式上最精彩的一幕，就是发现了著名 `xz` 后门的 "英雄开发者" Andres Freund 被拉上了台，披上了超级英雄的披风。
+开场由 [Jonathan Katz](https://jkatz05.com/) 与 [Melanie Plageman](https://postgresql.life/post/melanie_plageman/) 主持，前者是 PG 核心组七人之一，AWS RDS 的首席产品经理；后者是新近成为 PG 提交者，来自微软的 PostgreSQL 开发者。当然，开幕式上最精彩的一幕，就是发现了著名 `xz` 后门的 "英雄开发者" Andres Freund 被拉上了台，披上了超级英雄的披风。
 
 ![andres-hero.jpeg](andres-hero.jpeg)
 
-开幕式之后就开始了常规 Session Track，目前还没有会议的视频放出，但我相信以加拿大的办事效率，“用不了多久” 就能在 Youtube 上看到了。大部分的 Session 都是三选一的。我选了几个场次，下面是摘要：
+开幕式之后就开始了常规 Session Track，目前还没有会议的视频放出，但我相信以加拿大的办事效率，“用不了多久” 就能在 YouTube 上看到了。大部分的 Session 都是三选一的。我选了几个场次，下面是摘要：
 
 ---------
 
@@ -84,19 +85,19 @@ Yurii 和 Viggy 创办了 [Omnigres](https://omnigres.com/) ，旨在让 Postgre
 
 第二场分享来自学术界（CMU），师从网红教授 Andy Pavlo 的阿比盖尔·金，主题为：数据库中的无政府状态 —— [数据库管理系统可扩展性的调查与评估](https://abigalekim.github.io/assets/pdf/Anarchy_in_the_Database_PGConfDev2024.pdf)。我对这个主题非常感兴趣，因为 Pigsty 将 PG可扩展性为首要价值主张，收录了 255 个扩展插件，而 Kim 的这个研究带来了一些有趣的发现。
 
-例如，**PostgreSQL 是可扩展性最强的 DBMS**，在全部十项扩展点上支持其中九种（紧随其后的是 DuckDB，和PG同为我最看好的两款DBMS）。根据 Kim 的统计，PG 生态有 375+ 可用扩展，远远甩开其他数据库一个数量级。
+在 Kim 比较的系统中，PostgreSQL 支持所研究的十类扩展点中的九类，覆盖范围最广。她的调查列出了 375 个以上的 PostgreSQL 扩展。
 
 ![kim-extensibility.jpg](kim-extensibility.jpg)
 
 更有价值的是，Kim 定量分析了这些扩展之间的兼容性水平，得到了一个兼容性矩阵，并有一些有趣的发现 —— 例如，最为强大的 TimescaleDB 和 Citus 最容易与其他扩展发生冲突。而这样的信息对于用户与发行版维护者来说是非常有价值的。
 
-我跟 Kim 聊天时打趣说，你的这个研究大大的好 —— 可以有理有据地用数据说话，宣称 PostgreSQL 可扩展性天下无敌了。[PDF在线地址](https://abigalekim.github.io/assets/pdf/Anarchy_in_the_Database_PGConfDev2024.pdf)
+我跟 Kim 聊天时说，这项研究为比较数据库可扩展性提供了具体数据。[演讲幻灯片](https://abigalekim.github.io/assets/pdf/Anarchy_in_the_Database_PGConfDev2024.pdf)
 
 ---------
 
 ### PostgreSQL是如何被误用与滥用的
 
-下午的第一场，我听了来自 CrunchyData 的 Karen Jex 的分享，这是少有的来自用户（一位DBA，还是女性DBA，确实非常罕见），而不是开发者的分享。Karen 分享了一堆 PG 初学者会犯的可笑错误。Karen 的分享并没有什么我不知道的新知识，但确实让我确信了 —— 世界哪儿的初学者都一样，都会犯这些可笑的错误。但这样的视角对于 PG Hacker 来说确实是很新鲜的，很多大佬都听得津津有味。
+下午第一场，Crunchy Data 的 Karen Jex 从用户角度介绍了 PostgreSQL 初学者常犯的错误。这些例子对我来说很熟悉，但可以帮助开发者了解新用户如何使用数据库。
 
 ### PostgreSQL与人工智能生态
 
@@ -110,25 +111,25 @@ Yurii 和 Viggy 创办了 [Omnigres](https://omnigres.com/) ，旨在让 Postgre
 
 > 让我看看，Bruce在偷偷写什么代码？竟然是 ArgParser
 
-会后和 Bruce 聊了很多有趣的的话题，往年国内 PG 技术大会都喜欢请 Bruce 过来，或者远程做一个开幕分享。Bruce 说他很非常想再来中国，不过现在国际形势冲突加剧，美国大使馆发布的中国旅游风险等级太高，他也不敢过来了，让人遗憾。
+会后和 Bruce 聊了很多有趣的话题，往年国内 PG 技术大会都喜欢请 Bruce 过来，或者远程做一个开幕分享。Bruce 说他很想再来中国，不过现在国际形势冲突加剧，美国大使馆发布的中国旅游风险等级太高，他也不敢过来了，让人遗憾。
 
 ### 构建PB级别的PostgreSQL部署
 
-下午的第三场，我听了 Chris Travers 的分享：他们原来用 ElasticSearch 存数据，保留30天，数据量1PB，体验极差，基本上处于不可用状态，也难以维护。于是他们改用了一个水平分片的 PostgreSQL 集群完美地解决了问题 —— 总共存储了 10 PB 的数据。
+下午第三场，Chris Travers 介绍了他们从 Elasticsearch 迁移到分区、分片 PostgreSQL 部署的经历。按他的报告，原系统保留 30 天的数据，规模为 1 PB；迁移后的 PostgreSQL 部署存储了 10 PB 数据。
 
-通常来说出于各种因素，单机 PostgreSQL 的舒适区上界在几十TB ～ 几百TB 的数量级，PB 量级的部署我只听说过一例。即使是水平分片集群，10PB 量级也是极其罕见的了。尽管依然是中规中矩的分表/分布式实践，但数据量级确实让人印象深刻。[PDF地址](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/135/slides/30/Bagger_Talk%20(3).pdf)
+让我印象深刻的是这套系统在 10 PB 规模下的运维经验。[演讲幻灯片](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/135/slides/30/Bagger_Talk%20(3).pdf)介绍了这个具体案例。
 
 ---------
 
 ### 临时加场：当数据库遇上新硬件
 
-毫不夸张地说，这是本场最佳演讲，没有之一，也是我听过所有现场演讲中最富有激情与感染力的。演讲人 Margo Seltzer 是 UBC 的教授，以前是哈佛的教授，美国国家工程院院士，是数据库石破天祖师爷的亲传弟子，BerkeleyDB 的作者，她的老公也很有名，是 BSD / WiredTiger / nvi 的作者 Keith Bostic。
+这是本次大会中我最喜欢的演讲。Margo Seltzer 是 UBC 教授、美国国家工程院院士，曾任教于哈佛，也是 BerkeleyDB 的作者之一。
 
 Margo 的演讲极具激情与感染力，并一针见血地指出了数据库领域面临的几个核心问题。例如，数据库的瓶颈已经不再是磁盘的IO性能，而是主内存的速度瓶颈。而硬件领域的趋势 ——  **HBM**，**CXL** 也许是解决这些问题的答案，但具体怎么做，那就是在座的各位 PG Hacker 需要面对的挑战了。
 
 ![margo.jpg](margo.jpg)
 
-在各种国内会议听多了院士，教授念经一样的分享报告，Margo 院士的演讲风格给我带来了耳目一新的感觉，并极大地感染鼓舞了我。大会视频放出后，我强烈建议各位可以听一听她的演讲。
+我很喜欢 Margo 直接而有感染力的演讲方式。大会视频发布后，值得再听一遍。
 
 ---------
 
@@ -154,11 +155,11 @@ Margo 的分享结束后便是大会的官方 Social Event，在会场一街之�
 
 线程模型的收益有不少：更便宜的连接（等于内置连接池），共享的关系缓存，计划缓存，动态调整共享内存区域的能力，修改配置无需重启，Vacuum可以更加激进，运行中的 Explain Analyze，方便地限制每条连接的内存使用。但以 Tom Lane 为首的反对的声音也不小：这样可能会引入大量 Bug，丧失多进程模型隔离性的优势，以及 —— 引入大量的不兼容性，许多扩展都需要针对新的模型重写修改。
 
-Heikki 提出了目标与相当详细周密的计划供在座的 Hacker 们评审 —— 在五到七年内，完成到线程模型的转换，最终目标是没有中间状态。有趣的是，Heikki现场在 PPT 里引用了最大反对者 Tom Lane 的一段评论：“从历史上看，我认为这会是一场大灾难，导致大量代码悄无声息的崩坏，让事情脱离我们的控制”。
+Heikki 提出了目标与相当详细周密的计划供在座的 Hacker 们评审 —— 在五到七年内，完成到线程模型的转换，最终目标是没有中间状态。有趣的是，Heikki现场在 PPT 里引用了最大反对者 Tom Lane 的一段评论：“在此说明，我认为这会是一场灾难，导致大量代码悄无声息的崩坏，让事情脱离我们的控制”。
 
 ![heikki-multithread.jpg](heikki-multithread.jpg)
 
-虽然被当场揶揄，但这一次 Tom Lane 现场听着也是慈祥微笑，并没有直接表示反对。而最大的反对声音不是来自 Tom Lane，而是扩展维护者，一位维护了好几个扩展插件的老爷子问到扩展兼容性怎么办？（主要是分配/使用内存的方式）Heikki 表示只能要求这些扩展作者在五年左右的过渡阶段中国呢里重写修改适配新的模型。气得这位老爷子直接愤而离场出去了。
+虽然被当场揶揄，但这一次 Tom Lane 现场听着也是慈祥微笑，并没有直接表示反对。而最大的反对声音不是来自 Tom Lane，而是扩展维护者，一位维护了好几个扩展插件的老爷子问到扩展兼容性怎么办？（主要是分配/使用内存的方式）Heikki 表示只能要求这些扩展作者在五年左右的过渡期内重写修改适配新的模型。气得这位老爷子直接愤而离场出去了。
 
 鉴于线程模型对现有扩展生态的巨大冲击，我对这件事并不看好。我也与 Heikki 和 Tom lane 以及其他 Hacker 聊了一下关于线程模型的观点，总的来说，社区持谨慎观望态度。目前的进展也仅仅是在 PG 17 中重构了与 fork exec 有关的调用代码，并标记出使用的全局变量以便后续修改。即使真得发生，那也至少是 PG 2x 的事了。
 
@@ -172,11 +173,11 @@ Heikki 提出了目标与相当详细周密的计划供在座的 Hacker 们评�
 
 ![hallway-track.jpg](hallway-track.jpg)
 
-作为第一次现场参加 PGCon.Dev 的人，我很惊讶地发现自己有着于与新人不匹配的知名度与关注度。有近半的参会者看到我的胸牌 Vonng / Pigsty 就认识我了 —— 主要还是归功于我之前写的那篇 PG 大爽文《[PostgreSQL is eating the Database world](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4)》，Jonathan 跟我吐槽到说最近这篇文章天天出现在他的时间线上，整个 PG 社区的人基本上都看过了。
+作为第一次现场参加 PGCon.Dev 的人，我很惊讶地发现自己有着与新人不匹配的知名度与关注度。有近半的参会者看到我的胸牌 Vonng / Pigsty 就认识我了 —— 主要还是归功于我之前写的那篇 PG 大爽文《[PostgreSQL is eating the Database world](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4)》，Jonathan 跟我吐槽到说最近这篇文章天天出现在他的时间线上，整个 PG 社区的人基本上都看过了。
 
 ![collect.jpg](collect.jpg)
 
-> 拍照基集：Tom, Bruce, Jonathan, Andres, Robert Hass, Devrim, Scherbaum, Heikki, Keith,...
+> 合影：Tom, Bruce, Jonathan, Andres, Robert Haas, Devrim, Scherbaum, Heikki, Keith,...
 
 当然说起社交，最简单粗暴的诀窍就是礼多人不怪 —— 我准备了一盒胸针，PostgreSQL 的吉祥物 Logo **Slonik**，镀金的，还带个小亚克力盒子。我给每一个和我聊天的 PG Hacker 都送了一个，这个胸针成为了本次大会备受欢迎的抢手货。好多人都在胸前或者会牌上别上了，而没拿到的人就在问：咦你们这个在哪里拿的，是贡献者奖励吗？
 
@@ -186,7 +187,7 @@ Bruce 对这个胸针爱不释手，说：“哎呀这个精巧的徽章真是�
 
 ### 小聚：多国社区会餐
 
-中午，瀚高做东，把美国PG社区，欧洲PG社区，还有日本PG社区的几位头面参会者拉到一起聚餐，一家温哥华的广东菜馆。图中从左前开始逆时针顺序分别是，瀚高北美研究院的 Grant Zhou，瀚高创始人苗健，欧洲PG用户组/ Neon 的 Andreas Scherbaum，有PG核心组/ 美国EDB 的 Bruce Momjiam，荣誉退休的前核心组成员 / pgEdge 的 Jan Wieck，制作各种PG贡献者硬币，社区周边的 Mark Wong，以及日本社区的 Tatsuro Yamada （山田達郎）与 Kyotaro Horiguchi （堀口恭太郎），最后是我。
+中午，瀚高做东，把美国PG社区，欧洲PG社区，还有日本PG社区的几位头面参会者拉到一起聚餐，一家温哥华的广东菜馆。图中从左前开始逆时针顺序分别是，瀚高北美研究院的 Grant Zhou，瀚高创始人苗健，欧洲PG用户组/ Neon 的 Andreas Scherbaum，有PG核心组/ 美国EDB 的 Bruce Momjian，荣誉退休的前核心组成员 / pgEdge 的 Jan Wieck，制作各种PG贡献者硬币，社区周边的 Mark Wong，以及日本社区的 Tatsuro Yamada （山田達郎）与 Kyotaro Horiguchi （堀口恭太郎），最后是我。
 
 ![lunch.jpeg](lunch.jpeg)
 
@@ -204,17 +205,17 @@ Bruce 是 PG 中文社区的老朋友了，上面介绍过了；来自德国的 
 
 ### 让PG社区参与更有包容性
 
-第二天下午与昨天一样，有一个无需三选一的特殊场次，主题是 **社区建设**，由 Robert Hass 主持。3 位新晋的 PG 提交者轮流分享他们成为提交者的历程，与遇到的挑战和问题，分别是：泽田正彦，阿米特·兰格特，梅兰妮·普拉格曼。总体上社区参与面临的几个主要挑战是：非英语母语者的参与问题，时区差异，带有情绪的电子邮件沟通。
+第二天下午与昨天一样，有一个无需三选一的特殊场次，主题是 **社区建设**，由 Robert Haas 主持。3 位新晋的 PG 提交者轮流分享他们成为提交者的历程，与遇到的挑战和问题，分别是：泽田正彦，阿米特·兰格特，梅兰妮·普拉格曼。总体上社区参与面临的几个主要挑战是：非英语母语者的参与问题，时区差异，带有情绪的电子邮件沟通。
 
-Robert Hass 在会后的博客中提到：***他真的很想看到更多来自印度与日本的人参与到 PG 的高级职位中来，因为这两个国家有着庞大的开发者社区，却没有核心组成员，高级职位代表性不足***。
+Robert Haas 在会后的博客中提到：***他真的很想看到更多来自印度与日本的人参与到 PG 的高级职位中来，因为这两个国家有着庞大的开发者社区，却没有核心组成员，高级职位代表性不足***。
 
 ![robert-hass.jpg](robert-hass.png)
 
-说老实话，听着有些五味杂陈，因为在包容性的议题中没有提到 **中国**，而强调的是日本与印度。但这也是确实是没有办法的事情，中国在国际社区参与上，确实做的很拉垮。中国有三四百款国产数据库，其中很多都是基于 PG 魔改换皮套壳的，但这么多公司与用户，总共也只出了一个 PG 贡献者（ ——拓数派的 Richard Guo，原来在 Pivotal，今年刚晋为 Committer）。
+这场讨论提到了印度和日本，没有提到中国，让我有些感慨。我希望看到更多中国用户与开发者持续参与 PostgreSQL 上游。拓数派的 Richard Guo 当年刚成为 PostgreSQL committer。
 
-这次 PGCon.Dev ，中国过来参会的人，除了瀚高的四位就是我了，加起来正好一只手数过来。说来遗憾，中国技术界对 PostgreSQL 的认知水平与采纳程度仍然远远落后于全球，在生态上可能有10到15年的差距。要说语言挑战与障碍的问题，印度日本的英语口音也有不少沟通障碍，要说种族歧视啥的更是无稽之谈 —— 在场的华人面孔可绝对不算少。
+据我了解，本次从中国前来参会的有瀚高的四位和我，共五人。
 
-那么到底是为什么呢？如果你选择关门自嗨，土法炼钢造手搓数据库，白嫖社区，不参与到全球社区中来，那么别人自然也不会待见你。我希望我的参与能够 “Bootstrap” 并改善这一情况，让更多中国的 PG 用户、开发者，产品、开源项目，被全球社区所熟知，接纳，承认，让中文世界的用户也有更多的社区参与。
+我希望自己的参与能帮助更多中文社区的用户和开发者建立联系，让他们的工作更容易被全球社区了解，也为后续合作创造机会。
 
 ----------
 
@@ -222,15 +223,15 @@ Robert Hass 在会后的博客中提到：***他真的很想看到更多来自�
 
 第二天下午的最后一个议程叫做： **闪电演讲**。顾名思义，就是一个人只给5分钟，超时就立刻轰下来。大家都很干练，11 个主题整个才花了 45 分钟。在酒吧相谈甚欢的 Keith 分享了一些关于 PG Monitor 的改进，Peter Eisentraut 分享了关于 SQL 标准的跟进。当然，要说我最喜欢的分享，当属 Devrim Gündüz  关于 PG RPMs 的闪电演讲。昨天酒吧喝酒的时候，他神秘兮兮地说明天要放个大招，震撼全场，果不其然，在5分钟里讲完了 75 页的 PPT，气氛非常欢快～。
 
-说起 PostgreSQL，尽管这是个开源软件，但也许 99% 的用户都是直接使用 “官方” 编译好的成品二进制软件而不是从源码编译。Pigsty 作为一个数据库发行版，我自己维护了34个 RPM 扩展插件，但还有一百多个扩展，和各种生态工具都是直接来自 Devrim 老爷子维护的 PGDG 官方仓库的，我深深知道这项工作的不易。 Devrim 在用自己的信用，为这个世界上最先进，最流行的数据库软件质量把好最后一道关口。
+许多 PostgreSQL 用户直接安装二进制软件包。当时我为 Pigsty 维护 34 个扩展的软件包，Devrim 则在 PGDG RPM 仓库维护一百多个扩展。这些打包工作让更多用户能够安装和使用扩展。
 
 ![devrim.jpg](devrim.jpg)
 
 > Devrim 要是想干坏事，那破坏力说不定比 xz 要大多了
 
-Devrim 老爷子是一个很有意思的人，土耳其人，现居伦敦，还兼职酒吧 DJ 打碟，身上有一个 PostgreSQL Logo 的纹身，是 PGDG RPM 仓库的维护者。我跟他聊了一个多小时，了解了 PGDG 仓库的方方面面，讨论了许多问题。比如，一个扩展想弄进 PGDG 仓库里，一般需要什么条件，是什么流程。Devrim 说他会去关注 PGXN ，以及社区讨论，像最近最近大火的 `pgvector` 向量数据库扩展就是有人推荐给他，然后就收录进去了。我就白了一眼说：你看看[推给你的那个人莫不是我](https://github.com/pgvector/pgvector/issues/76)…，哈哈哈哈。
+Devrim 老爷子是一个很有意思的人，土耳其人，现居伦敦，还兼职酒吧 DJ 打碟，身上有一个 PostgreSQL Logo 的纹身，是 PGDG RPM 仓库的维护者。我跟他聊了一个多小时，了解了 PGDG 仓库的方方面面，讨论了许多问题。比如，一个扩展想弄进 PGDG 仓库里，一般需要什么条件，是什么流程。Devrim 说他会去关注 PGXN ，以及社区讨论，像最近大火的 `pgvector` 向量数据库扩展就是有人推荐给他，然后就收录进去了。我就白了一眼说：你看看[推给你的那个人莫不是我](https://github.com/pgvector/pgvector/issues/76)…，哈哈哈哈。
 
-说起来很有趣，在最近发布 [Pigsty v2.7](https://mp.weixin.qq.com/s/CzNUNAVnafO-hMCMdfxgZA) 中，我发现我维护的34个扩展里有4个 `pgsql-http`, `pgsql-gzip`, `pg_net`, `pg_bigm` 被纳入了进入了 PGDG 官方仓库。我一和 Devrim 提起这个事，他就笑眯眯地跟说我：我跑到你的 Pigsty 网站[扩展列表](https://pigsty.cc/docs/reference/extension/)上扒拉了一圈，发现有几个不错的，就弄进官方仓库了。我就问，我打包的那些不错的 RUST 扩展有没有机会弄进官方仓库里？他马上义正严辞地表态 —— 这些 Go 和 Rust 异端插件想也别想！但反正你不是自己弄了个 YUM / APT 软件仓库专门放这些扩展吗？
+说起来很有趣，在最近发布 [Pigsty v2.7](https://mp.weixin.qq.com/s/CzNUNAVnafO-hMCMdfxgZA) 中，我发现我维护的34个扩展里有4个 `pgsql-http`, `pgsql-gzip`, `pg_net`, `pg_bigm` 被纳入了 PGDG 官方仓库。我一和 Devrim 提起这个事，他就笑眯眯地跟说我：我跑到你的 Pigsty 网站[扩展列表](https://pigsty.cc/docs/reference/extension/)上扒拉了一圈，发现有几个不错的，就弄进官方仓库了。我就问，我打包的那些不错的 RUST 扩展有没有机会弄进官方仓库里？他马上义正严辞地表态 —— 这些 Go 和 Rust 异端插件想也别想！但反正你不是自己弄了个 YUM / APT 软件仓库专门放这些扩展吗？
 
 我和 Devrim 聊得非常尽兴。最后我答应当一个 **PG扩展猎手**，发掘新的 PG 插件。如果觉得不错就交给他，收纳进 PG 的官方仓库里。
 
@@ -248,9 +249,9 @@ Devrim 老爷子是一个很有意思的人，土耳其人，现居伦敦，还�
 
 ![unconference2.jpg](unconference2.png)
 
-看得出来，大家都非常重视可观测性上的特性。在 PostgreSQL 可观测性上，我确实是当仁不让的专家，`pg_exporter` 就是我写的。所以我抛出来的议题是：为 PostgreSQL 添加一个第一方的监控扩展，内置 Prometheus 监控端点，直接通过 HTTP 对外暴露监控指标。
+作为 `pg_exporter` 的作者，我提出为 PostgreSQL 添加第一方监控扩展，内置 Prometheus 端点，通过 HTTP 提供指标。
 
-提出这个问题的原因是，`pg_exporter` 虽好，但毕竟是外部组件，会引入额外的管理复杂度；而且如果 PostgreSQL 处于崩溃恢复无法接受新连接的状态，外部组件也难以知道内部的状态，只有将这个功能做成内核扩展，才能真正完整地提取这些信息。
+这个提案希望减少管理独立 Exporter 的工作，并在崩溃恢复等无法接受 SQL 连接的阶段提供内部状态。这些能力仍需要在 PostgreSQL 中实现和验证。
 
 实现的方案是采用类似 `bgw_replstatus` 扩展使用的后台工作进程，监听一个额外端口，通过 HTTP 对外暴露监控指标。内容上基本上也以我编写的 `pg_exporter` 作为蓝本，除了少量系统关键指标外，所有指标都通过一张 Collector 配置表进行定义。
 
@@ -272,13 +273,13 @@ Devrim 老爷子是一个很有意思的人，土耳其人，现居伦敦，还�
 
 ### 议题：关于服务端中文字符集支持
 
-Jeremy Schneider 在本次大会带来一场关于字符排序规则（ Collation） 的分享，我非常关注。这个分享抛出了一系列 Collate 规则变化导致的问题。说实话，我以前也专门[写过一篇文章研究过这个问题](https://vonng.com/pg/collate/)，最终结论与 Jeremy 高度一致，应该用 `C.UTF8` ，我一直是这么做的，并制定开发规约，也在发行版中强制默认配置推行这一点，而 Jeremy 的分享，则详细阐述了[不这么做会导致哪些坑爹的结果](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/95/slides/26/pgcon24_collation.pdf)。
+Jeremy Schneider 的分享介绍了排序规则变化带来的问题。他对简单、稳定排序方式的偏好，与我自己的[实践](https://vonng.com/pg/collate/)相近。[演讲幻灯片](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/95/slides/26/pgcon24_collation.pdf)详细说明了其中的取舍。
 
 会后在大厅里，我和 Jeremy 进一步地讨论了这个问题，核心组的 Peter Eisentraut 也参与了进来。Jeremy 问我中国用户是怎样使用字符集与 Collation 的，我说新应用大体上都用的是 `C.UTF8`，通常只有一些政企单位和传统行业的老系统才会去折腾服务端中文字符集。
 
-但这里确实有一个略尴尬的问题，例如 2023 年底中国发布的国标 GB18030 对信息系统提出了两条强制性要求：产品可以正确输入、输出、处理 GB18030 强制部分规定的全部汉字字符；产品可以正确识别 GB18030 强制性部分规定的全部汉字字符对应的编码。
+我们还讨论了信息系统对 GB18030 字符输入、输出、处理和编码识别的兼容需求。
 
-PostgreSQL 可以在 **客户端** 支持 GB 18030 编码，也提供了 `convert_to` 将字符串编码为 GB18030 编码字节串的编码方案支持，但是不支持直接在服务端使用此编码（支持的是 `EUC_CN`），也没有通过 ICU 提供对 GB 18030 的支持。此外，我还向 Peter 提出了 `convert_to` + `gb18030` 大概有 20个新增汉字映射有误的问题。Jeremy 和 Peter 都表示会进一步跟进研究，看看怎么解决这些问题。
+PostgreSQL 当时支持 GB18030 客户端编码，也可以通过 `convert_to` 转换为这种编码的字节串，但不支持将它用作服务端编码。ICU 排序规则也不会增加服务端编码支持。我还向 Peter 提出，`convert_to(..., 'gb18030')` 对大约 20 个新增汉字可能存在映射问题。Jeremy 和 Peter 都表示会继续调查。
 
 ---------
 

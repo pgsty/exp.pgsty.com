@@ -1,104 +1,107 @@
 ---
-title: "Victoria: The Observability Stack That Slaps the Industry"
-linkTitle: "Victoria: Observability Stack Arrives"
+title: "Adopting the Victoria observability stack in Pigsty"
 date: 2025-12-17
 authors: [vonng]
 summary: >
-  VictoriaMetrics is brutally efficient—using a fraction of Prometheus + Loki’s resources for multiples of the performance. Pigsty v4 swaps to the Victoria stack; here’s the beta for anyone eager to try it.
+  The December 2025 Pigsty v4 beta introduced VictoriaMetrics, VictoriaLogs, and VictoriaTraces. This article records the motivation, test results, and deployment model.
 tags: [Monitoring]
 ---
 
-I’ve spent the last few weeks preparing Pigsty v4.0. The headliner: ripping out Prometheus + Loki and dropping in the full Victoria stack. **VictoriaMetrics is no-frills brute force**—it just works and it’s ridiculous. The observability portion is done, so here’s a beta for early testers.
+This article describes the Pigsty v4 beta in December 2025.
 
---------
+While preparing Pigsty v4.0, I replaced the default Prometheus and Loki services with VictoriaMetrics and VictoriaLogs. I also added VictoriaTraces. The aim was to reduce storage and memory use and improve dashboard and log-query response time.
 
-## First impressions
+## Previous experience
 
-Maybe you haven’t heard of VictoriaMetrics, but you definitely know Prometheus. Victoria is Prometheus’ big brother—built by Belarusian wizard Aliaksandr Valialkin. Back at Tantan we tracked ~50 M time series using twelve 64C/256G nodes of Prometheus. I swapped in a three-node distributed Victoria cluster and it didn’t even break a sweat. Later tests showed a single beefy node could handle it. Memory/disk dropped to **¼** of Prometheus; query speed jumped **4×**. It blew me away.
+At Tantan, we monitored about 50 million time series with twelve Prometheus nodes, each with 64 CPU cores and 256 GB of memory. In my tests, a three-node VictoriaMetrics cluster handled the workload; a larger single server also handled it. Memory and disk use were roughly one quarter of the previous setup, and queries were about four times faster.
 
-Industry benchmarks back it up. VM routinely crushes InfluxDB, Prometheus, TimescaleDB in ingestion throughput and high-cardinality queries.
+![VictoriaMetrics architecture](arch.png)
 
-![arch.png](arch.png)
+Pigsty initially offered VictoriaMetrics as an optional module. A deployment for the video production team Media Storm (影视飓风), together with the planned retirement of Promtail, prompted the infrastructure update. Promtail was the log collection agent; Loki itself was not being retired.
 
-Pigsty used to ship Prometheus by default and keep VM as a “pro” module. Two things pushed me to refactor:
+Aliaksandr Valialkin's work on allocation control and efficient storage also prompted me to test the system.
 
-1. Grafana Loki/Promtail were aging out. VictoriaLogs was the obvious replacement.
-2. A customer (the film studio behind *Movie Hurricane*) needed production-grade Victoria. I decided to redo the entire infra layer.
+## Ten-node test
 
-Victoria is a full suite: metrics, logs, traces. So Pigsty v4 rewrites the infra module accordingly.
+For the v4 beta, I collected metrics and logs from ten nodes. After one day, the test showed:
 
---------
+| Measurement | Observed value |
+| --- | --- |
+| Time series | About 120,000 |
+| VictoriaMetrics memory | About 600 MB |
+| Stored metric samples | About 1.1 billion |
+| Metric storage | About 440 MB |
+| Log records | About 500,000 |
+| Log storage | Less than 6 MB |
+| Entire monitoring stack, including Grafana and Alertmanager | About 0.2 vCPU and 1 GB memory |
 
-## Why Victoria?
+![VictoriaMetrics statistics in the test](victoria-metrics-stats.png)
 
-Before performance, let’s talk about the man behind it — Aliaksandr Valialkin (@valyala). Before Victoria he was CTO at ad-tech shop VertaMedia. In Go circles he’s legendary.
-His **fasthttp** has 23k stars and is **10×** faster than net/http (150M concurrent connections, 200k RPS). His **quicktemplate** is **20×** faster than html/template; **fastjson** beats encoding/json by **15×**.
+![Resource use of the monitoring services](resource-usage-overview.png)
 
-Common thread: **zero allocations on the hot path**. That philosophy permeates Victoria. No third-party deps, ruthless memory management,
-simple architecture with AK‑47 reliability. He also has the swagger to back it up: he publishes benchmarks that faceplant competitors and never blinks.
+I also ran the Pigsty v3.7 Prometheus and Loki setup on ten nodes. After ten hours, its resource use was near or above the Victoria setup. The readings cover different collection periods: ten hours for Prometheus and Loki, and one day for Victoria.
 
---------
+![Prometheus and Loki resource use](prometheus-loki-comparison.png)
 
-## How strong is Victoria?
+The practical improvement was faster dashboard loading and log searches in this environment.
 
-We tested on ten nodes ingesting all metrics/logs. Pigsty v4’s VictoriaMetrics + VictoriaLogs consumed 0.2 vCPU and 1GB RAM for the entire stack (Grafana, Alertmanager included). Daily load: 120k time series in 600 MB RAM, 1.1B samples in 440MB storage, 500k log lines in under 6MB.
+## Metrics, logs, and traces
 
-![victoria-metrics-stats.png](victoria-metrics-stats.png)
+VictoriaMetrics accepts Prometheus metrics and provides a compatible query API. PG Exporter continues to expose the same `/metrics` endpoint. Existing dashboards can use VictoriaMetrics as their data source; check query results when migrating because MetricsQL has differences from PromQL. Recording and alert rules are evaluated by the separate `vmalert` service.
 
-![resource-usage-overview.png](resource-usage-overview.png)
+VictoriaMetrics supports both single-server and cluster deployments.
 
-For comparison, Pigsty v3.7 on the same ten nodes with Prometheus + Loki ate about the same resources in just ten hours—data volume too small to highlight the disparity, but it scales horribly.
+![VictoriaMetrics cluster architecture](vm-cluster-architecture.jpg)
 
-![prometheus-loki-comparison.png](prometheus-loki-comparison.png)
+For this workload, one server had enough capacity. I used independent single-server replicas to provide redundancy without managing distributed storage. Each replica collected and stored the metrics separately.
 
-Victoria won’t just sip resources—it’s faster queries, better compression, higher cardinality tolerance, and effortless clustering.
+![Independent single-server replicas used in the beta](single-node-redundancy.png)
 
---------
+In the previous setup, expanding the log search interval could make Loki queries time out. Faster log searches were a main reason for adopting VictoriaLogs.
 
-## Architecture
+VictoriaLogs stores logs and uses LogsQL. Moving from Loki requires changing LogQL queries and the log collection configuration. In this deployment, Vector replaced Promtail.
 
-Pigsty v4 builds a fully distributed Victoria setup: separate ingest/query nodes, replication, HA, plus VictoriaLogs and VictoriaTraces. The stack exposes Grafana dashboards, Alertmanager routes, Nginx ingress, and integrates with existing host/DB exporters.
+![VictoriaLogs overview](victoria-logs-overview.png)
 
-![nginx-services-architecture.png](nginx-services-architecture.png)
+LogsQL allows a search without a stream selector. For example, `"error" "timeout"` searches for log entries containing both terms. This is useful when the affected service is not yet known. See the [VictoriaLogs documentation](https://docs.victoriametrics.com/victorialogs/).
 
-Even self-monitoring is wired up, and adding your own app metrics is a matter of dropping in config files.
+![LogsQL query example](logsql-syntax.png)
 
-![self-monitoring-dashboard.png](self-monitoring-dashboard.png)
+VictoriaTraces supplies trace storage. This beta test covered metrics and logs.
 
-Pigsty is no longer just a PostgreSQL distro—it’s now an observability distro too.
+## Pigsty integration
 
---------
+The Pigsty infrastructure repository provides RPM and DEB packages for Victoria components, tools, and Grafana plugins. The `infra` deployment configures storage directories, services, Grafana data sources, dashboards, and Nginx routes.
 
-## Getting started
+![Packages in the Pigsty repository](pigsty-repo-packages.png)
 
-We introduced `infra.yml`, which installs only the Victoria stack (no PostgreSQL/Etcd). Want pure Victoria on any mainstream Linux? Run:
+Nginx exposes the services through the configured infrastructure domain. The stack includes VictoriaMetrics, VictoriaLogs, VictoriaTraces, Grafana, vmalert, and Alertmanager.
+
+![Infrastructure service routes](nginx-services-architecture.png)
+
+The deployment also configures service monitoring. Additional application targets can be added through scrape configuration.
+
+![Self-monitoring dashboard](self-monitoring-dashboard.png)
+
+## The beta deployment
+
+The December 2025 beta used the `infra` configuration template to install monitoring services without PostgreSQL or etcd. The commands below show that workflow. For a new host, use the current [Pigsty infrastructure guide](https://pigsty.io/docs/infra/).
 
 ```bash
-curl https://repo.pigsty.cc/beta | bash
+curl -fsSL https://repo.pigsty.cc/beta | bash
+cd ~/pigsty
 ./configure -c infra
 ./infra.yml
 ```
 
-The config is straightforward; add more nodes or replicas as needed.
+![Infrastructure inventory example](infra-config-example.png)
 
-![infra-config-example.png](infra-config-example.png)
+![Completed infrastructure installation](installation-complete.png)
 
-Everything bootstraps itself:
+With three infrastructure nodes, the template deployed three independent replicas.
 
-![installation-complete.png](installation-complete.png)
+![Three-node installation](three-node-cluster.png)
 
-A three-node install gives three independent replicas out of the box:
+At the time of writing, the remaining v4.0 work included dashboards and documentation, with a stable release planned for January 2026. Native distributed Victoria deployment was a later task.
 
-![three-node-cluster.png](three-node-cluster.png)
-
-Pigsty v4 is still beta, but the Victoria portion is rock solid. Remaining work is dashboard polish and docs. If you want the easiest way to try Victoria, this is it.
-
-v4.0 stable ships January 2026 with full docs and additional features, including Victoria’s native distributed mode.
-
---------
-
-## Final thoughts
-
-Upgrading to Victoria benefited me directly. Opening Grafana and having sub-second, buttery-smooth queries is pure joy. Remember waiting seconds for Loki searches? Never again.
-
-VictoriaMetrics embodies the purest form of open source: a lone expert ships something that dunks on industry giants, releases it under a permissive license, and doesn’t play licensing shell games. No VC puppet strings, no bait-and-switch—just product excellence. More people should know about it and use it.
+This migration gave me a monitoring stack that used fewer resources and responded faster under our workload. Those were the reasons to make it the Pigsty default.

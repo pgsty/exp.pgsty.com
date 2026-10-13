@@ -7,13 +7,15 @@ summary: >
 tags: [PostgreSQL, PG Admin, Monitoring]
 ---
 
+> Written in 2020. The metric counts and examples describe the deployment at that time.
+
 ----------------
 
 ## Preface
 
-Playing with databases and playing with cars have something in common - they both require frequently checking the dashboard.
+Operating a database is like driving a car: both require attention to a dashboard.
 
-What are you doing staring at the dashboard? Looking at metrics. Why look at metrics? You need to understand the current operating state to effectively apply control.
+Metrics show the current state and help you decide when to act.
 
 ![](img/blog/golden-metrics-car.jpeg)
 
@@ -41,9 +43,9 @@ avg(count by (ins) ({__name__=~"pg.*"}))
 avg(count by (ins) ({__name__=~"node.*"}))
 ```
 
-Over 1000 PostgreSQL metrics, over 2000 machine metrics.
+In the deployment used for this article, these queries found more than 1,000 PostgreSQL series and 2,000 host series per instance.
 
-These metrics are all data treasures, and mining and visualization can extract their value.
+These series support investigation and visualization.
 
 But for daily management, only a few core metrics are needed.
 
@@ -68,11 +70,11 @@ Based on experience and usage frequency, continuously subtracting, we can filter
 | **Queries Per Second** | QPS | **APP** | Connection-Pool | Traffic |
 | **CPU Usage** | CPU Usage | SYS | Machine Node | Saturation |
 
-In emergency situations: Errors are always the first priority golden metric.
+During an incident, I check errors first.
 
-In normal situations: Application perspective golden metrics: QPS and RT
+For routine application monitoring, I focus on QPS and response time.
 
-In normal situations: DBA perspective golden metrics: DB saturation (water level)
+For capacity management, I focus on database saturation.
 
 ----------------
 
@@ -80,19 +82,15 @@ In normal situations: DBA perspective golden metrics: DB saturation (water level
 
 ### **Error Metrics**
 
-The first priority metrics are always **errors** - errors are often directly user-facing.
+I check **errors** first because they often affect users directly.
 
 If you could only choose one metric to monitor, then choose **error metrics** - like the number of error log entries per second at the application, system, and DB layers might be most appropriate.
 
-For a car, if you could only choose one function on the dashboard, what would you choose?
+Error counts and rates show failures. They support alerting and diagnosis, but cannot by themselves show how much spare capacity remains.
 
-Choose **error metrics** - keep the car moving.
+A growing connection-pool queue signals contention for available connections. Queue length alone does not identify the bottleneck or measure spare capacity.
 
-Error-type metrics are very important and directly reflect system anomalies, such as connection pool queuing. But the biggest problem with error-type metrics is they're only meaningful when alerting, making them difficult to use for daily water level assessment and performance analysis. Additionally, error-type metrics are often difficult to quantify precisely and can usually only give qualitative results: problematic vs not problematic.
-
-Furthermore, error-type metrics are difficult to quantify precisely. We can only say: when the connection pool has queuing, database load is relatively high; the longer the queue, the higher the load; when there's no queuing, database load isn't very high - that's all. For daily management, this capability is definitely insufficient.
-
-**An important reason for setting metrics and building monitoring/alerting systems is to prevent system overload. If the system is already overloaded with lots of errors, then using error phenomena to define saturation in reverse is meaningless**.
+To detect pressure before users see errors, also monitor latency, resource use, and queues.
 
 The purpose of metrics is to measure the system's operating state. We also care about other aspects of system capability: throughput/traffic, response time/latency, saturation/utilization/water level. These three represent system capability, service quality, and load level respectively.
 
@@ -102,19 +100,17 @@ Different focus points - backends (database users) focus on system capability an
 
 Traffic-type metrics have great potential, especially metrics like QPS and TPS which are quite representative.
 
-Traffic metrics can directly measure system capability, such as how many orders processed per second, how many requests processed per second.
+Traffic metrics measure current throughput, such as orders or requests completed per second.
 
-This is similar to a speedometer - highway speed limits, city speed limits. Environment, load.
+A speedometer shows how fast a car is moving, not how much faster it could go. Throughput has the same distinction.
 
-But traffic metrics like TPS and QPS also have problems. Queries on a database instance are often varied and diverse. A query taking 10 microseconds and one taking 10 seconds are both counted as one Q in statistics. **Metrics like QPS cannot be compared horizontally and only have rough reference value**. Even when query types change, they can't be compared vertically with their own historical data. It's also difficult to set utilization targets for metrics like QPS and TPS. The same database executing `SELECT 1` can reach hundreds of thousands of QPS, but when executing complex SQL, it might only reach thousands of QPS. Different load types and machine hardware will significantly impact a database's QPS ceiling. QPS only has reference value when queries on a database are highly homogeneous with no complex changes. Under such strict conditions, you can set a QPS water level target through stress testing.
+QPS and TPS measure completed work, not its cost. A 10-microsecond query and a 10-second query each count as one call. Compare throughput with the query mix, latency, and resource use. Load tests can establish a useful throughput baseline for a known workload.
 
 ### **Latency Metrics**
 
-Similar to gear levels - slow queries, low gear, slow speed. Low query tier, low TPS water level. High query tier, high TPS water level.
-
 Latency is suitable for measuring system service quality.
 
-Compared to QPS/TPS, metrics like RT (Response Time) actually have more reference value. Because increased response time is often a precursor to system saturation. According to empirical rules, the higher the database load, the higher the average response time for queries and transactions. An advantage of RT over QPS is that **RT can have a utilization target set** - for example, you can set an absolute threshold for RT: not allowing slow queries with RT over 1ms in production OLTP databases. But metrics like QPS are difficult to draw red lines for. However, RT also has its own problems. The first problem is it's still qualitative rather than quantitative - increased latency is just a warning of system saturation but can't be used to precisely measure system saturation. The second problem is that RT statistics available from databases and middleware are usually averages, but what really provides warning effect might be statistics like P99 and P999.
+RT (response time) measures service quality. Set a target for the workload: for example, a particular OLTP service might require a 1 ms response time. Rising latency can indicate contention, but does not measure saturation by itself. Averages can also hide slow requests, so use P99 or P99.9 when duration distributions are available.
 
 ### **Saturation Metrics**
 
@@ -122,7 +118,7 @@ Saturation metrics are like a car's tachometer, fuel gauge, and temperature gaug
 
 Saturation metrics are suitable for measuring system load.
 
-The load metric users expect is a **saturation** metric. So-called saturation is how "full" the service capacity is - usually a measure of a specific metric of the currently most limited resource in the system. Generally, 0% saturation means the system is completely idle, 100% saturation means full load. Systems will experience severe performance degradation before reaching 100% utilization, so setting metrics also needs to include a **utilization target** or **water level red line and yellow line**. When system instantaneous load exceeds the red line, it should trigger alerts; when long-term load exceeds the yellow line, it should trigger capacity expansion.
+Saturation describes pressure on a limiting resource. Utilization and queue length help identify it, but they measure different things. Set alert thresholds from workload baselines and response-time targets. Sustained pressure is a reason to review capacity, query cost, and resource limits.
 
 | **Other Optional Metrics** | | | | |
 |------------|-----------|-----|------|-----|

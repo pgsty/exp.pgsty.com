@@ -1,83 +1,81 @@
 ---
-title: "PG服务器日志常规配置"
+title: "PostgreSQL 服务器日志配置"
 date: 2018-02-06
 authors: [vonng]
 summary: >
-  建议配置PostgreSQL的日志格式为CSV，方便分析，而且可以直接导入PostgreSQL数据表中。
+  CSV 日志可以导入 PostgreSQL 表，也可以通过 file_fdw 直接查询。
 tags: [PostgreSQL, PG管理, 监控]
 ---
 
-建议配置PostgreSQL的日志格式为CSV，方便分析，而且可以直接导入PostgreSQL数据表中。
+本文写于 2018 年。下方表结构对应 PostgreSQL 10 的 23 列 CSV 格式，Filebeat 示例使用当时的 `prospectors` 配置。
 
-## 日志相关配置项
+CSV 日志可以导入 PostgreSQL 表，也可以通过 `file_fdw` 直接查询。
+
+## 日志配置
 
 ```ini
-log_destination ='csvlog'
-logging_collector =on
-log_directory ='log'
-log_filename ='postgresql-%a.log'
-log_min_duration_statement =1000
-log_checkpoints =on
-log_lock_waits =on
-log_statement ='ddl'
-log_replication_commands =on
-log_timezone ='UTC'
-log_autovacuum_min_duration =1000
+log_destination = 'csvlog'
+logging_collector = on
+log_directory = 'log'
+log_filename = 'postgresql-%a.log'
+log_min_duration_statement = 1000
+log_checkpoints = on
+log_lock_waits = on
+log_statement = 'ddl'
+log_replication_commands = on
+log_timezone = 'UTC'
+log_autovacuum_min_duration = 1000
 
-track_io_timing =on
-track_functions =all
-track_activity_query_size =16384
+track_io_timing = on
+track_functions = all
+track_activity_query_size = 16384
 ```
+
+最后三项用于运行统计，不控制日志输出。`logging_collector` 和 `track_activity_query_size` 需要重启服务器生效。按星期命名的文件每周会重用同一名称，应按所需保留时间设置轮转和清理规则。
 
 ## 日志收集
 
-如果需要从外部收集日志，可以考虑使用filebeat。
+原方案使用 Filebeat 将本地日志转发到 Kafka。请替换文件路径和 Kafka 地址。这个旧版示例从已有文件末尾开始读取，按时间戳模式合并行，最多合并 20 行；它不能完整识别任意多行消息的 CSV 记录边界。
 
 ```yaml
 filebeat.prospectors:
+  - type: log
+    enabled: true
+    paths:
+      - /pg/data/log/postgresql-*.csv
+    document_type: db-trace
+    tail_files: true
+    multiline.pattern: '^20\d\d-\d\d-\d\d'
+    multiline.negate: true
+    multiline.match: after
+    multiline.max_lines: 20
 
-## input
-- type: log
-enabled: true
-paths:
-- /var/lib/postgresql/data/pg_log/postgresql-*.csv
-document_type: db-trace
-tail_files: true
-multiline.pattern: '^20\d\d-\d\d-\d\d'
-multiline.negate: true
-multiline.match: after
-multiline.max_lines: 20
 max_cpus: 1
 
-## modules
 filebeat.config.modules:
-path: ${path.config}/modules.d/*.yml
-reload.enabled: false
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
 
-## queue
 queue.mem:
-events: 1024
-flush.min_events: 0
-flush.timeout: 1s
+  events: 1024
+  flush.min_events: 0
+  flush.timeout: 1s
 
-## output
 output.kafka:
-hosts: ["10.10.10.10:9092","x.x.x.x:9092"]
-topics:
-- topic: 'log.db'
+  hosts: ["kafka.example.com:9092"]
+  topics:
+    - topic: 'log.db'
 ```
 
-## CSV日志格式
+## CSV 日志格式
 
-很有趣的想法，将CSV日志弄成PostgreSQL表，对于分析而言非常方便。
-
-原始的csv日志格式定义如下：
+将日志映射为表后，就能用 SQL 分析。下列表结构与 [PostgreSQL 10 的 CSV 字段](https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG) 一致。后续版本增加了列，导入时应使用产生日志的服务器版本对应的表结构：
 
 ```sql
-日志表的结构定义
+-- 日志表结构
 create table postgresql_log
 (
-  log_time               timestamp,
+  log_time               timestamp(3) with time zone,
   user_name              text,
   database_name          text,
   process_id             integer,
@@ -106,22 +104,21 @@ create table postgresql_log
 
 ## 导入日志
 
-日志是结构良好的CSV，（CSV允许跨行记录），直接使用COPY命令导入即可。
+用 `COPY` 导入已经关闭的 CSV 日志文件，服务器需要有文件读取权限。文件在客户端机器上时，改用 psql 的 `\copy`。日志轮转后再导入完整文件，每个文件只导入一次。
 
 ```sql
-COPY postgresql_log FROM '/var/lib/pgsql/data/pg_log/postgresql.log' CSV DELIMITER ',';
+COPY postgresql_log FROM '/pg/data/log/postgresql-Mon.csv' WITH (FORMAT csv);
 ```
 
 ## 映射日志
 
-当然，除了把日志直接拷贝到数据表里分析，还有一种办法，可以让PostgreSQL直接将自己的本地CSVLOG映射为一张外部表。以SQL的方式直接进行访问。
+`file_fdw` 可以直接查询本地 CSV 文件，无需先复制到表中。用具备扩展和服务器文件访问权限的角色执行以下设置。示例假定文件位于 `/pg/data/log`，且星期名为英文缩写，请按实际输出调整路径。部分星期文件尚不存在时，先查询已有文件对应的子表。
 
 ```sql
 CREATE SCHEMA IF NOT EXISTS monitor;
 
--- search path for su
-ALTER ROLE postgres SET search_path = public, monitor;
-SET search_path = public, monitor;
+-- This session only
+SET search_path = monitor, pg_catalog;
 
 -- extension
 CREATE EXTENSION IF NOT EXISTS file_fdw WITH SCHEMA monitor;
@@ -168,9 +165,9 @@ CREATE FOREIGN TABLE IF NOT EXISTS monitor.pg_log_sun() INHERITS (monitor.pg_log
 
 ```
 
-## 加工日志
+## 提取日志字段
 
-可以使用以下存储过程从日志消息中进一步提取语句的执行时间
+这些函数从英文日志消息中提取耗时、语句文本和形似 IPv4 的文本。耗时单位为毫秒。函数仅处理示例中的消息格式，不覆盖所有扩展查询协议或本地化消息：
 
 ```sql
 CREATE OR REPLACE FUNCTION extract_duration(statement TEXT)
@@ -183,7 +180,7 @@ BEGIN
   IF found_duration
   THEN
     RETURN (SELECT regexp_matches [1] :: FLOAT
-            FROM regexp_matches(statement, 'duration: (.*) ms')
+            FROM regexp_matches(statement, '^duration: ([0-9]+(?:\.[0-9]+)?) ms')
             LIMIT 1);
   ELSE
     RETURN NULL;

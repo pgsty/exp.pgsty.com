@@ -19,6 +19,6 @@ cascade:
   breadcrumb: false
 ---
 
-本栏目完整转载最初发表于 [vonng.com](https://vonng.com/) 并构成 PG Exporter 监控实践基础的博客原文。每篇文章保留原始发布日期、完整正文、作者署名、题图与文内插图；不合并、不缩写，也不改写成摘要。
+最初发表于 [vonng.com](https://vonng.com/) 的 PostgreSQL 监控、诊断、容量与日志文章。各篇保留原发布日期、署名、插图与历史背景，并配有英文译文。
 
-旧文中的截图、命令、产品名称与运维假设都是历史原貌的一部分。当前 PG Exporter 行为请以[文档](/zh/docs/)、[设计记录](/zh/design/)与[发布注记](/zh/release/)为准。
+当前版本的安装与操作方法见 [PG Exporter 使用手册](/zh/docs/)。

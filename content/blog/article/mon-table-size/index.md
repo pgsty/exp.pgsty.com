@@ -2,18 +2,20 @@
 title: "Monitoring Table Size in PostgreSQL"
 date: 2018-05-14
 authors: [vonng]
-summary: "Tables in PostgreSQL correspond to many physical files. This article explains how to calculate the actual size of a table in PostgreSQL."
+summary: "Measure PostgreSQL table storage, including indexes, TOAST, and relation forks."
 tags: [PostgreSQL, PG Admin, Monitoring]
 ---
 
-### Table Space Layout
+This 2018 article explains physical storage for ordinary PostgreSQL tables.
 
-In the broad sense, a **Table** includes two parts: the **main table** and **TOAST table**:
+### Table Storage Layout
 
-* Main table: stores the relation's own data, i.e., the narrow sense relation, `relkind='r'`.
-* TOAST table: corresponds one-to-one with the main table, stores oversized fields, `relkind='t'`.
+An ordinary table has its own storage and may also have a TOAST table:
 
-Each table consists of **main body** and **indexes** - two **Relations** (for main tables, index relations may not exist):
+* Main table: stores row data, `relkind='r'`.
+* TOAST table: stores out-of-line values when needed, `relkind='t'`. Some tables have no TOAST table.
+
+A table and each of its indexes are separate **relations**:
 
 * Main relation: stores tuples.
 * Index relation: stores index tuples.
@@ -24,22 +26,22 @@ Each **relation** may have **four forks**:
 
 * fsm: stores information about free space in the main fork, numbered 1
 * vm: stores information about visibility in the main fork, numbered 2
-* init: used for unlogged tables and indexes, a rare special fork, numbered 3
+* init: used for unlogged tables and indexes, numbered 3
 
-Each fork is stored as one or more files on disk: files larger than 1GB are split into multiple segments of maximum 1GB each.
+Each fork is stored in one or more files. The default segment size is 1 GiB; it can be changed when PostgreSQL is built.
 
-In summary, a table is not as simple as it appears - it consists of several relations:
+To account for a table’s storage, include these relations:
 
 * Main table's main relation (single)
 * Main table's indexes (multiple)
 * TOAST table's main relation (single)
 * TOAST table's index (single)
 
-Each relation may actually contain 1-3 forks: `main` (always exists), `fsm`, `vm`.
+Include every fork that exists for each relation: `main`, `fsm`, `vm`, and `init`. The `init` fork applies to unlogged relations.
 
 ### Getting Table's Associated Relations
 
-Use the following query to list all fork oids:
+The following query lists relation OIDs. Forks share a relation OID; they do not have independent OIDs. The left join keeps tables that have no TOAST table:
 
 ```sql
 select
@@ -53,8 +55,8 @@ select
 from
   pg_namespace nsp
   join pg_class rel on nsp.oid = rel.relnamespace
-  , LATERAL ( select array_agg(indexrelid) as indexes from pg_index where indrelid = rel.oid) ind
-  , LATERAL ( select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind
+  CROSS JOIN LATERAL (select array_agg(indexrelid) as indexes from pg_index where indrelid = rel.oid) ind
+  LEFT JOIN LATERAL (select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind ON true
 where nspname not in ('pg_catalog', 'information_schema') and rel.relkind = 'r';
 ```
 
@@ -67,37 +69,39 @@ where nspname not in ('pg_catalog', 'information_schema') and rel.relkind = 'r';
 
 ### Statistical Functions
 
-PostgreSQL provides a series of functions to determine the space occupied by various parts.
+PostgreSQL provides [size functions](https://www.postgresql.org/docs/10/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE) for each part:
 
 | Function                        | Statistical Scope                                        |
 | ------------------------------- | -------------------------------------------------------- |
 | `pg_total_relation_size(oid)`  | Entire relation, including table, indexes, TOAST, etc.  |
 | `pg_indexes_size(oid)`         | Space occupied by relation's index portion              |
-| `pg_table_size(oid)`            | Space occupied by relation excluding indexes            |
+| `pg_table_size(oid)`            | Table forks and TOAST, including the TOAST index; excludes the main table’s indexes            |
 | `pg_relation_size(oid)`        | Get size of a relation's main file part (main fork)    |
 | `pg_relation_size(oid, 'main')` | Get relation's `main` fork size                         |
 | `pg_relation_size(oid, 'fsm')`  | Get relation's `fsm` fork size                          |
 | `pg_relation_size(oid, 'vm')`   | Get relation's `vm` fork size                           |
 | `pg_relation_size(oid, 'init')` | Get relation's `init` fork size                         |
 
-Although physically a table consists of so many files, logically we usually only care about the size of two things: table and indexes. Therefore, the main functions used here are `pg_indexes_size` and `pg_table_size`, whose sum equals `pg_total_relation_size` for regular tables.
+For routine monitoring, group storage into table and index space. For ordinary tables, `pg_table_size` plus `pg_indexes_size` equals `pg_total_relation_size`.
 
-The table size portion can typically be calculated as:
+The following identities describe the components; they are formulas, not a complete SQL query:
 
-```sql
+```text
  pg_table_size(relid)
      = pg_relation_size(relid, 'main')
      + pg_relation_size(relid, 'fsm')
      + pg_relation_size(relid, 'vm')
-     + pg_total_relation_size(reltoastrelid)
+     + pg_relation_size(relid, 'init')
+     + COALESCE(pg_total_relation_size(reltoastrelid), 0)
 
  pg_indexes_size(relid)
-     = (select sum(pg_total_relation_size(indexrelid)) where indrelid = relid)
+     = (SELECT COALESCE(sum(pg_total_relation_size(indexrelid)), 0)
+        FROM pg_index WHERE indrelid = relid)
 ```
 
-Note that TOAST tables also have their own indexes, but there is only one, so using `pg_total_relation_size(reltoastrelid)` can calculate the overall size of the TOAST table.
+A TOAST table has one index. Use `pg_total_relation_size(reltoastrelid)` to include both the TOAST table and its index.
 
-### Example: Statistics for a Specific Table and Related Relations UDTF
+### Example: Table and Related Relation Sizes
 
 ```sql
 SELECT
@@ -114,7 +118,7 @@ UNION ALL SELECT indexrelid FROM pg_index WHERE indrelid = 16418 -- index
 UNION ALL SELECT reltoastrelid FROM pg_class WHERE oid = 16418)); -- toast
 ```
 
-This can be wrapped as a UDTF: `pg_table_size_detail`, for convenient use:
+Wrap the query in a table-returning function for reuse. Replace the example OID with a table in your database:
 
 ```sql
 CREATE OR REPLACE FUNCTION pg_table_size_detail(relation RegClass)
@@ -139,10 +143,10 @@ BEGIN
     rel.relkind                              as relkind,
     rel.reltuples::bigint                    as tuples,
     rel.relpages                             as pages,
-    pg_total_relation_size(oid)              as size
+    pg_total_relation_size(rel.oid)          AS size
   FROM pg_class rel
-  WHERE oid = ANY (array(
-      SELECT relation as id -- main
+  WHERE rel.oid = ANY (array(
+      SELECT relation::oid AS id -- main
       UNION ALL SELECT indexrelid FROM pg_index WHERE indrelid = relation -- index
       UNION ALL SELECT reltoastrelid FROM pg_class WHERE oid = relation)); -- toast
 END;
@@ -152,7 +156,11 @@ LANGUAGE PlPgSQL;
 SELECT * FROM pg_table_size_detail(16418);
 ```
 
-Sample return result:
+Each row’s `size` includes that relation’s attached storage. The main table row
+already includes its indexes and TOAST, so do not sum this column. `tuples` and
+`pages` come from planner statistics and can lag behind current data.
+
+Sample result from the original environment:
 
 ```text
 geo=# select * from  pg_table_size_detail(4325625);
@@ -181,18 +189,19 @@ select
   toastind.indexrelid as toastindexid,
   pg_total_relation_size(rel.oid)  as size,
   pg_relation_size(rel.oid) + pg_relation_size(rel.oid,'fsm')
-  + pg_relation_size(rel.oid,'vm') as relsize,
+  + pg_relation_size(rel.oid,'vm')
+  + pg_relation_size(rel.oid,'init') AS relsize,
   pg_indexes_size(rel.oid)         as indexsize,
-  pg_total_relation_size(reltoastrelid) as toastsize,
+  COALESCE(pg_total_relation_size(reltoastrelid), 0) AS toastsize,
   ind.indexids,
   ind.indexnames,
   ind.indexsizes
 from pg_namespace nsp
   join pg_class rel on nsp.oid = rel.relnamespace
-  ,LATERAL ( select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind
-  , LATERAL ( select  array_agg(indexrelid) as indexids,
-                      array_agg(indexrelid::RegClass) as indexnames,
-                      array_agg(pg_total_relation_size(indexrelid)) as indexsizes
+  LEFT JOIN LATERAL (select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind ON true
+  CROSS JOIN LATERAL (select array_agg(indexrelid ORDER BY indexrelid) AS indexids,
+                      array_agg(indexrelid::regclass ORDER BY indexrelid) AS indexnames,
+                      array_agg(pg_total_relation_size(indexrelid) ORDER BY indexrelid) AS indexsizes
               from pg_index where indrelid = rel.oid) ind
 where nspname not in ('pg_catalog', 'information_schema') and rel.relkind = 'r';
 ```

@@ -1,21 +1,23 @@
 ---
-title: PGCon.Dev 2024, The conf that shutdown PG for a week
+title: "PGCon.Dev 2024: The Week PostgreSQL Commits Paused"
 date: 2024-06-17
 authors: [vonng]
 summary: >
-  Experience & Feeling on the PGCon.Dev 2024
+  Notes from PGCon.Dev 2024: extension packaging, observability, community discussions, and plans for PostgreSQL.
 tags: [PostgreSQL, PG Ecosystem]
 ---
 
-PGCon.Dev, once known as PGCon—the annual must-attend gathering for PostgreSQL hackers and key forum for its future direction, has been held in Ottawa since its inception in 2007.
+This is a June 2024 conference report. Roles, package counts, and proposals reflect that event.
 
-This year marks a new chapter as the original organizer, Dan, hands over the reins to a new team, and the event moves to SFU's Harbour Centre in Vancouver, kicking off a new era with grandeur.
+PGCon, the predecessor to PGCon.Dev, was held in Ottawa from 2007 through 2023. It brought PostgreSQL developers together to discuss the project’s direction.
 
-How engaging was this event? [Peter Eisentraut](https://peter.eisentraut.org/), member of the PostgreSQL core team, noted that during PGCon.Dev, [there were no code commits to PostgreSQL](https://peter.eisentraut.org/blog/2024/06/04/how-engaging-was-pgconfdev-really) -- resulting in the longest pause in twenty years, a whopping week! a historic coding ceasefire! Why? Because all the developers were at the conference!
+In 2024, a new organizing team took over from Dan Langille and moved the event to SFU’s Harbour Centre in Vancouver.
+
+[Peter Eisentraut](https://peter.eisentraut.org/blog/2024/06/04/how-engaging-was-pgconfdev-really) found a gap of six days, twelve hours, and forty-nine minutes between PostgreSQL commits around the conference. It was the longest gap in more than twenty years. The developers had plenty to discuss in person.
 
 ![intro.jpg](intro.jpg)
 
-> Considering the last few interruptions, which occurred in the early days of the project twenty years ago,
+> The three longer gaps all occurred early in the project’s history.
 
 I’ve been embracing PostgreSQL for a decade, but attending a global PG Hacker conference in person was a first for me, and I’m immensely grateful for the organizer's efforts.
 PGCon.Dev 2024 wrapped up on May 31st, though this post comes a bit delayed as I’ve been exploring Vancouver and Banff National Park ;)
@@ -24,20 +26,19 @@ PGCon.Dev 2024 wrapped up on May 31st, though this post comes a bit delayed as I
 
 ## Day Zero: Extension Summit
 
-Day zero is for leadership meetings, and I've signed up for the afternoon's Extension Ecosystem Summit.
+Day zero was for leadership meetings, and I signed up for the afternoon's Extension Ecosystem Summit.
 
 Maybe this summit is somewhat subtly related to my recent post, "[Postgres is eating the database world](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4),"  highlighting PostgreSQL's thriving extension ecosystem as a unique and critical success factor and drawing the community's attention.
 
 [![ecosystem.jpg](ecosystem.jpg)](https://medium.com/@fengruohang/postgres-is-eating-the-database-world-157c204dcfc4)
 
-I participated in David Wheeler's Binary Packing session along with other PostgreSQL community leaders. Despite some hesitation to new standards like PGXN v2 from current RPM/APT maintainers.
-In the latter half of the summit, I attended a session led by Yurii Rashkovskii, discussing extension directory structures, metadata, naming conflicts, version control, and binary distribution ideas.
+I joined David Wheeler's Binary Packaging session with the RPM and APT maintainers. They questioned the need for new distribution standards such as PGXN v2. In the second half, I attended Yurii Rashkovskii's discussion of extension directories, metadata, naming conflicts, versioning, and binary distribution.
 
 ![extension-summit.jpg](extension-summit.jpg)
 
 Prior to this summit, the PostgreSQL community had held [six mini-summits](https://www.eventbrite.com/e/postgres-extension-ecosystem-mini-summit-tickets-851127263557) discussing these topics intensely, with visions for the extension ecosystem's future development shared by various speakers. Recordings of these sessions are available on [YouTube](https://www.youtube.com/playlist?list=PL11N188AYb_aT6ulbJfrQJJziWb012jG3).
 
-And after the summit, I had a chance to chat with Devrim, the RPM maintainer, about extension packing, which was quite enlightening.
+And after the summit, I had a chance to chat with Devrim, the RPM maintainer, about extension packaging, which was quite enlightening.
 
 > "Keith Fan Group" -- from Devrim on Extension Summit
 
@@ -71,19 +72,19 @@ I had a great conversation with Viggy and Yurii. Yurii walked me through compili
 
 Abigale Kim from CMU, under the mentorship of celebrity professor Andy Pavlo, delivered the talk "[Anarchy in the Database—A Survey and Evaluation of DBMS Extensibility](https://abigalekim.github.io/assets/pdf/Anarchy_in_the_Database_PGConfDev2024.pdf)." This topic intrigued me since Pigsty's primary value proposition is about PostgreSQL's [**extensibility**](https://pigsty.io/docs/reference/extension/).
 
-Kim’s research revealed interesting insights: **PostgreSQL is the most extensible DBMS**, supporting 9 out of 10 extensibility points, closely followed by DuckDB. With over 375+ available extensions, PostgreSQL significantly outpaces other databases.
+In Kim’s comparison, PostgreSQL supported nine of the ten extension points studied, the broadest coverage among the surveyed systems. Her survey listed more than 375 PostgreSQL extensions.
 
 ![kim-extensibility.jpg](kim-extensibility.jpg)
 
 Kim's quantitative analysis of compatibility levels among these extensions resulted in a compatibility matrix, unveiling conflicts—most notably, powerful extensions like TimescaleDB and Citus are prone to clashes. This information is very valuable for users and distribution maintainers. [Read the detailed study](https://abigalekim.github.io/assets/pdf/Anarchy_in_the_Database_PGConfDev2024.pdf).
 
-I joked with Kim that — now I could brag about PostgreSQL's extensibility with her research data.
+I told Kim that her research provided concrete data for comparing database extensibility.
 
 ---------
 
 ### How PostgreSQL is Misused and Abused
 
-The first-afternoon session featured [Karen Jex](https://postgresql.life/post/karen_jex/) from CrunchyData, an unusual perspective from a user — and a female DBA. Karen shared common blunders by PostgreSQL beginners. While I knew all of what was discussed, it reaffirmed that beginners worldwide make similar mistakes — an enlightening perspective for PG Hackers, who found the session quite engaging.
+[Karen Jex](https://postgresql.life/post/karen_jex/) from Crunchy Data brought a user’s perspective to the first afternoon session. She described mistakes commonly made by PostgreSQL beginners. The examples were familiar to me, but useful for developers who rarely see how newcomers use the database.
 
 ### PostgreSQL and the AI Ecosystem
 
@@ -97,19 +98,19 @@ During the lunch, Bruce explained that Jonathan Katz needed a topic to introduce
 
 ### PB-Level PostgreSQL Deployments
 
-The third afternoon session by [Chris Travers](https://postgresql.life/post/chris_travers/) discussed their transition from using ElasticSearch for data storage—with a poor experience and high maintenance for 1PB over 30 days retention, to a horizontally scaled PostgreSQL cluster perfectly [handling 10PB of data](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/135/slides/30/). Normally, PostgreSQL comfort levels on a single machine range from several dozen to a few hundred TB. Deployments at the PB scale, especially at 10PB, even within a horizontally scaled cluster, are exceptionally rare. While the practice itself is standard—partitioning and sharding—the scale of data managed is truly impressive.
+[Chris Travers](https://postgresql.life/post/chris_travers/) reported moving a workload from Elasticsearch to a partitioned and sharded PostgreSQL deployment. The earlier system retained 1 PB for 30 days; the PostgreSQL deployment described in his [slides](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/135/slides/30/) stored 10 PB. I found the operating experience at that scale particularly interesting.
 
 ------
 
 ### Highlight: When Hardware and Database Collide
 
-Undoubtedly, the standout presentation of the event, Margo Seltzer's talk "[When Hardware and Database Collide](https://www.pgevents.ca/events/pgconfdev2024/schedule/session/192-keynote-when-hardware-and-databases-collide/)" was not only the most passionate and compelling talk I've attended live but also a highlight across all conferences.
+My favorite talk at this conference was Margo Seltzer's "[When Hardware and Database Collide](https://www.pgevents.ca/events/pgconfdev2024/schedule/session/192-keynote-when-hardware-and-databases-collide/)".
 
-Professor Margo Seltzer, formerly of Harvard and now at UBC, a member of the National Academy of Engineering and the creator of BerkeleyDB, delivered a powerful discourse on the core challenges facing databases today. She pinpointed that the bottleneck for databases has shifted from disk I/O to main memory speed. Emerging hardware technologies like **HBM** and **CXL** could be the solution, posing new challenges for PostgreSQL hackers to tackle.
+Margo Seltzer is a professor at UBC, formerly at Harvard, a member of the National Academy of Engineering, and one of the authors of BerkeleyDB. She discussed challenges facing databases today. She pinpointed that the bottleneck for databases has shifted from disk I/O to main memory speed. Emerging hardware technologies like **HBM** and **CXL** could be the solution, posing new challenges for PostgreSQL hackers to tackle.
 
 ![margo.jpg](margo.jpg)
 
-This was a refreshing divergence from China's typically monotonous academic talks, leaving a profound impact and inspiration. Once the conference video is released, I highly recommend checking out her energizing presentation.
+I enjoyed Margo's direct and engaging presentation. I would like to watch it again when the conference video is available.
 
 ------
 
@@ -125,13 +126,13 @@ The atmosphere was warm and familiar, with many reconnecting after long periods.
 
 ---------
 
-## Day 2: Debate, Lunch, and Lighting Talks
+## Day 2: Debate, Lunch, and Lightning Talks
 
 ### Multi-Threading Postgres
 
 The warmth from the previous night's socializing carried over into the next day, marked by the eagerly anticipated session on "**Multi-threaded PostgreSQL**," which was packed to capacity. The discussion, initiated by Heikki, centered on the pros and cons of PostgreSQL's process and threading models, along with detailed implementation plans and current progress.
 
-The threading model promises numerous benefits: cheaper connections (akin to a built-in connection pool), shared relation and plan caches, dynamic adjustment of shared memory, config changes without restarts, more aggressive Vacuum operations, runtime Explain Analyze, and easier memory usage limits per connection. However, there's significant opposition, maybe led by Tom Lane, concerned about potential bugs, loss of isolation benefits from the multi-process model, and extensive incompatibilities requiring many extensions to be rewritten.
+Heikki described potential benefits of a threading model: cheaper connections, shared relation and plan caches, adjustable shared memory, and easier memory limits. The discussion also covered isolation, bugs, and compatibility changes that extension authors would need to handle.
 
 ![heikki-multithread.jpg](heikki-multithread.jpg)
 
@@ -163,7 +164,7 @@ Anyway, I'm glad to have made many new friends and connections.
 
 ### Multinational Community Lunch
 
-As for lunch, HighGo hosted key participants from the American, European, Japanese, and Chinese PostgreSQL communities at a Cantonese restaurant in Vancouver. The conversation ranged from serious technical discussions to lighter topics. I've made acquaintance with Tatsuro Yamada, who gives a talk, "[Advice is seldom welcome but efficacious](https://www.pgevents.ca/events/pgconfdev2024/schedule/session/62-advice-is-seldom-welcome-but-efficacious/)", and Kyotaro Horiguchi, a core contributor to PostgreSQL known for his work on WAL replication and multibyte string processing and the author of pg_hint_plan.
+As for lunch, HighGo hosted key participants from the American, European, Japanese, and Chinese PostgreSQL communities at a Cantonese restaurant in Vancouver. The conversation ranged from serious technical discussions to lighter topics. I met Tatsuro Yamada, who gave the talk "[Advice is seldom welcome but efficacious](https://www.pgevents.ca/events/pgconfdev2024/schedule/session/62-advice-is-seldom-welcome-but-efficacious/)", and Kyotaro Horiguchi, a core contributor to PostgreSQL known for his work on WAL replication and multibyte string processing and the author of pg_hint_plan.
 
 ![lunch.jpeg](lunch.jpeg)
 
@@ -173,34 +174,33 @@ Another major contributor to the PostgreSQL community, **Mark Wong** organizes P
 
 Bruce, already a familiar face in the PG Chinese community, Andreas Scherbaum from Germany, organizer of the European PG conferences, and Miao Jian, founder of Han Gao, representing the only Chinese database company at PGCon.Dev, all shared insightful stories and discussions about the challenges and nuances of developing databases in their respective regions.
 
-On returning to the conference venue, I had a conversation with [Jan Wieck](https://www.crunchydata.com/news/jan-wieck-former-postgres-core-team-member-joins-crunchy-data), a PostgreSQL Hackers Emeritus. He shared his story of participating in the PostgreSQL project from the early days and encouraged me to get more involved in the PostgreSQL community, reminding me its future depends on the younger generation.
+On returning to the conference venue, I had a conversation with [Jan Wieck](https://www.crunchydata.com/news/jan-wieck-former-postgres-core-team-member-joins-crunchy-data), a former PostgreSQL core team member. He shared his story of participating in the PostgreSQL project from the early days and encouraged me to get more involved in the PostgreSQL community, reminding me its future depends on the younger generation.
 
 ---------
 
 ### Making PG Hacking More Inclusive
 
-At PGCon.Dev, a special session on community building chaired by Robert Hass, featured three new PostgreSQL contributors sharing their journey and challenges, notably the barriers for non-native English speakers, timezone differences, and emotionally charged email communications.
+At PGCon.Dev, a special session on community building chaired by Robert Haas, featured three new PostgreSQL contributors sharing their journey and challenges, notably the barriers for non-native English speakers, timezone differences, and emotionally charged email communications.
 
 Robert emphasized in a post-conference blog [his desire to see more developers from India and Japan rise to senior positions within PostgreSQL's ranks](https://rhaas.blogspot.com/2024/06/2024pgconfdev-and-growing-community.html), noting the underrepresentation from these countries despite their significant developer communities.
 
 > While we're at it, I'd really like to see more people from India and Japan in senior positions within the project. We have very large developer communities from both countries, but there is no one from either of those countries on the core team, and they're also underrepresented in other senior positions. At the risk of picking specific examples to illustrate a general point, there is no one from either country on the infrastructure team or the code of conduct committee. We do have a few committers from those countries, which is very good, and I was pleased to see Amit Kapila on the 2024.pgconf.dev organizing commitee, but, overall, I think we are still not where we should be. Part of getting people involved is making them feel like they are not alone, and part of it is also making them feel like progression is possible. Let's try harder to do that.
 
-Frankly, the lack of mention of China in discussions about inclusivity at PGCon.Dev, in favor of India and Japan, left a bittersweet taste. But I think China deserves the snub, given its poor international community engagement.
+The discussion mentioned India and Japan but not China, which left me with mixed feelings. I would like to see more sustained upstream participation from Chinese users and developers. Richard Guo from PieCloudDB had become a PostgreSQL committer that year.
 
-China has hundreds of "domestic/national" databases, many mere forks of PostgreSQL, yet there's only a single notable Chinese contributor to PostgreSQL is Richard Guo from PieCloudDB, recently promoted to PG Committer.
-At the conference, the Chinese presence was minimal, summing up to five attendees, including myself. It's regrettable that China's understanding and adoption of PostgreSQL lag behind the global standard by about 10-15 years.
+As far as I knew, five attendees had come from China: four from HighGo and me.
 
-I hope my involvement can bootstrap and enhance Chinese participation in the global PostgreSQL ecosystem, making their users, developers, products, and open-source projects more recognized and accepted worldwide.
+I hope my participation helps more users and developers in the Chinese-speaking community make connections, share their work with the global community, and find opportunities to collaborate.
 
 ----------
 
 ### Lightning Talks
 
-Yesterday’s event closed with a series of lightning talks—5 minutes max per speaker, or you're out. Concise and punchy, the session wrapped up 11 topics in just 45 minutes. Keith shared improvements to PG Monitor, and Peter Eisentraut discussed SQL standard updates. But from my perspective, the highlight was Devrim Gündüz's talk on PG RPMs, which lived up to his promise of a "big reveal" made at the bar the previous night, packing a 75-slide presentation into 5 lively minutes.
+The second day ended with lightning talks, each limited to five minutes. Eleven speakers covered their topics in 45 minutes. Keith discussed PG Monitor improvements, and Peter Eisentraut covered SQL standard updates. My highlight was Devrim Gündüz’s talk on PG RPMs: he fitted 75 slides into five minutes, delivering the “big reveal” he had promised at the bar.
 
 ![devrim.jpg](devrim.jpg)
 
-Speaking of PostgreSQL, despite being open-source, most users rely on official pre-compiled binaries packages rather than building from source. I maintain 34 RPM extensions for [Pigsty](https://pigsty.io), my Postgres distribution, but much of the ecosystem, including over a hundred other extensions, is managed by Devrim from the official PGDG repo. His efforts ensure quality for the world’s most advanced and popular database.
+Many PostgreSQL users install binary packages rather than build from source. At the time, I maintained packages for 34 extensions in Pigsty, while Devrim maintained more than a hundred in the PGDG RPM repository. This packaging work makes extensions available to a much wider audience.
 
 Devrim is a fascinating character — a Turkish native living in London, a part-time DJ, and the maintainer of the PGDG RPM repository, sporting a PostgreSQL logo tattoo. After an engaging chat about the PGDG repository, he shared insights on how extensions are added, highlighting the community-driven nature of PGXN and recent popular additions like `pgvector`, ([which I made the suggestion haha](https://github.com/pgvector/pgvector/issues/76)).
 
@@ -218,13 +218,13 @@ The top-voted topics were Multithreading (42 votes), Observability (35 votes), a
 
 ![unconference2.jpg](unconference2.png)
 
-There's a clear focus on observability among the community. As the author of [pg_exporter](https://github.com/Vonng/pg_exporter), I proposed developing a first-party monitoring extension. This extension would integrate Prometheus monitoring endpoints directly into PostgreSQL, exposing metrics via HTTP without needing external components.
+There's a clear focus on observability among the community. As the author of [pg_exporter](https://github.com/pgsty/pg_exporter), I proposed developing a first-party monitoring extension. This extension would integrate Prometheus monitoring endpoints directly into PostgreSQL, exposing metrics via HTTP without needing external components.
 
-The rationale for this proposal is straightforward. While `pg_exporter` works well, it's an external component that adds management complexity. Additionally, in scenarios where PostgreSQL is recovering from a crash and cannot accept new connections, external tools struggle to access internal states. An in-kernel extension could seamlessly capture this information.
+The proposal aimed to reduce the need to manage a separate exporter and expose internal state while SQL connections were unavailable, such as during crash recovery. Those capabilities would require implementation and testing in PostgreSQL.
 
 The suggested implementation involves a background worker process similar to the `bgw_replstatus` extension. This process would listen on an additional port to expose monitoring metrics through HTTP, using pg_exporter as a blueprint. Metrics would primarily be defined via a Collector configuration table, except for a few critical system indicators.
 
-This idea garnered attention from several PostgreSQL hackers at the event. Developers from EDB and CloudNativePG are evaluating whether [`pg_exporter`](https://github.com/Vonng/pg_exporter) could be directly integrated into their distributions as part of their monitoring solutions. And finally, an Observability Special Interest Group (SIG) was formed by attendees interested in observability, planning to continue discussions through a mailing list.
+This idea garnered attention from several PostgreSQL hackers at the event. Developers from EDB and CloudNativePG are evaluating whether [`pg_exporter`](https://github.com/pgsty/pg_exporter) could be directly integrated into their distributions as part of their monitoring solutions. And finally, an Observability Special Interest Group (SIG) was formed by attendees interested in observability, planning to continue discussions through a mailing list.
 
 ---------------
 
@@ -232,7 +232,7 @@ This idea garnered attention from several PostgreSQL hackers at the event. Devel
 
 During the last two days, I have had some discussions with PG Hackers about some Chinese-specific issues.
 
-A notable suggestion was supporting the LoongArch architecture in the PGDG global repository, which was backed by some enthusiastically local chip and OS manufacturers. Despite the interest, Devrim indicated a "No" due to the lack of support for LoongArch in OS Distro used in the PG community, like CentOS 7, Rocky 8/9, and Debian 10/11/12. Tomasz Rybak was more receptive, noting potential future support if LoongArch runs on Debian 13.
+One suggestion was to add LoongArch builds to the PGDG repositories, with build infrastructure offered by Chinese chip and operating-system vendors. Devrim said the RPM build distributions did not support the architecture at that time. Tomasz Rybak was open to Debian packages if the architecture became available in Debian 13.
 
 In summary, official PG RPMs might not yet support LoongArch, but APT has a chance, contingent on broader OS support for mainstream open-source Linux distributions.
 
@@ -240,9 +240,9 @@ In summary, official PG RPMs might not yet support LoongArch, but APT has a chan
 
 ### Issue: Server-side Chinese Character Encoding
 
-At the recent conference, Jeremy Schneider presented an insightful talk on collation rules that resonated with me. He highlighted the pitfalls of not using C.UTF8 for collation, a practice I've advocated for based on my own [research](https://vonng.com/en/pg/collate/), and which is detailed in his presentation here.
+Jeremy Schneider’s talk on collation described problems caused by changes in sorting rules. His preference for simple, stable ordering matched my own [practice](https://vonng.com/en/pg/collate/). His [slides](https://www.pgevents.ca/events/pgconfdev2024/sessions/session/95/slides/26/pgcon24_collation.pdf) explain the tradeoffs.
 
-Post-talk, I discussed further with Jeremy and Peter Eisentraut the nuances of character sets in China, especially the challenges posed by the mandatory **GB18030** standard, which PostgreSQL can handle on the client side but not the server side. Also, there are some issues about 20 Chinese characters not working on the `convert_to` + `gb18030` encoding mapping.
+After the talk, Jeremy, Peter Eisentraut, and I discussed GB18030 compatibility. PostgreSQL supported this encoding for clients and conversion functions, but not as a server encoding. I also raised a possible mapping problem affecting about twenty added Chinese characters in `convert_to(..., 'gb18030')`. They agreed to investigate.
 
 ---------
 
@@ -264,7 +264,7 @@ Notably, following the conference, Pigsty's international CDN traffic spiked sig
 
 ------------
 
-Some slides are [available](https://www.pgevents.ca/events/pgconfdev2024/sessions/) on the official site, and some blog posts about PGCon are here.Dev 2024:
+The [official session archive](https://www.pgevents.ca/events/pgconfdev2024/sessions/) contains slides. Other reports include:
 
 - [Andreas Scherbaum PostgreSQL Development Conference 2024 - Review](https://andreas.scherbaum.la/post/2024-06-14_postgresql-development-conference-2024-review/)
 

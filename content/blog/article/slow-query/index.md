@@ -1,56 +1,100 @@
 ---
-title: A Methodology for Diagnosing PostgreSQL Slow Queries
+title: "Diagnose PostgreSQL slow queries"
 date: 2021-02-23
 authors: [vonng]
 summary: >
-  Slow queries are the sworn enemy of OLTP databases. Here’s how to identify, analyze, and fix them using metrics (Pigsty dashboards), pg_stat_statements, and logs.
+  Use query statistics, logs, and monitoring to find a slow query, test its cause, and verify a fix.
 tags: [PostgreSQL, PG Admin, Performance]
 ---
 
-> “You can’t optimize what you can’t measure.”
+This walkthrough uses the Pigsty sandbox and dashboards from February 2021.
 
-Slow queries hog connections, hold locks, block replication, trigger deadlocks, and waste resources. Every DBA must know how to find and fix them quickly.
+Slow queries occupy connections, hold locks, and consume CPU and I/O. On a standby, a long query can conflict with WAL replay. PostgreSQL can delay replay or cancel the conflicting query, depending on its standby settings. See [hot standby conflicts](https://www.postgresql.org/docs/current/hot-standby.html#HOT-STANDBY-CONFLICT).
 
-## Traditional tools
+Monitoring helps you find the affected query and compare its behavior before and after a change.
 
-- **`pg_stat_statements`** – essential extension that aggregates execution stats per normalized query: calls, total/mean/max time, rows per call, I/O time, etc. Always enable it.
-- **Slow query logs** – controlled via `log_min_duration_statement`. Great for one-off incidents or forensic analysis, but sampling thresholds mean you miss sub-threshold issues. Full logging is expensive but the ultimate truth when you need it.
+![CPU use before and after query optimization](slow-query-8.webp)
 
-## Why monitoring helps
+In this example, query optimization reduced CPU use from about 40% to 4%.
 
-Static snapshots don’t show trends. Monitoring systems (Pigsty in my case) sample every few seconds, letting you rewind, compare before/after, and show stakeholders what’s happening. They also calm nervous bosses during incidents.
+## Collect query statistics and logs
 
-## Workflow (simulated incident)
+The `pg_stat_statements` extension groups similar statements. It records call counts, execution times, rows retrieved or affected, and I/O statistics. To enable it:
 
-We spin up the Pigsty sandbox, run pgbench load (50 TPS writes on the primary, 1000 TPS reads on a replica), then deliberately drop `pgbench_accounts_pkey` to break index scans.
+1. Add `pg_stat_statements` to `shared_preload_libraries`.
+2. Restart PostgreSQL.
+3. Run `CREATE EXTENSION pg_stat_statements` in the database where you will read the statistics.
 
-### 1. Detection
+A query ID identifies a normalized statement. It does not identify one execution or guarantee one execution plan. Column names vary by PostgreSQL version; use the matching [pg_stat_statements reference](https://www.postgresql.org/docs/current/pgstatstatements.html).
 
-Cluster dashboards show QPS collapsing and response times spiking (1 ms → 300 ms). System load shoots above 200%, alarms fire.
+Use `log_min_duration_statement` to log statements whose duration reaches a threshold. These logs help explain individual slow executions. Choose the threshold for the workload: logging every statement increases log volume and collection overhead.
 
-### 2. Identification
+A cumulative average can hide a recent regression. Take repeated samples to compare response time, call rate, and I/O over the incident interval. A slow-query threshold should reflect the application's latency requirement. A frequent point lookup and an occasional batch query need different thresholds.
 
-Use the **PG Query** dashboard to find the worst offender. Query ID `-6041100154778468427` has mean latency jumping from microseconds to hundreds of milliseconds while QPS plummets. Drill into **PG Stat Statements** to see the normalized SQL: `SELECT abalance FROM pgbench_accounts WHERE aid = $1`.
+## Reproduce the problem in a sandbox
 
-### 3. Hypothesis
+This experiment deliberately removes an index. Run it in a disposable `pgbench` database.
 
-Simple point lookup suddenly slow? Most likely the index vanished. Check **PG Table Catalog** and **PG Table Detail**: index scans drop to zero, seq scans soar. Hypothesis confirmed.
+The historical Pigsty sandbox used `make ri`, `make ro`, and `make rw` to initialize and exercise the `pg-test` cluster. The following commands apply write and read loads through its service ports:
 
-### 4. Fix
+```bash
+# Write load: 50 transactions per second
+while true; do pgbench -nv -P1 -c20 --rate=50 -T10 postgres://test:test@pg-test:5433/test; done
 
-Recreate the index:
-
-```sql
-ALTER TABLE pgbench_accounts ADD PRIMARY KEY (aid);
+# Read load: 1000 transactions per second
+while true; do pgbench -nv -P1 -c40 --select-only --rate=1000 -T10 postgres://test:test@pg-test:5434/test; done
 ```
 
-Latency falls from seconds to milliseconds, QPS recovers, system load normalizes. Dashboards provide immediate feedback.
+Run each load in its own terminal. On the primary, remove the primary key:
 
-## Summary
+```sql
+ALTER TABLE pgbench_accounts DROP CONSTRAINT pgbench_accounts_pkey;
+```
 
-1. **Detect** – monitor query latency, concurrency, and system load.
-2. **Identify** – use pg_stat_statements/monitoring to find the exact query (by query ID).
-3. **Hypothesize** – analyze the SQL, review table/index metrics.
-4. **Fix & verify** – add indexes, rewrite queries, adjust schema, then watch metrics confirm success.
+The point lookup loses its index. In this test, average response time increased from about 1 ms to 300 ms. One replica's QPS fell from 500 to 7.
 
-Pigsty’s dashboards wrap these steps into a workflow, but the methodology applies with any monitoring stack: measure, locate, hypothesize, fix, verify.
+![Query rate and response time after removing the index](slow-query-1.jpg)
+
+The cluster load also increased and triggered alerts.
+
+![Cluster load during the slow-query incident](slow-query-2.png)
+
+## Find the query
+
+Open **PG Cluster** to identify the affected instance. In **PG Query**, look for statements whose response time and share of execution time increased.
+
+In this example, query ID `-6041100154778468427` changed from about 17 μs to 280 ms, while its QPS fell from 500 to 7.
+
+![Identify the slow statement in the query overview](slow-query-3.jpg)
+
+Open **PG Query Detail** for this query ID to find the SQL:
+
+```sql
+SELECT abalance FROM pgbench_accounts WHERE aid = $1;
+```
+
+![Statement text in the query detail](slow-query-4.png)
+
+## Test the cause
+
+The statement retrieves one account by `aid`. In **PG Table Catalog**, check whether that column has an index. In **PG Table Detail**, compare index scans and sequential scans on `pgbench_accounts`.
+
+In this experiment, index scans fell to zero and sequential scans increased after the primary key was removed. This supports the missing-index diagnosis.
+
+![Index scans and sequential scans on pgbench_accounts](slow-query-5.png)
+
+## Apply and verify the fix
+
+Restore an index on `aid` in the sandbox:
+
+```sql
+CREATE UNIQUE INDEX ON pgbench_accounts (aid);
+```
+
+This restores the lookup path. It does not recreate the primary-key constraint removed earlier.
+
+![Query response time and throughput after the fix](slow-query-6.png)
+
+![Cluster load after the fix](slow-query-7.png)
+
+Compare the same workload and time intervals before and after the change. Record query latency, throughput, and resource use. Stop the test load when the experiment is complete.

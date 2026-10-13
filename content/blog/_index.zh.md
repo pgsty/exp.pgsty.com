@@ -25,6 +25,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-`pg_exporter` 的博客原文、设计记录、发布注记与项目动态。它是一款声明式 PostgreSQL 与 PgBouncer 指标导出器。
+PG Exporter 的实践文章、设计决策与发布注记。
 
-在[文章](/zh/article/)中阅读全文与原图，在[设计](/zh/design/)中查看架构理由与被否决方案，或从[发布归档](/zh/release/)查看已经交付的变更。当前产品行为仍以[文档](/zh/docs/)为准。
+[文章](/zh/article/)介绍监控实践，[设计记录](/zh/design/)解释架构与取舍，[发布注记](/zh/release/)列出各版本变更。安装和运行当前稳定版，请查阅[使用手册](/zh/docs/)。

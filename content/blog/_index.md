@@ -26,6 +26,6 @@ cascade:
 icon: fa-solid fa-blog
 ---
 
-Original long-form articles, design records, release notes, and project updates for `pg_exporter`, the declarative PostgreSQL and PgBouncer metrics exporter.
+PG Exporter articles, design decisions, and release notes.
 
-Read the [original articles](/article/) in full, including their original figures; use the [Design Records](/design/) for architectural reasoning and rejected alternatives, or scan the [complete release archive](/release/) for shipped changes. Current product behavior remains in the [documentation](/docs/).
+Read [articles](/article/) for monitoring practice, [design records](/design/) for architecture and tradeoffs, and [release notes](/release/) for changes in each version. Use the [manuals](/docs/) to install and operate the current stable release.

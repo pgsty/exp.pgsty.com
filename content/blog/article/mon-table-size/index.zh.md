@@ -1,20 +1,22 @@
 ---
-title: "监控PG中的表大小"
+title: "监控 PostgreSQL 表大小"
 date: 2018-05-14
 authors: [vonng]
 summary: >
-  PostgreSQL中的表对应着许多物理文件，本文介绍如何统计一张表在PostgreSQL的实际大小。
+  统计 PostgreSQL 表的存储空间，包括索引、TOAST 和关系的各个分支。
 tags: [PostgreSQL, PG管理, 监控]
 ---
 
+本文写于 2018 年，介绍 PostgreSQL 普通表的物理存储。
+
 ### 表的空间布局
 
-宽泛意义上的 **表（Table）**，包含了 **本体表** 与 **TOAST表** 两个部分：
+普通表包含自身存储，也可能有一张 TOAST 表：
 
-* 本体表，存储关系本身的数据，即狭义的关系，`relkind='r'`。
-* TOAST表，与本体表一一对应，存储过大的字段，`relinkd='t'`。
+* 本体表：存储行数据，`relkind='r'`。
+* TOAST 表：按需存储行外数据，`relkind='t'`。部分表没有 TOAST 表。
 
-而每个表，又由 **主体** 与 **索引** 两个 **关系（Relation）** 组成（对本体表而言，可以没有索引关系）
+表本身和它的每个索引都是独立的 **关系（Relation）**：
 
 * 主体关系：存储元组。
 * 索引关系：存储索引元组。
@@ -25,22 +27,22 @@ tags: [PostgreSQL, PG管理, 监控]
 
 * fsm：保存关于main分支中空闲空间的信息，编号为1
 * vm：保存关于main分支中可见性的信息，编号为2
-* init：用于不被日志记录（unlogged）的的表和索引，很少见的特殊分支，编号为3
+* init：用于不写 WAL 的 unlogged 表和索引，编号为3
 
-每个分支存储为磁盘上的一到多个文件：超过1GB的文件会被划分为最大1GB的多个段。
+每个分支存储在一个或多个文件中。默认每段最大 1 GiB，编译 PostgreSQL 时可以修改此值。
 
-综上所述，一个表并不是看上去那么简单，它由几个关系组成：
+统计一张表的存储，需要计入以下关系：
 
 * 本体表的主体关系（单个）
 * 本体表的索引（多个）
 * TOAST表的主体关系（单个）
 * TOAST表的索引（单个）
 
-而每个关系实际上可能又包含了1~3个分支：`main`（必定存在），`fsm`，`vm`。
+对每个关系，应计入实际存在的 `main`、`fsm`、`vm` 和 `init` 分支。`init` 用于 unlogged 关系。
 
 ### 获取表的附属关系
 
-使用下列查询，列出所有的分支oid。
+以下查询列出关系 OID。分支共享所属关系的 OID，没有独立 OID。左连接会保留没有 TOAST 表的普通表：
 
 ```sql
 select
@@ -54,8 +56,8 @@ select
 from
   pg_namespace nsp
   join pg_class rel on nsp.oid = rel.relnamespace
-  , LATERAL ( select array_agg(indexrelid) as indexes from pg_index where indrelid = rel.oid) ind
-  , LATERAL ( select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind
+  CROSS JOIN LATERAL (select array_agg(indexrelid) as indexes from pg_index where indrelid = rel.oid) ind
+  LEFT JOIN LATERAL (select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind ON true
 where nspname not in ('pg_catalog', 'information_schema') and rel.relkind = 'r';
 ```
 
@@ -68,37 +70,39 @@ where nspname not in ('pg_catalog', 'information_schema') and rel.relkind = 'r';
 
 ### 统计函数
 
-PG提供了一系列函数用于确定各个部分占用的空间大小。
+PostgreSQL 提供了对应的[大小统计函数](https://www.postgresql.org/docs/10/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE)：
 
 | 函数                            | 统计口径                                 |
 | ------------------------------- | ---------------------------------------- |
 | `pg_total_relation_size(oid)`  | 整个关系，包括表，索引，TOAST等。        |
 | `pg_indexes_size(oid)`         | 关系索引部分所占空间                     |
-| `pg_table_size(oid)`            | 关系中除索引外部分所占空间               |
+| `pg_table_size(oid)`            | 表的各个分支和 TOAST（含 TOAST 索引），不含主表索引               |
 | `pg_relation_size(oid)`        | 获取一个关系主文件部分的大小（main分支） |
 | `pg_relation_size(oid, 'main')` | 获取关系 `main` 分支大小                   |
 | `pg_relation_size(oid, 'fsm')`  | 获取关系 `fsm` 分支大小                    |
 | `pg_relation_size(oid, 'vm')`   | 获取关系 `vm` 分支大小                     |
 | `pg_relation_size(oid, 'init')` | 获取关系 `init` 分支大小                   |
 
-虽然在物理上一张表由这么多文件组成，但从逻辑上我们通常只关心两个东西的大小：表与索引。因此这里要用到的主要就是两个函数：`pg_indexes_size` 与 `pg_table_size`，对普通表其和为 `pg_total_relation_size`。
+日常监控可将存储分为表与索引两部分。对普通表，`pg_table_size` 与 `pg_indexes_size` 之和等于 `pg_total_relation_size`。
 
-而通常表大小的部分可以这样计算：
+各部分满足以下关系。这是计算公式，不是完整的 SQL 查询：
 
-```sql
+```text
  pg_table_size(relid)
      = pg_relation_size(relid, 'main')
      + pg_relation_size(relid, 'fsm')
      + pg_relation_size(relid, 'vm')
-     + pg_total_relation_size(reltoastrelid)
+     + pg_relation_size(relid, 'init')
+     + COALESCE(pg_total_relation_size(reltoastrelid), 0)
 
  pg_indexes_size(relid)
-     = (select sum(pg_total_relation_size(indexrelid)) where indrelid = relid)
+     = (SELECT COALESCE(sum(pg_total_relation_size(indexrelid)), 0)
+        FROM pg_index WHERE indrelid = relid)
 ```
 
-注意，TOAST表也有自己的索引，但有且仅有一个，因此使用 `pg_total_relation_size(reltoastrelid)` 可计算TOAST表的整体大小。
+TOAST 表有一个索引。使用 `pg_total_relation_size(reltoastrelid)` 可计算 TOAST 表及其索引的总大小。
 
-### 例：统计某一张表及其相关关系UDTF
+### 例：统计表及其附属关系大小
 
 ```sql
 SELECT
@@ -115,7 +119,7 @@ UNION ALL SELECT indexrelid FROM pg_index WHERE indrelid = 16418 -- index
 UNION ALL SELECT reltoastrelid FROM pg_class WHERE oid = 16418)); -- toast
 ```
 
-可以将其包装为UDTF：`pg_table_size_detail`，便于使用：
+可将查询包装为返回表的函数，方便复用。请将示例 OID 替换为实际数据库中的表：
 
 ```sql
 CREATE OR REPLACE FUNCTION pg_table_size_detail(relation RegClass)
@@ -140,10 +144,10 @@ BEGIN
     rel.relkind                              as relkind,
     rel.reltuples::bigint                    as tuples,
     rel.relpages                             as pages,
-    pg_total_relation_size(oid)              as size
+    pg_total_relation_size(rel.oid)          AS size
   FROM pg_class rel
-  WHERE oid = ANY (array(
-      SELECT relation as id -- main
+  WHERE rel.oid = ANY (array(
+      SELECT relation::oid AS id -- main
       UNION ALL SELECT indexrelid FROM pg_index WHERE indrelid = relation -- index
       UNION ALL SELECT reltoastrelid FROM pg_class WHERE oid = relation)); -- toast
 END;
@@ -154,7 +158,9 @@ SELECT * FROM pg_table_size_detail(16418);
 
 ```
 
-返回结果样例：
+每行 `size` 都包含该关系的附属存储。主表行已经包含索引和 TOAST，不能再将这一列求和。`tuples` 和 `pages` 来自规划器统计，可能落后于实际数据。
+
+原环境中的返回结果：
 
 ```text
 geo=# select * from  pg_table_size_detail(4325625);
@@ -183,18 +189,19 @@ select
   toastind.indexrelid as toastindexid,
   pg_total_relation_size(rel.oid)  as size,
   pg_relation_size(rel.oid) + pg_relation_size(rel.oid,'fsm')
-  + pg_relation_size(rel.oid,'vm') as relsize,
+  + pg_relation_size(rel.oid,'vm')
+  + pg_relation_size(rel.oid,'init') AS relsize,
   pg_indexes_size(rel.oid)         as indexsize,
-  pg_total_relation_size(reltoastrelid) as toastsize,
+  COALESCE(pg_total_relation_size(reltoastrelid), 0) AS toastsize,
   ind.indexids,
   ind.indexnames,
   ind.indexsizes
 from pg_namespace nsp
   join pg_class rel on nsp.oid = rel.relnamespace
-  ,LATERAL ( select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind
-  , LATERAL ( select  array_agg(indexrelid) as indexids,
-                      array_agg(indexrelid::RegClass) as indexnames,
-                      array_agg(pg_total_relation_size(indexrelid)) as indexsizes
+  LEFT JOIN LATERAL (select indexrelid from pg_index where indrelid = rel.reltoastrelid) toastind ON true
+  CROSS JOIN LATERAL (select array_agg(indexrelid ORDER BY indexrelid) AS indexids,
+                      array_agg(indexrelid::regclass ORDER BY indexrelid) AS indexnames,
+                      array_agg(pg_total_relation_size(indexrelid) ORDER BY indexrelid) AS indexsizes
               from pg_index where indrelid = rel.oid) ind
 where nspname not in ('pg_catalog', 'information_schema') and rel.relkind = 'r';
 ```

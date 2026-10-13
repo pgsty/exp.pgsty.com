@@ -1,99 +1,85 @@
 ---
-title: "Pigsty正式发布"
+title: "The First Pigsty Release"
 date: 2021-01-13
 authors: [vonng]
 summary: >
-  一个比较正式的上线发布通知：Pigsty —— 世界上最先进的开源关系型数据库PostgreSQL的监控系统与供给方案。
-tags: [Pigsty, 监控]
+  Introducing Pigsty's first release: PostgreSQL monitoring, high-availability cluster provisioning, and a local demo environment.
+tags: [Pigsty, Monitoring]
 ---
 
-今天我很荣幸的宣布，**Pigsty正式发布了！**
+This article describes Pigsty at its January 2021 release.
 
-![图片](01.webp)
+Today, I released **Pigsty**.
 
-**官方网站：https://pigsty.cc**
+![Pigsty release announcement](01.webp)
 
-## Pigsty是什么？
+Official website: [pigsty.cc](https://pigsty.cc)
 
-- Pigsty是针对大规模PostgreSQL集群的监控系统
+## What is Pigsty?
 
-- Pigsty是高可用PostgreSQL集群的供给方案
+Pigsty monitors large PostgreSQL fleets and automates the deployment of highly available clusters. It is free, open-source software built on open-source components.
 
-- Pigsty基于开源生态构建，是免费的开源软件
+![Pigsty overview](02.webp)
 
-![图片](02.webp)
+I wanted to reduce the manual work of managing PostgreSQL through a shared monitoring interface and deployment process.
 
-Pigsty 针对大规模数据库集群监控与管理而设计，提供业界顶尖的PostgreSQL监控系统与开箱即用的高可用数据库供给方案。Pigsty基于开源生态构建，旨在降低PostgreSQL使用管理的门槛，为用户带来极致的可观测性与丝滑的数据库使用体验。\
+## Monitoring
 
-## Pigsty是监控系统
+I needed to manage a large PostgreSQL fleet. After trying several open-source and commercial monitoring products, I could not find one that met my needs, so I began building Pigsty.
 
-PostgreSQL是世界上最好的开源关系型数据库，但在其生态中却缺少一个足够好的监控系统。Pigsty即旨在解决这一问题：提供世界上最好的PostgreSQL监控系统，
+The interface uses Grafana. At its first release, it contained more than 30 dashboards, over a thousand panels, and about 180,000 lines of JSON configuration, covering databases and infrastructure.
 
-开发Pigsty的初衷是：作者需要对一个大规模PostgreSQL集群进行管理，但找遍所有市面上的开源与商业监控系统方案后，发现没有一个是“足够好用”的。本着“**我行我上**”的精神，开发设计了本系统。
+![Database monitoring dashboard](03.webp)
 
-Pigsty的界面基于Grafana深度定制，由30+监控面板，上千+仪表盘，18万行JSON定制而成，涵盖数据库与基础设施的方方面面。
+![Detailed monitoring panels](04.webp)
 
-![图片](03.webp)
+This version provided nearly 1,200 monitoring metrics. They show fleet-wide totals and let users inspect reads and writes on individual database objects.
 
-![图片](04.webp)
+![Monitoring metric coverage](05.webp)
 
-Pigsty提供近1200个监控指标，一骑绝尘，远超市面上现有的相关产品。提供从全局大盘汇总到某一个数据对象增删改查的全域数据支持。\
+## Cluster provisioning
 
-![图片](05.webp)
+Distributing and demonstrating a monitoring system requires a database environment. Existing installations vary, so I included database provisioning in Pigsty.
 
-## Pigsty是供给方案
+The deployment combines replication, failover, traffic proxies, connection pooling, service discovery, and basic privilege configuration. This reduces the work of configuring each component separately.
 
-Pigsty同时还是一个高可用数据库集群供给方案。
+![PostgreSQL provisioning architecture](06.webp)
 
-监控系统要想发行与演示，必须要先有被监控的对象。可许多用户自建的数据库实在是千奇百怪。所以这里，Pigsty项目决定将数据库供给方案作为项目的一部分发布。
+Fill in the configuration file, and Pigsty creates the database cluster it describes.
 
-将主从复制，故障切换，流量代理，连接池，服务发现，基本权限系统等成熟的生产级部署方案打包至本项目中，真正让用户做到 **立等可取**，**开箱即用**。
+![Declarative cluster configuration](07.webp)
 
-![图片](06.webp)
+More than 130 settings describe the database and infrastructure. Declarative configuration and idempotent execution manage physical and virtual machines as infrastructure code, with a workflow similar to Kubernetes.
 
-数据库供给方案所做的事情一言以蔽之：**您填写一张表单，然后系统会自动根据表单的内容创建出对应的数据库集群**。真正做到傻瓜式数据库管理。
+## Open-source components and license
 
-![图片](07.webp)
+This release used the **Apache 2.0** license, with a professional edition and optional commercial support also available. Issues, pull requests, donations, and sponsorship were welcome.
 
-Pigsty通过130+配置项定义了数据库与基础设施的方方面面，采用声明式的语法与幂等的执行机制，使用代码定义基础设施，在物理机与虚拟机上达到了与Kubernetes类似的舒爽体验，简单易用。
+![Open-source components](08.webp)
 
-## Pigsty是开源软件
+Monitoring uses Prometheus, Grafana, Alertmanager, and exporters. It also includes Nginx, Dnsmasq/CoreDNS, NTP/Chrony, Consul/etcd, and other infrastructure components. These can integrate with an existing monitoring environment.
 
-Pigsty依托开源，回馈社区，是免费的开源软件。Pigsty基于 **Apache 2.0** 协议开源，但也提供 **专业版** 与 **可选的商业支持服务**。欢迎各位贡献ISSUE与PR，也欢迎捐赠与赞助。
+Provisioning uses Ansible to deploy PostgreSQL, PgBouncer, Patroni, HAProxy, and Keepalived. Deployment logic is packaged as Ansible roles for integration and customization.
 
-![图片](08.webp)
+## Try Pigsty
 
-Pigsty的监控系统基于开源组件Prometheus，Grafana，Alertmanager, Exporter进行深度定制开发。同时还包括Nginx, Dnsmasq/CoreDNS, NTP/Chrony, Consul/Etcd等基础设施。遵循业界监控最佳实践，可以方便地与已有监控基础设施集成。
+Pigsty provides English and Chinese documentation, a public demo, and a local Vagrant sandbox. At its first release, these commands created a sandbox with database clusters and monitoring infrastructure on a laptop:
 
-Pigsty的供给方案基于流行的DevOps工具Ansible进行开发，部署涉及的组件包括：Postgres, Pgbouncer, Patroni, HAProxy, Keepalived。所有部署逻辑都以Ansible Role的方式编写，可以方便地进行集成、定制与二次开发。
+```bash
+make up          # Start the Vagrant virtual machines
+make ssh         # Configure SSH access to the virtual machines
+make init        # Initialize Pigsty
+sudo make dns    # Add static Pigsty DNS entries; optional, requires sudo
+make mon-view    # Open Pigsty; sandbox default credentials: admin / admin
+```
 
-PostgreSQL是世界上最先进的开源关系型数据库，而Pigsty旨在成为世界上最先进的开源关系型数据库的监控系统与供给方案。希望Pigsty能在各位使用PostgreSQL的过程中起到帮助。
+Production environments use the same deployment process, with configuration adapted to their hosts, networks, and database requirements.
 
-## Pigsty可以开箱即用
+## Project links
 
-Pigsty提供了详实的中英文档供您参考。
+- [Chinese documentation](https://pigsty.cc)
+- [English documentation](https://pigsty.io)
+- [Public demo](https://demo.pigsty.cc)
+- [GitHub repository](https://github.com/pgsty/pigsty)
 
-更重要的是，Pigsty既提供了可公开访问的演示Demo，也自带了基于Vagrant的本地沙箱。您可以使用以下命令简单的在自己的笔记本上一键拉起带有数据库集群与监控基础设施的沙箱环境。
-
-    make up          # 拉起vagrant虚拟机
-    make ssh         # 配置虚拟机ssh访问
-    make init        # 初始化Pigsty
-    sudo make dns    # 写入Pigsty静态DNS域名（需要sudo,可选）
-    make mon-view    # 打开Pigsty首页（默认用户密码：admin:admin）
-
-也可以在修改极少量配置后，使用完全相同的工作流初始化生产环境。
-
-Pigsty的相关站点\
------------------
-
-Pigsty提供了详实的中英文档供您参考。
-
-中文站点：https://pigsty.cc
-
-英文站点：https://pigsty.cc/en/
-
-官方演示：http://demo.pigsty.cc
-
-Github仓库：https://github.com/Vonng/pigsty
-
-![图片](09.webp)
+![Pigsty project links](09.webp)

@@ -4,57 +4,42 @@ linkTitle: "Relation Bloat Monitoring and Management"
 date: 2018-10-06
 authors: [vonng]
 summary: >
-  PostgreSQL uses MVCC as its primary concurrency control technology. While it has many benefits, it also brings other effects, such as relation bloat.
+  Estimate PostgreSQL table and index bloat from statistics, then use VACUUM FULL or pg_repack to reclaim space.
 tags: [PostgreSQL, PG Admin]
 ---
 
-> Author: [Vonng](https://vonng.com) ([@Vonng](https://vonng.com/en/))
+This article was written in 2018. It explains statistics-based bloat estimates and maintenance practices from that period.
 
-PostgreSQL uses MVCC as its primary concurrency control technology. While it has many benefits, it also brings other effects, such as relation bloat. Relation bloat (table and index) negatively impacts database performance and wastes disk space. To keep PostgreSQL always at optimal performance, it's necessary to perform timely garbage collection on bloated relations and regularly rebuild excessively bloated relations.
-
-In actual operations, garbage collection isn't that simple. Here are a series of issues:
-
-* What causes relation bloat?
-* How to measure relation bloat?
-* How to monitor relation bloat?
-* How to handle relation bloat?
-
-This article will explain these issues in detail.
+PostgreSQL uses MVCC to let transactions work with different row versions. Old versions can leave tables and indexes larger than their live data requires. Routine vacuum makes space reusable; a rewrite can return excess space to the filesystem. This article explains how to measure bloat and choose when to reorganize a relation.
 
 ---------------------
 
 ## Relation Bloat Overview
 
-Suppose a relation actually occupies 100G of storage, but much space is wasted by dead tuples, fragments, and free areas. If it were compressed into a new relation, it would occupy 60G, then we can approximately consider this relation has a bloat rate of (100 - 60) / 100 = 40%.
+If a relation occupies 100 GB and a compact copy would occupy 60 GB, its estimated bloat rate is `(100 - 60) / 100 = 40%`.
 
-Regular `VACUUM` cannot solve table bloat issues. Dead tuples themselves can be reclaimed by concurrent `VACUUM` mechanisms, but the fragments and holes they create cannot. For example, even after deleting many dead tuples, the table size cannot be reduced. Over time, relation files become filled with many holes, wasting substantial disk space.
+Regular `VACUUM` reclaims dead-tuple space for reuse within the table. It can also truncate empty pages at the end of the file. It does not compact live rows across the whole table, so free space between live pages usually remains allocated.
 
-The `VACUUM FULL` command can reclaim this space by copying live tuples from the old table file to a new table, compacting the table by rewriting the entire table. However, in actual production, this operation holds an `AccessExclusiveLock` on the table, blocking normal business access, making it unsuitable for non-stop services. `pg_repack` is a practical third-party plugin that can perform lock-free `VACUUM FULL` while online business continues normally.
+`VACUUM FULL` copies live tuples to a new file to compact the table. It holds an `AccessExclusiveLock` for the operation, blocking reads and writes. `pg_repack` allows most reads and writes to continue, but needs brief exclusive locks during setup and the final swap.
 
-Unfortunately, there's no best practice for when to perform `VACUUM FULL` to handle bloat. DBAs need to formulate cleanup strategies for their specific business scenarios. However, regardless of the strategy adopted, the mechanisms for implementing these strategies are similar:
-
-* Monitor, detect, and measure relation bloat levels
-* Handle relation bloat based on bloat level, timing, and other factors
-
-Here are some key questions: first, how to define relation bloat rate?
+Measure bloat before choosing which relations to rewrite. Set the threshold and schedule from workload, available disk space, and maintenance windows.
 
 ---------------------
 
 ## Measuring Relation Bloat
 
-To measure relation bloat levels, we first need to define a metric: **bloat rate**.
+Estimate the bloat rate with `1 - compact_size / actual_size`. The compact size includes live tuples and necessary page, tuple, and alignment overhead.
 
-The calculation idea for bloat rate is: estimate the space that would be occupied if the target table were in a **compact** state through statistical information, and the proportion of actual used space exceeding this compact space is the bloat rate. Therefore, bloat rate can be defined as 1 - (total bytes occupied by live tuples / total bytes occupied by relation).
+Relation size is available from PostgreSQL. The next step is to measure or estimate the space that live tuples need.
 
-For example, if a table actually occupies 100G of storage, but much space is wasted by dead tuples, fragments, and free areas, and if compressed into a new table it would occupy 60G, then the bloat rate is 1 - 60/100 = 40%.
+### Measuring Tuple and Free Space
 
-Getting relation size is relatively simple and can be obtained directly from system catalogs. So the key issue is how to obtain **total bytes of live tuples**.
+`pgstattuple` scans a relation and reports live tuples, dead tuples, and free space.
+`tuple_percent` uses a 0–100 scale. Thus `1 - tuple_percent / 100` is the share
+outside live tuples, including necessary storage overhead. The sample calls this
+value `bloat`, but it is not the exact fraction a rewrite can reclaim.
 
-### Precise Calculation of Bloat Rate
-
-PostgreSQL comes with the `pgstattuple` module, which can be used to precisely calculate table bloat rates. For example, the `tuple_percent` field here is the percentage of actual tuple bytes to total relation size. Subtracting this value from 1 gives the bloat rate.
-
-```sql
+```text
 vonng@[local]:5432/bench# select *,
                           1.0 - tuple_len::numeric / table_len as bloat
                           from pgstattuple('pgbench_accounts');
@@ -72,53 +57,48 @@ vonng@[local]:5432/bench# select *,
 └────────────────────┴────────────────────────┘
 ```
 
-`pgstattuple` is very useful for precisely determining table and index bloat. For specific details, refer to the official documentation: https://www.postgresql.org/docs/current/static/pgstattuple.html.
+See the [PostgreSQL 10 `pgstattuple` reference](https://www.postgresql.org/docs/10/pgstattuple.html) for field definitions and the `pgstatindex` function for B-tree indexes.
 
-Additionally, PostgreSQL provides two built-in extensions, `pg_freespacemap` and `pageinspect`. The former can be used to examine the free space size in each page, while the latter can precisely show the physical storage content within each data page in relations. If you want to examine the internal state of relations, these two plugins are very practical. Detailed usage can be found in the official documentation:
+Two other supplied extensions help inspect relation storage:
 
-https://www.postgresql.org/docs/current/static/pgfreespacemap.html
+- [pg_freespacemap](https://www.postgresql.org/docs/10/pgfreespacemap.html) reports recorded free space in each page.
+- [pageinspect](https://www.postgresql.org/docs/10/pageinspect.html) reads the contents of individual pages.
 
-https://www.postgresql.org/docs/current/static/pageinspect.html
+For routine monitoring, an estimate is usually enough to identify relations for closer inspection. Measuring every live tuple requires a full relation scan, which can add substantial I/O when repeated across many tables.
 
-However, in most cases, we don't care too much about the precision of bloat rates. In actual production, the requirements for bloat rates aren't high: having the first significant digit accurate is generally sufficient. On the other hand, to know precisely the total bytes occupied by live tuples, a full scan of the entire relation is needed, which puts pressure on the online system's I/O. If you want to monitor bloat rates for all tables, this approach isn't suitable.
+PostgreSQL 9.5 added `pgstattuple_approx` to the `pgstattuple` extension. It estimates some values to reduce the amount of data scanned. Its cost depends on how much of the relation must be read.
 
-For example, a 200G relation would take approximately 5 minutes to perform precise bloat rate estimation using the `pgstattuple` plugin. In version 9.5 and later, the `pgstattuple` plugin also provides the `pgstattuple_approx` function, trading precision for speed. But even with estimation, it still takes seconds.
-
-For monitoring bloat rates, the most important requirement is fast speed and low impact. Therefore, when we need to monitor many tables across many databases simultaneously, we need to perform **fast estimation** of bloat rates to avoid impacting business operations.
+Use statistics-based estimates for frequent monitoring across many tables. Scan selected relations when you need a more precise measurement.
 
 ---------------------
 
 ## Estimating Bloat Rate
 
-PostgreSQL maintains many statistical information for each relation. Using statistical information, we can quickly and efficiently estimate bloat rates for all tables in the database. Estimating bloat rates requires using statistical information on tables and columns. Three directly used statistical metrics are:
+The estimate uses three values from table and column statistics:
 
 * Average tuple width `avgwidth`: calculated from column-level statistical data, used to estimate space occupied in compact state
 * Tuple count: `pg_class.reltuples`: used to estimate space occupied in compact state
 * Page count: `pg_class.relpages`: used to measure actually used space
 
-The calculation formula is also simple:
+The estimate is:
 
 ```c
 1 - (reltuples * avgwidth) / (block_size - pageheader) / relpages
 ```
 
-Here `block_size` is page size, default 8182, `pageheader` is header overhead, default 24 bytes. Page size minus header size gives actual space available for tuple storage. Therefore, `(reltuples * avgwidth)` gives estimated total tuple size, and dividing by the former gives expected pages needed to compactly store all tuples. Finally, expected page count divided by actual page count gives **utilization rate**, and 1 minus utilization rate gives bloat rate.
+Here `block_size` is page size, default 8192, `pageheader` is header overhead, default 24 bytes. Page size minus header size gives actual space available for tuple storage. Therefore, `(reltuples * avgwidth)` gives estimated total tuple size, and dividing by the former gives expected pages needed to compactly store all tuples. Finally, expected page count divided by actual page count gives **utilization rate**, and 1 minus utilization rate gives bloat rate.
 
 ### Difficulties
 
-The key here is how to use statistical information to estimate average tuple length. To achieve this, we need to overcome three difficulties:
+Estimating average tuple length requires accounting for:
 
 * When tuples contain null values, headers will have null bitmaps
 * There's padding between headers and data sections, requiring boundary alignment consideration
 * Some field types also have alignment requirements
 
-Fortunately, bloat rate itself is an estimation, so being roughly correct is sufficient.
-
 ### Calculating Average Tuple Length
 
-To understand the estimation process, we first need to understand PostgreSQL's internal layout of data pages and tuples.
-
-First, let's look at tuple **average length**. The tuple layout in PostgreSQL is shown in the diagram below.
+The diagram shows the PostgreSQL tuple layout used to estimate average tuple length.
 
 ![](page-tuple.png)
 
@@ -127,7 +107,7 @@ Space occupied by a tuple can be divided into three parts:
 * Fixed-length line pointer (4 bytes, strictly speaking this isn't part of the tuple, but it corresponds one-to-one with tuples)
 * Variable-length header
   * Fixed-length part 23 bytes
-  * When tuples contain null values, a null bitmap appears, with each field occupying one bit, so its length is the number of fields divided by 8
+  * When tuples contain null values, a null bitmap appears, with each field occupying one bit, so its length is the number of fields divided by 8, rounded up
   * After the null bitmap, padding is needed to `MAXALIGN`, usually 8
   * If the table has the `WITH OIDS` option enabled, tuples also have a 4-byte OID, but we don't consider this case here
 * Data section
@@ -148,7 +128,7 @@ The main variables in average header length are **null bitmap** and **padding al
 * Average header length with null bitmap (with padding): `nullhdr`
 * Proportion of tuples with null values: `nullfrac`
 
-The formula for estimating average header length is also very simple:
+Estimate average header length with:
 
 ```python
 avg_size_hdr =  nullhdr * nullfrac + normhdr * (1 - nullfrac)
@@ -160,10 +140,10 @@ Since headers without null bitmaps are 23 bytes long, aligned to 8-byte boundari
 avg_size_hdr =  nullhdr * nullfrac +  24 * (1 - nullfrac)
 ```
 
-To calculate the length of a value padded to 8-byte boundaries, use this formula for efficient computation:
+To round a length up to an 8-byte boundary, use:
 
 ```python
-padding = lambda x : x + 7 >> 3 << 3
+padding = lambda x: ((x + 7) >> 3) << 3
 ```
 
 ### Calculating Average Data Section Length
@@ -195,57 +175,65 @@ max   | 1
 sum   | 1733.76873471724
 ```
 
+`max(null_frac)` is an approximation for the fraction of rows with any NULL.
+Column statistics do not describe how NULL values overlap across columns.
+
 ### Integration
 
-Integrating the logic from the above three sections, we get the following stored procedure that returns bloat rate for a given table:
+The function below combines those estimates. It assumes 8-byte alignment and
+uses the server’s block size. It returns NULL when statistics are unavailable.
+It estimates heap space only; TOAST, fillfactor, and column alignment can affect
+the result.
 
 ```sql
 CREATE OR REPLACE FUNCTION public.pg_table_bloat(relation regclass)
- RETURNS double precision
- LANGUAGE plpgsql
+RETURNS double precision
+LANGUAGE plpgsql
 AS $function$
 DECLARE
   _schemaname text;
-  tuples      BIGINT := 0;
-  pages       INTEGER := 0;
-  nullheader  INTEGER:= 0;
-  nullfrac    FLOAT := 0;
-  datawidth   INTEGER :=0;
-  avgtuplelen FLOAT :=24;
+  _tablename  text;
+  tuples      double precision;
+  pages       integer;
+  nullheader  double precision;
+  nullfrac    double precision;
+  datawidth   double precision;
+  avgtuplelen double precision;
+  blocksize   integer := current_setting('block_size')::integer;
 BEGIN
-  SELECT
-    relnamespace :: RegNamespace,
-    reltuples,
-    relpages
-  into _schemaname, tuples, pages
-  FROM pg_class
-  Where oid = relation;
+  SELECT n.nspname, c.relname, c.reltuples, c.relpages
+    INTO _schemaname, _tablename, tuples, pages
+    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.oid = relation;
 
-  SELECT
-    23 + ceil(count(*) >> 3),
-    max(null_frac),
-    ceil(sum((1 - null_frac) * avg_width))
-  into nullheader, nullfrac, datawidth
-  FROM pg_stats
-  where schemaname = _schemaname and tablename = relation :: text;
+  IF pages = 0 THEN RETURN 0; END IF;
+  IF pages IS NULL OR tuples < 0 THEN RETURN NULL; END IF;
 
-  SELECT (datawidth + 8 - (CASE WHEN datawidth%8=0 THEN 8 ELSE datawidth%8 END)) -- avg data len
-    + (1 - nullfrac) * 24 + nullfrac * (nullheader + 8 - (CASE WHEN nullheader%8=0 THEN 8 ELSE nullheader%8 END))
-    INTO avgtuplelen;
+  SELECT 23 + ceil(count(*) / 8.0),
+         max(null_frac),
+         sum((1 - null_frac) * avg_width)
+    INTO nullheader, nullfrac, datawidth
+    FROM pg_stats
+    WHERE schemaname = _schemaname AND tablename = _tablename
+      AND NOT inherited;
 
-  raise notice '% %', nullfrac, datawidth;
+  IF datawidth IS NULL THEN RETURN NULL; END IF;
 
-  RETURN 1 - (ceil(tuples * avgtuplelen / 8168)) / pages;
+  avgtuplelen := 4 + ceil(datawidth / 8.0) * 8
+    + (1 - nullfrac) * 24 + nullfrac * ceil(nullheader / 8.0) * 8;
+
+  RETURN greatest(0, 1 - ceil(tuples * avgtuplelen / (blocksize - 24)) / pages);
 END;
-$function$
+$function$;
 ```
 
 ### Batch Calculation
 
-For monitoring, we often care about not just one table, but all tables in the database. Therefore, the above bloat rate calculation logic can be rewritten as a batch calculation query and defined as a view for easy use:
+For database-wide monitoring, a view can estimate many relations from catalog
+statistics. This separate example estimates B-tree index bloat:
 
 ```sql
-DROP VIEW IF EXISTS monitor.pg_bloat_indexes CASCADE;
+CREATE SCHEMA IF NOT EXISTS monitor;
 CREATE OR REPLACE VIEW monitor.pg_bloat_indexes AS
   WITH btree_index_atts AS (
       SELECT
@@ -257,7 +245,7 @@ CREATE OR REPLACE VIEW monitor.pg_bloat_indexes AS
         pg_index.indexrelid,
         indexclass.relam,
         tableclass.relname                                                          AS tablename,
-        (regexp_split_to_table((pg_index.indkey) :: TEXT, ' ' :: TEXT)) :: SMALLINT AS attnum,
+        generate_series(1, pg_index.indnatts)                                        AS attnum,
         pg_index.indexrelid                                                         AS index_oid
       FROM ((((pg_index
         JOIN pg_class indexclass ON ((pg_index.indexrelid = indexclass.oid)))
@@ -388,17 +376,22 @@ CREATE OR REPLACE VIEW monitor.pg_bloat_indexes AS
 COMMENT ON VIEW monitor.pg_bloat_indexes IS 'index bloat monitor';
 ```
 
-Although it looks long, querying this view to get bloat rates for all tables in the entire database (3TB) takes only 50ms of computation. And it only needs to access statistical data, not the relations themselves, consuming no instance I/O.
+In the original 3 TB database, this view took about 50 ms. It reads catalog
+statistics rather than scanning every index page. Catalog access and relation-size
+lookups still have a cost, and stale or incomplete statistics affect the estimate.
+The result is a screening tool for candidate indexes.
 
 ---------------------
 
 ## Handling Table Bloat
 
-If it's just a toy database, or the business allows long daily downtime for maintenance, then simply executing `VACUUM FULL` in the database would suffice. But `VACUUM FULL` requires exclusive read-write locks on tables. For databases that need to run continuously, we need to use `pg_repack` to handle table bloat.
+Use `VACUUM FULL` when a maintenance window allows exclusive table access. For
+online reorganization, `pg_repack` reduces the duration of exclusive locking.
 
-* Homepage: http://reorg.github.io/pg_repack/
+* [pg_repack documentation](https://reorg.github.io/pg_repack/)
 
-`pg_repack` is included in PostgreSQL's official yum repository, so it can be installed directly via `yum install pg_repack`.
+The original PostgreSQL 10 environment used the PGDG package below. Select the
+package built for your PostgreSQL major version:
 
 ```bash
 yum install pg_repack10
@@ -408,108 +401,118 @@ yum install pg_repack10
 
 ### Using `pg_repack`
 
-Like most PostgreSQL client programs, `pg_repack` also connects to PostgreSQL servers through similar parameters.
+`pg_repack` uses the usual PostgreSQL client connection parameters.
 
 Before using `pg_repack`, you need to create the `pg_repack` extension in the database to be reorganized:
 
 ```sql
-CREATE EXTENSION pg_repack
+CREATE EXTENSION pg_repack;
 ```
 
-Then you can use it normally. Several typical usage patterns:
+Example commands:
 
 ```bash
-# Complete cleanup of entire database, 5 concurrent tasks, 10 second timeout
-pg_repack -d <database> -j 5 -T 10
+# Repack mydb; use 5 workers for index builds and wait up to 10 seconds for locks
+pg_repack -d mydb -j 5 -T 10 --no-kill-backend
 
-# Clean specific table mytable in mydb, 10 second timeout
-pg_repack mydb -t public.mytable -T 10
+# Repack one table; skip it if conflicting locks remain after 10 seconds
+pg_repack mydb -t public.mytable -T 10 --no-kill-backend
 
 # Clean specific index myschema.myindex, must use full name with schema
-pg_repack mydb -i myschema.myindex
+pg_repack mydb -i myschema.myindex --no-kill-backend
 ```
 
-Detailed usage can be found in the official documentation.
+`-T` controls lock waiting, not total runtime. Without `--no-kill-backend`,
+`pg_repack` can cancel and later terminate conflicting sessions. A full-table
+repack needs a primary key or a suitable unique index on NOT NULL columns. See
+the [option reference](https://reorg.github.io/pg_repack/#options).
 
 ---------------------
 
 ### `pg_repack` Strategy
 
-Usually, if business has peak and valley cycles, you can choose to perform reorganization during business valleys. `pg_repack` executes quickly but is resource-intensive. Running during peak periods might affect overall database performance and could cause replication lag.
+Schedule `pg_repack` during low-traffic periods. It consumes CPU, disk I/O, and extra storage, and can increase query latency and replication lag.
 
-For example, you can use the bloat rate monitoring views provided in the above two sections to daily select the most severely bloated tables and indexes for automatic reorganization.
+For example, select candidate tables during a low-traffic period. The following
+view supplies the columns used by the scheduling example; `total_mb` measures
+current disk usage in MiB, including indexes and TOAST:
+
+```sql
+CREATE OR REPLACE VIEW monitor.pg_bloat_tables AS
+SELECT current_database() AS datname,
+       n.nspname,
+       c.relname,
+       pg_total_relation_size(c.oid) / 1048576.0 AS total_mb,
+       b.ratio * 100 AS bloat_pct
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+CROSS JOIN LATERAL (SELECT public.pg_table_bloat(c.oid) AS ratio) b
+WHERE c.relkind = 'r'
+  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND n.nspname NOT LIKE 'pg_toast%';
+```
+
+The shell functions return one table name per line and accept table names as
+separate quoted arguments:
 
 ```bash
-#--------------------------------------------------------------#
-# Name: repack_tables
-# Desc: repack table via fullname
-# Arg1: database_name
-# Argv: list of table full name
-# Deps: psql
-#--------------------------------------------------------------#
-# repack single table
-function repack_tables(){
-    local db=$1
+repack_tables() {
+    local db=$1 relname old_size new_size
     shift
-
-    log_info "repack ${db} tables begin"
-    log_info "repack table list: $@"
-
-    for relname in $@
-    do
-        old_size=$(psql ${db} -Atqc "SELECT pg_size_pretty(pg_relation_size('${relname}'));")
-        # kill_queries ${db}
-        log_info "repack table ${relname} begin, old size: ${old_size}"
-        pg_repack ${db} -T 10 -t ${relname}
-        new_size=$(psql ${db} -Atqc "SELECT pg_size_pretty(pg_relation_size('${relname}'));")
-        log_info "repack table ${relname} done , new size: ${old_size} -> ${new_size}"
+    for relname in "$@"; do
+        old_size=$(psql -X -d "$db" -v ON_ERROR_STOP=1 -v relation="$relname" -At <<'SQL'
+SELECT pg_size_pretty(pg_total_relation_size(:'relation'::regclass));
+SQL
+) || return
+        printf 'Repack %s: %s before\n' "$relname" "$old_size"
+        pg_repack --dbname="$db" --table="$relname" --wait-timeout=10 --no-kill-backend || return
+        new_size=$(psql -X -d "$db" -v ON_ERROR_STOP=1 -v relation="$relname" -At <<'SQL'
+SELECT pg_size_pretty(pg_total_relation_size(:'relation'::regclass));
+SQL
+) || return
+        printf 'Repack %s: %s -> %s\n' "$relname" "$old_size" "$new_size"
     done
-
-    log_info "repack ${db} tables done"
 }
 
-#--------------------------------------------------------------#
-# Name: get_bloat_tables
-# Desc: find bloat tables in given database match some condition
-# Arg1: database_name
-# Echo: list of full table name
-# Deps: psql, monitor.pg_bloat_tables
-#--------------------------------------------------------------#
-function get_bloat_tables(){
-    echo $(psql ${1} -Atq <<-'EOF'
-    WITH bloat_tables AS (
-        SELECT
-          nspname || '.' || relname as relname,
-          actual_mb,
-          bloat_pct
-        FROM monitor.pg_bloat_tables
-        WHERE nspname NOT IN ('dba', 'monitor', 'trash')
-        ORDER BY 2 DESC,3 DESC
-    )
-    -- 64 small + 16 medium + 4 large
-    (SELECT relname FROM bloat_tables WHERE actual_mb < 256 AND bloat_pct > 40 ORDER BY bloat_pct DESC LIMIT 64) UNION
-    (SELECT relname FROM bloat_tables WHERE actual_mb BETWEEN 256 AND 1024  AND bloat_pct > 30 ORDER BY bloat_pct DESC LIMIT 16) UNION
-    (SELECT relname FROM bloat_tables WHERE actual_mb BETWEEN 1024 AND 4096  AND bloat_pct > 20 ORDER BY bloat_pct DESC  LIMIT 4);
-EOF
+get_bloat_tables() {
+    psql -X -d "$1" -v ON_ERROR_STOP=1 -At <<'SQL'
+WITH bloat_tables AS (
+    SELECT format('%I.%I', nspname, relname) AS relname,
+           total_mb, bloat_pct
+    FROM monitor.pg_bloat_tables
+    WHERE nspname NOT IN ('dba', 'monitor', 'trash')
 )
+(SELECT relname FROM bloat_tables
+ WHERE total_mb < 256 AND bloat_pct > 40
+ ORDER BY bloat_pct DESC LIMIT 64)
+UNION
+(SELECT relname FROM bloat_tables
+ WHERE total_mb >= 256 AND total_mb < 1024 AND bloat_pct > 30
+ ORDER BY bloat_pct DESC LIMIT 16)
+UNION
+(SELECT relname FROM bloat_tables
+ WHERE total_mb >= 1024 AND total_mb <= 4096 AND bloat_pct > 20
+ ORDER BY bloat_pct DESC LIMIT 4);
+SQL
 }
 ```
 
-Here, three rules are set:
+These size thresholds use current disk usage, including the table, indexes, and TOAST:
 
-* From small tables < 256MB with bloat rate > 40%, select TOP64
-* From medium tables 256MB to 1GB with bloat rate > 40%, select TOP16
-* From large tables 1GB to 4GB with bloat rate > 20%, select TOP4
+* From small tables < 256 MiB with bloat rate > 40%, select TOP64
+* From medium tables 256 MiB to 1 GiB with bloat rate > 30%, select TOP16
+* From large tables 1 GiB to 4 GiB with bloat rate > 20%, select TOP4
 
-Select these tables for automatic reorganization during early morning valleys. Tables over 4GB are handled manually.
-
-But when to perform reorganization still depends on specific business patterns.
+This example reorganizes selected tables during the early-morning low-traffic period and handles tables whose total disk usage exceeds 4 GiB manually. Adjust the schedule to your workload.
 
 ---------------------
 
 ### `pg_repack` Principles
 
-`pg_repack`'s principle is quite simple. It creates a copy for the table to be rebuilt. First, it takes a full snapshot, writes all live tuples to the new table, and synchronizes all changes to the original table to the new table through triggers. Finally, it replaces the old table with the new compact copy through renaming. For indexes, this is accomplished through PostgreSQL's `CREATE(DROP) INDEX CONCURRENTLY`.
+`pg_repack` builds a compact copy and records concurrent changes with a trigger.
+After replaying those changes, it swaps storage through the system catalogs.
+Index-only repacks build a replacement index concurrently, then swap and drop the
+old index.
 
 **Reorganizing Tables**
 
@@ -519,26 +522,22 @@ But when to perform reorganization still depends on specific business patterns.
 4. Copy data from the old table to the new empty table
 5. Create the same indexes on the new table
 6. Apply incremental changes from the log table to the new table
-7. Switch new and old tables through renaming
-8. Drop the old, renamed table
+7. Swap table, index, and TOAST storage through the system catalogs
+8. Drop the old storage
 
 **Reorganizing Indexes**
 
 1. Use `CREATE INDEX CONCURRENTLY` to create a new index on the original table, maintaining the same definition as the old index
-2. `Analyze` the new index, set the old index as invalid, and swap new and old indexes in the data directory
+2. Swap the old and new indexes in the system catalogs
 3. Delete the old index
 
 ---------------------
 
-### `pg_repack` Considerations
+### `pg_repack` Operating Checks
 
-- Before starting reorganization, it's best to cancel all ongoing `Vacuum` tasks
-- Before reorganizing indexes, it's best to manually clean up queries that might be using those indexes
+- Schedule around long transactions and conflicting maintenance. Inspect lock waits before deciding whether to cancel a session.
+- Budget disk for the replacement table, indexes, and change log. The project recommends free space of about twice the table-and-index size for a full repack.
+- Monitor WAL volume, replica replay lag, and free disk space throughout the copy and index build. WAL is generated during the operation, not just at the final swap.
+- After interruption, inspect the installed version’s cleanup guidance and the remaining objects before retrying. Temporary-object names and cleanup behavior vary by version.
 
-- If abnormal situations occur (like forced exit midway), garbage might be left behind that needs manual cleanup. This might include:
-  - Temporary tables and temporary indexes built in the same schema as the original table/index
-  - Temporary table names: `${schema_name}.table_${table_oid}`
-  - Temporary index names: `${schema_name}.index_${table_oid}}`
-  - Related triggers might remain on the original table and need manual cleanup
-- When reorganizing particularly large tables, reserve at least the same amount of disk space as the table and its indexes, requiring special care and manual checking
-- When completing reorganization and performing renaming replacement, massive amounts of WAL will be generated, possibly causing replication delay that cannot be canceled
+See the [pg_repack requirements and implementation notes](https://reorg.github.io/pg_repack/) when planning the operation.

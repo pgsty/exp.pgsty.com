@@ -1,150 +1,134 @@
 ---
-title: "PostgreSQL监控系统概览"
+title: "An Overview of PostgreSQL Monitoring"
 date: 2018-12-17
 authors: [vonng]
 summary: >
-  监控系统是几乎所有运维工作的基础，更亦是驾驭数据库的必备工具，本文简单介绍了一个PostgreSQL的监控系统。
-tags: [PostgreSQL, 监控, PG管理]
+  A tour of a PostgreSQL monitoring system: dashboards, architecture, key metrics, and the statistics behind them.
+tags: [PostgreSQL, Monitoring, Administration]
 ---
 
-## PostgreSQL驾驶技巧
+This article describes a monitoring system from December 2018. Its dashboard layout and statistics-collector details belong to that period.
 
-PostgreSQL是一个很棒的数据库，但也相当复杂。上手虽简单，但想要用好不容易，想要管理好就更麻烦了。监控系统是几乎所有运维工作的基础，更亦是驾驭数据库的必备工具。用好一个监控系统，理解各种指标背后的意义并不是一件简单的事情，因此本司机决定写一系列文章，来介绍了PostgreSQL监控系统的设计，实施与使用。
+## Using monitoring to manage PostgreSQL
 
-![图片](01.webp)
+Managing PostgreSQL requires an understanding of its operating state. Monitoring brings this information together for routine checks, fault diagnosis, and performance tuning. I planned a series of articles about the design, implementation, and use of this monitoring system.
 
-## 0x01 PostgreSQL监控面板
+![PostgreSQL monitoring](01.webp)
 
-为了帮助读者形成一种直觉，这里展示了在实际环境中，我所使用的监控面板。最为常用的监控面板为“单数据库实例”监控，并分为7个主要的子区域：概览，操作系统，数据库活动与会话，复制，检查点与WAL，数据库冲突，以及数据库对象统计，如下所示。
+## The PostgreSQL dashboard
 
-![图片](02.webp)
+These are the dashboards I used in a working environment. The most frequently used view monitored one database instance. It had seven main sections: overview, operating system, database activity and sessions, replication, checkpoints and WAL, conflicts, and database object statistics.
 
-![图片](03.webp)
+![Single-instance dashboard](02.webp)
 
-监控系统的架构\
----------------
+![Single-instance dashboard details](03.webp)
 
-程序员的一个基本原则就是：“不要造轮子”。所以如果有现成的开源组件能用，那是最好不过。一个比较简单的实用监控系统架构如下图所示。主要组件包括：Prometheus，Grafana，Consul，以及各个Exporter。各类Exporter从数据库，连接池，以及机器上获取指标数据库，Prometheus从Consul中发现这些Exporter，并向其拉取数据，Grafana负责展示Prometheus中的数据，而AlertManager负责报警相关的任务。
+## System architecture
 
-![图片](04.webp)
+This system uses Prometheus, Grafana, Consul, and exporters.
 
-## 监控系统的指标
+Exporters read metrics from databases, connection pools, and hosts. Prometheus discovers exporters through Consul and scrapes their metrics. Grafana displays the data, while Alertmanager handles alerts.
 
-监控面板与系统架构，不过是监控系统的面子，真正的里子在于监控指标。哪些指标需要监控，每种指标如何解读，这才是真正重要的东西。毕竟知道了这些知识，即使没有监控系统，通过命令行手工检查也可以发现问题，但不了解指标背后的涵义，即使再傻瓜再漂亮的监控面板也于事无补。
+![Monitoring architecture](04.webp)
 
-下面会简单介绍单实例监控面板中涉及到的指标。
+## Monitoring metrics
 
-### 概览
+For each metric, identify the question it answers, its data source, and the meaning of changes in its value. This helps interpret charts and guides command-line investigation. The following sections describe the main metrics in the single-instance dashboard.
 
-概览是一些重要的核心指标，一眼扫过去就应当能大致定位数据库的主要问题。这里主要包括：
+### Overview
 
-- CPU使用率、平均查询时间、TPS、QPS，连接池排队数，活跃连接数：判断数据库负载水平
+The overview contains key metrics that help narrow down a problem at a glance:
 
-- 内存空闲率：判断是否出现进程异常（例如突然被杀）
+- CPU utilization, average query time, TPS, QPS, queued pool clients, and active connections indicate load.
+- Free memory helps identify pressure that can lead to processes being killed.
+- Free disk space shows whether storage is close to full.
+- Database age indicates proximity to transaction ID wraparound limits.
+- Database size and cache hit ratio help identify changes in activity.
 
-- 磁盘空闲率：判断磁盘是否被写满
+![Core metrics](05.webp)
 
-- 数据库年龄：数据库是否快出现事务标识回卷故障。
+### Operating system
 
-- 数据库大小，缓存命中率：判断异常活动
+The operating-system section includes:
 
-![图片](05.webp)
+- CPU utilization and system load.
+- Memory usage, including changes in the operating-system cache.
+- Network and disk throughput, and disk IOPS.
 
-### 操作系统指标\
+Compare these metrics with database activity to identify resource pressure and investigate possible hardware faults.
 
-操作系统指标主要包括：
+![Operating-system metrics](06.webp)
 
-- CPU与负载水平
+### Database activity and sessions
 
-- 内存使用，特别需要关注操作系统`cache`部分的变化。
+Activity and session metrics show the database's current workload:
 
-- 网络与磁盘的IO吞吐量，磁盘的IOPS。
+- TPS, QPS, and average response time describe traffic and latency.
+- The cache hit ratio here refers to PostgreSQL's shared buffers. It excludes the operating-system file cache.
+- Connection counts by state show how sessions are being used. Active connections show work in progress; inspect `idle in transaction` sessions to find why their transactions remain open.
+- Complex or large queries can create temporary files. Heavy temporary-file I/O can reduce performance.
 
-操作系统的指标能直观地反映大部分数据库活动异常，对于硬件类故障的排查尤有帮助。
+![Database activity and sessions](07.webp)
 
-![图片](06.webp)
+### Replication
 
-### 数据库活动与会话
+Replication lag helps assess replica freshness and investigate replication faults.
 
-Activity与Session是数据库当前状态的直观反映，指标包括：
+The primary reports how far replicas lag in bytes of WAL and, from PostgreSQL 10, replication lag times. A replica can also report the time since its last replayed transaction, although this is not an exact measure of current lag: it can increase while an idle primary produces no new transactions.
 
-- TPS/QPS，平均响应时间都是最直接的负载指标。
+![Replication metrics](08.webp)
 
-- 缓存命中率对数据库性能有直接的影响，注意这里只是PostgreSQL本身BufferPool的命中率，并没有计算操作系统的文件缓存。
+### Checkpoints and WAL
 
-- 后端连接按状态的分布，`active`状态的连接是很重要的负载指标，而`idle in transaction`的连接数则需要特别关注。
+Checkpoints consume I/O by writing dirty pages. With `full_page_writes` enabled, the first change to a page after a checkpoint also writes a full-page image to WAL. This can increase disk and network traffic and contribute to performance problems.
 
-- 临时文件通常是由一些复杂查询，长查询，过多的临时文件容易导致性能恶化。
+Useful metrics include:
 
-![图片](07.webp)
+- WAL generation rate.
+- LSN growth rate.
+- Buffers written by checkpoints and by backends. Heavy backend writes can indicate that checkpoint or background-writing settings need review.
+- Database and WAL size.
 
-### 复制指标
+![Checkpoints and WAL](09.webp)
 
-很多类型的故障与主从复制滞后有关，因此，ReplicationDelay是一个重要的监控指标。
+### Locks and conflicts
 
-在主库上可以获取从库的复制延迟，包括LSN落后的字节数，以及滞后的时长（v10以后）。在从库上也可以获得距离主库的滞后时长，但这种方法通常不如前一种准确。
+Counts by lock type help explain database activity and investigate lock conflicts.
 
-![图片](08.webp)
+![Locks and database conflicts](10.webp)
 
-### 检查点与WAL
+### Object statistics
 
-检查点会吃IO，一方面它会引发大量页面落盘，另一方面在默认`full_page_write`打开的情况下，每一次检查点都会导致其后的WAL量升高，吃磁盘与网络的带宽。在一些情况下可能会成为故障的原因。因此有必要监控检查点与WAL，相关指标包括：
+Object-level statistics help locate the source of a problem:
 
-- WAL日志的生成速率
+- Index and sequential scan counts per table. For frequent sequential scans on large tables, use query plans to check whether the indexes suit the workload.
+- Tuple reads and writes, table size, and table age.
+- The proportion of dead tuples, which indicates vacuum demand and can help investigate bloat. It is not the same as the physical bloat ratio; statistics-based bloat estimates provide another view.
+- Function call counts and execution time.
 
-- LSN增长的速度
+![Database object statistics](11.webp)
 
-- 缓冲区刷回的数目，通常缓冲区刷回主要由Checkpoint负责，如果有大量缓冲区由后端进程负责刷盘，就需要检查并调整相关参数的配置了。
+## Metric sources
 
-- 数据库与WAL日志的大小。
+### The statistics collector
 
-![图片](09.webp)
+In the PostgreSQL versions discussed here, many metrics came from the built-in statistics collector. System views expose the data through SQL; the PostgreSQL documentation defines each view. Some common views are listed below.
 
-### 锁与数据库冲突
+![PostgreSQL statistics views](12.webp)
 
-锁按类型分布的数据对于判断数据库活动的类型很有帮助。
+The [PostgreSQL 11 statistics documentation](https://www.postgresql.org/docs/11/monitoring-stats.html) describes several details to account for:
 
-![图片](10.webp)
+- Cumulative statistics were not updated continuously. Backends reported their counts before becoming idle, so work still in progress was not yet fully reflected in those totals.
+- Statistics reports were normally spaced at least 500 ms apart (`PGSTAT_STAT_INTERVAL`). Current activity, controlled by `track_activities`, followed a separate mechanism.
+- Repeated statistics queries within one transaction could reuse the same snapshot. `pg_stat_clear_snapshot()` cleared it so the next query could fetch a new one.
+- The required `track_*` settings had to be enabled in `postgresql.conf`.
 
-### 对象级统计
+These details describe the older collector process. [PostgreSQL 15 replaced it with shared-memory cumulative statistics](https://www.postgresql.org/docs/15/release-15.html); use the documentation for your server version when interpreting update and snapshot behavior.
 
-对象级统计能够帮助DBA快速定位故障的根源。包括：
+### Catalogs and other system views
 
-- 每个表的访问次数：索引扫描/顺序扫描。频繁出现的顺序扫描往往意味着索引出现了问题。
+Other catalogs and views provide useful data too. For example, `pg_database` supplies database metadata used to assess transaction ID age, and `pg_locks` shows locks and waits. Built-in functions provide further measurements, including database size.
 
-- 表中元组的拉取，修改，增删改查数目，表的大小，年龄，都有助于精确定位问题的来源。
+## Further articles
 
-- 死元组的比例：死元组的比例可用于估算表的膨胀程度，对于维持性能很有帮助。（还有另外一种通过统计数据估算表膨胀率的方法）
-
-- 函数的调用次数与执行时间。
-
-![图片](11.webp)
-
-监控指标的来源\
----------------
-
-### 统计收集器
-
-对于PostgreSQL而言，其监控指标主要源于自带的统计收集器。PostgreSQL提供了很多系统视图，因此能很简单地以SQL语句的形式拉取统计数据。系统视图的具体定义可以参考文档，后续文章也会依此详细介绍。其中，比较重要的视图包括：
-
-![图片](12.webp)
-
-从统计视图中收集数据有一些注意事项：
-
-- 统计数据并非实时更新的，每个服务进程只有在闲置前会更新统计计数。所以正在执行的查询和事务不影响计数。
-
-- 收集器本身每隔（`PGSTAT_STAT_INTERVAL=500ms`）才发送一次新的报告。所以除了 当前进程活动`track_activity`之外的统计指标都不是最新的。
-
-- 在事务中执行的统计查询，统计数据不会发生变化。使用`pg_stat_clear_snapshot()`来获取最新的快照。
-
-<!-- -->
-
-- 要让数据库收集这些统计数据，需要在`postgresql.conf`中打开各种`track_*`选项。
-
-### 系统视图
-
-除了统计视图外，还有一些系统视图也能提供很多有价值的指标信息，例如`pg_database`与`pg_locks`，分别提供了数据库年龄尺寸，以及数据库内的锁等待信息。此外，还有很多系统指标是通过内建的函数提供的。
-
-## 结语
-
-监控是一个很大的话题，够写半本书了，因此这篇文章能做的也就是给读者留下一点直觉：监控系统应该是啥样子的。其实有了以上的信息，一个合格的架构师与PostgreSQL DBA应该能很轻松的复现该监控系统了。具体的实现细节，将在后续文章中继续介绍。
+This article introduces the architecture and main metrics. Later articles cover implementation details and how to use the metrics to investigate problems.

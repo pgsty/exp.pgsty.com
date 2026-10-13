@@ -19,6 +19,6 @@ cascade:
   breadcrumb: false
 ---
 
-This column republishes the original long-form articles from [vonng.com](https://vonng.com/) behind PG Exporter's monitoring practice. Each article keeps its original publication date, complete text, authorship, featured image, and inline figures; articles are not merged, condensed, or rewritten into summaries. When no original English edition exists, the default route preserves the Chinese original instead of inventing a translation.
+Articles on PostgreSQL monitoring, diagnosis, capacity, and logging, originally published at [vonng.com](https://vonng.com/). Each article retains its publication date, authorship, figures, and historical context. English translations accompany the Chinese originals.
 
-The historical screenshots, commands, product names, and operating assumptions remain part of the original record. For current PG Exporter behavior, use the [documentation](/docs/), [Design records](/design/), and [Release notes](/release/).
+For current installation and operation, use the [PG Exporter manuals](/docs/).

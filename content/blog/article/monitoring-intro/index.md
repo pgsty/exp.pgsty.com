@@ -1,358 +1,296 @@
 ---
-title: "PostgreSQL监控系统Pigsty概述"
+title: "Introducing Pigsty, a PostgreSQL Monitoring System"
 date: 2020-05-30
 authors: [vonng]
 summary: >
-  近自己做了套数据库监控系统，搞的还可以，简单给大家介绍一下。
-tags: [Pigsty, 监控, PostgreSQL]
+  The PostgreSQL monitoring system I built: its architecture, monitoring hierarchy, instance and cluster dashboards, and slow-query analysis.
+tags: [Pigsty, Monitoring, PostgreSQL]
 ---
 
-近自己做了套数据库监控系统，搞的还可以，简单给大家介绍一下。
+This article presents Pigsty as it stood in May 2020. Metric counts and dashboard names describe that system.
 
-> Pigsty is an advanced PostgreSQL monitoring systemd based on open source projects like prometheus & grafana. PIGSTY /pɪɡ staɪ/ is the abbreviation of "Postgres in Grafana Style".
+I recently built a database monitoring system called Pigsty. This article describes its architecture, dashboards, and metrics.
 
-Pigsty是一个基于Grafana与Prometheus与Consul的Postgres数据库监控系统。
+Pigsty uses Grafana, Prometheus, and Consul. PIGSTY /pɪɡ staɪ/ stands for "Postgres in Grafana Style".
 
-## 整体架构
+## Architecture
 
-> TLDR: (Node/Pg/Pgbouncer) Exporter Discovered by Consul to Prometheus to Grafana
+Node, PostgreSQL, and PgBouncer exporters collect metrics. Consul provides service discovery, Prometheus stores and processes the metrics, and Grafana displays them.
 
-    ┏━━━━━━━━━━━┓     ┏━━━━━━━━━━━━━━━━━━━━┓
-    ┃   Node    ┃ --> ┃   Node    Exporter-┃┐
-    ┃ Pgbouncer ┃ --> ┃ Pgbouncer Exporter-┃┼--> Prometheus ---> Grafana
-    ┃ Postgres  ┃ --> ┃ Postgres  Exporter-┃┘        ↑
-    ┃           ┃     ┗━━━━━━━━━━━━━━━━━━━━┛  (Service Discovery)
-    ┃  Consul   ┃ ----------------------------->   Consul
-    ┗━━━━━━━━━━━┛
+```text
+┏━━━━━━━━━━━┓     ┏━━━━━━━━━━━━━━━━━━━━┓
+┃   Node    ┃ --> ┃   Node    Exporter-┃┐
+┃ Pgbouncer ┃ --> ┃ Pgbouncer Exporter-┃┼--> Prometheus ---> Grafana
+┃ Postgres  ┃ --> ┃ Postgres  Exporter-┃┘        ↑
+┃           ┃     ┗━━━━━━━━━━━━━━━━━━━━┛  (Service Discovery)
+┃  Consul   ┃ ----------------------------->   Consul
+┗━━━━━━━━━━━┛
+```
 
-### 一言以蔽之：用Exporter取指标数据，通过Consul服务发现赋予身份标签与组织结构，存进Prometheus中进行预处理计算，最后使用Grafana展示
+Service discovery also supplies identity labels and the structure used to organize the targets. Prometheus recording rules calculate derived metrics before Grafana presents them.
 
-这里能看到的主要还是Grafana里的Dashboard，因此主要还是介绍脸面上的东西。\
+The following sections focus on the Grafana dashboards.
 
-### 层次组织
+### Monitoring hierarchy
 
-![图片](01.webp)
+![Monitoring hierarchy](01.webp)
 
-监控主要分为五个层次，集群（cluster），服务（service），实例（instance），数据库（database），与节点（node）。不过在本系统中，服务层次的监控指标被整合至集群级别，数据库层次的监控指标被整合至实例级别。因此实际上，只有三个核心层次的监控展示：集群，实例，节点。
+The monitoring model has five levels: cluster, service, instance, database, and node. In this version, service metrics are included in cluster dashboards, and database metrics are included in instance dashboards. The three main views are therefore cluster, instance, and node.
 
-- 集群使用`cls`唯一标识，名称类似于：`pg-test-tt`
+- `cls` identifies a cluster, for example `pg-test-tt`.
+- `ins` identifies an instance, for example `pg-test-tt-0`. It combines the cluster name and an instance number. In this deployment, instance 0 was usually the primary.
+- `ip` identifies a node.
 
-- 实例使用`ins`唯一标识，名称类似于：`pg-test-tt-0`， 以集群为前缀，序号为后缀。后缀为0的实例通常是集群中的主库。
+There are also dashboards for the whole fleet, sharded databases, individual databases, connection pools, individual queries, and PgBouncer. I will focus on the main views here.
 
-- 节点使用`ip`唯一标识。
+## Features
 
-除此之外，还有一些其他层次的Dashboard：例如全局大盘概览，分片库专用的Shard Dashboard，每一个数据库具体的Database Dashboard、连接池Pool层次的Dashboard，具体到某一个库上某一个查询的PG Query Dashboard，Pgbouncer中间件专用Dashboard，等等，这些衍生或周边的Dashboard就不介绍了。
+The system supports routine checks, fault diagnosis, and performance tuning. It includes these dashboards:
 
-## 功能简介
+- PostgreSQL fleet overview.
+- PostgreSQL shard monitoring.
+- PostgreSQL cluster monitoring.
+- PostgreSQL instance monitoring.
+- A dedicated troubleshooting view for a PostgreSQL instance.
+- PostgreSQL host monitoring.
+- Slow-query analysis.
+- Redis fleet overview.
+- Redis cluster monitoring.
+- Redis instance monitoring.
+- PostgreSQL cluster health assessment.
 
-核心功能：日常巡检，故障排查，性能优化，全知即全能。
+## Home and navigation
 
-- PG全局监控
+The home page covers PostgreSQL and Redis. Global metrics appear on the left, cluster navigation on the right, and alerts and events in the middle. Use the navigation links or click a shard, cluster name, instance name, or IP address to open its dashboard.
 
-- PG Shard监控
+![Home page and navigation](02.webp)
 
-- PG集群监控
+## Database metrics
 
-- PG实例监控
+### Coverage
 
-- PG实例监控（故障排查专用视图）
+At the time, the system exposed about 3,300 metrics per instance, including:
 
-- PG节点监控
+- About 1,000 database and connection-pool metrics, of which 250 were derived through recording rules.
+- About 2,000 node metrics, of which 700 were derived through recording rules.
 
-- PG慢查询平台
+For example, QPS alone produced nearly 30 related metrics:
 
-- Redis全局概览
+![Metrics derived from QPS](03.webp)
 
-- Redis集群监控
+The following sections introduce some of the more useful ones.
 
-- Redis实例监控
+### The four golden signals
 
-- PG集群健康度评估系统
+The metrics can be grouped by the four golden signals used in Google SRE practice.
 
-## 首页导航概览
+**Errors**
 
-包含PG和Redis两部分，左侧为全局指标概览，右侧为集群导航。中间为全局报警与事件提醒。点击右上角的导航链接，或者页面中的可导航元素（Shard，集群名，实例名，IP等）可跳转至感兴趣的面板
+- Configuration checks: checksums, NUMA, transparent huge pages, synchronous commit, and other important settings.
+- Memory and TCP errors, and clock drift.
+- Failed hosts, databases, connection pools, or monitoring components.
+- Queued clients, `idle in transaction` sessions, long transactions, deadlocks, broken replication, high rollback counts, and monitoring errors.
 
-![图片](02.webp)
+**Saturation**
 
-## DB监控：指标介绍
+- PostgreSQL load and node load.
+- CPU, memory, disk, and network utilization; cache hit ratios; backend connection use; and connection-pool use.
 
-### 指标丰富程度
+**Traffic**
 
-> 你可以不看，我不能没有。
+- QPS, TPS, and QPS by statement category.
+- Connection-pool traffic, WAL generation, row reads and writes, block access, and buffer access.
+- Host disk and network I/O, and memory pages swapped in and out.
 
-每个实例包括了约3300个指标，其中：
+**Latency**
 
-数据库与连接池指标1000个，其中规则定义衍生指标250个。
+- Average transaction response time, or Xact RT.
+- Average query response time, or Query RT.
+- Average response time by statement.
+- Average disk read and write latency.
+- Replication lag in seconds and bytes.
+- Monitoring query duration.
 
-节点指标约2000个，其中规则定义的衍生指标700个。
+## PostgreSQL instance monitoring
 
-举个例子，单纯一个QPS，就可以衍生出下面近30个指标。\
+### Instance overview
 
-![图片](03.webp)
+The overview includes:
 
-这里随便挑一些重要的指标介绍一下\
+- Instance identity: cluster name, ID, host, software version, and other cluster members.
+- Important configuration: directories, ports, and configuration file paths.
+- Health and role, such as primary or standby.
+- Key metrics: PostgreSQL load, replication lag, active backends, queued clients, query latency, TPS, and database age.
+- Database load at the current instant and over 1, 5, and 15 minutes.
+- Database alerts and events.
 
-### 指标内容
+![Instance overview](04.webp)
 
-按Google SRE实践划分的四类黄金指标
+For the definition of PostgreSQL load, see my earlier article, [How to Set KPIs for PostgreSQL](/article/pg-load/).
 
-**错误**
+### Node overview
 
-- 配置错误：关键功能是否配置正常：校验和，Numa，透明大页，同步提交等。
+The node overview shows:
 
-- 内存错误，TCP错误，时间漂移错误
+- CPU, memory, disks, and network interfaces: their capacity, important settings, and core metrics.
+- Disk and network-interface details on the right.
 
-- 服务宕机：机器，数据库，连接池，监控组件
+![Node overview](05.webp)
 
-- 数据库客户端排队，IdleInXact连接，超长事务，死锁，复制中断，大量回滚，监控报错
+#### Daily totals
 
-**饱和度**
+This section summarizes the preceding 24 hours, including query counts and rows returned. The first two rows contain node statistics; the next two mainly contain PostgreSQL statistics.
 
-- **PG Load,** Node Load
+These totals are useful for usage accounting and capacity assessment.
 
-- CPU使用，内存使用，磁盘使用，网卡带宽利用率，缓存命中率，后端连接使用，连接池使用
+#### Replication
 
-**流量**
+The replication section shows:
 
-- 数据库直接指标：QPS，TPS，查询细分QPS
+- Replication settings on the current node.
+- Lag in seconds and bytes, plus WAL retained by replication slots.
+- WAL sender statistics for downstream nodes.
+- LSN positions that describe replication progress and durability.
+- The number of downstream nodes, which can help detect a lost replication connection.
 
-- 间接流量指标：连接池进出流量，WAL写入量，增删改查条数，块访问量，缓冲区访问量
+![Instance replication](06.webp)
 
-- 节点流量：磁盘IO流量，网络IO流量，内存页面换入换出
+#### Transactions
 
-**延迟**
+The transaction section shows activity through TPS, response time, and locks:
 
-- 事务平均响应时间 Xact RT
+- TPS and comparisons with the preceding two days, plus database transaction and rollback counts.
+- Rollback counts and rates.
+- Detailed TPS charts. Green bands show ±1 standard deviation and yellow bands show ±3, calculated from the preceding 30 minutes. Values outside the yellow band indicate an unusual change relative to that window.
+- Average transaction response time from the connection pool, with the same bands.
+- Relative variation of TPS and response time. A dimensionless measure such as `(σ/μ)²` grows as variation increases relative to the mean.
+- TPS and transaction response time by database. Most instances in this deployment had one database, while a few had several.
+- Transaction and rollback counts collected directly from PostgreSQL, alongside TPS from the connection pool.
+- Lock counts grouped by the eight table-lock modes and by broader read, write, and exclusive categories.
 
-- 查询平均响应时间 Query RT
+![Transaction metrics](07.webp)
 
-- 语句平均响应时间：Statement RT
+#### Queries
 
-- 磁盘平均响应时间：Disk R/W Latency
+Query metrics resemble the transaction metrics, but count statements rather than transactions. They help locate slow queries and performance bottlenecks.
 
-- 复制延迟（以秒或字节计算）
+- QPS and average query response time, their variation, and comparisons with previous periods.
+- This article uses 1 ms as an example warning threshold for average query response time, with closer investigation at 100 ms. Set these thresholds for the workload.
 
-- 监控查询延迟
+![Query metrics](08.webp)
 
-## DB监控：PG实例
+#### Statements
 
-### 实例概览
+This section breaks query metrics down by normalized statement. Statements with the same parsed structure after constants are removed belong to the same query class and have a query ID. The slow-query view provides the SQL text and detailed statistics for that ID.
 
-- 实例身份信息：集群名，ID，所属节点，软件版本，所属集群其他成员等
+- The list on the left sorts statements by average response time from `pg_stat_statements`. Click a query ID to open its detailed view.
+- The candidates are the 32 queries with the greatest total execution time, excluding monitoring queries and isolated long-running statements with very few calls.
+- The right side shows current QPS and average response time for each query, with rankings by response time and total execution time.
 
-- 实例配置信息：一些关键配置，目录，端口，配置路径等
+#### Backend processes
 
-- 实例健康信息，实例角色（Primary，Standby）等。
+Backend metrics describe connections to PostgreSQL. Grouping them in several ways helps diagnose connection surges, slow queries, and waits.
 
-- 黄金指标：PG Load，复制延迟，活跃后端，排队连接，查询延迟，TPS，数据库年龄
+- Counts by backend type, state, database, and wait-event type.
+- Active connections, `idle in transaction` connections, and long transactions.
 
-- 数据库负载：实时（Load0），1分钟，5分钟，15分钟
+![Backend processes](09.webp)
 
-- 数据库警报与提醒事件
+#### Connection pools
 
-![图片](04.webp)
+The connection-pool section is similar, but all its metrics come from PgBouncer:
 
-关于PG Load，可以参考本号前一篇文章，如何给PostgreSQL定KPI
+- Server connection states: active, used, idle, tested, and logging in.
+- Client connections grouped by user, database, and pool (`user:database`).
+- Waiting clients and the wait time of the client at the head of the queue, which help identify connection backlog.
+- The proportion of available pool connections in use.
 
-### 节点概览
+#### Database overview
 
-- 四大基本资源：CPU，内存，磁盘，网卡的配置规格，关键功能，与核心指标
+This section draws mainly on `pg_stat_database` and `pg_database`, with WAL measurements alongside them:
 
-- 右侧是网卡详情与磁盘详情
+- WAL generation in bytes per second, an indicator of write activity.
+- The shared-buffer hit ratio. A buffer miss can be served by the operating-system page cache or by storage.
+- Rows read, inserted, updated, and deleted per second.
+- Temporary-file counts and size, which help identify large-query workloads.
 
-![图片](05.webp)
+![Database overview](10.webp)
 
-#### 单日统计
+#### Persistence
 
-以最近1日为周期的统计信息（从当前时刻算起的前24小时），比如最近一天的查询总数，返回的记录总数等。上面两行是节点级别的统计，下面两行是主要是PG相关的统计指标。
+Persistence metrics cover writes, checkpoints, and block access:
 
-对于计量计费，水位评估特别有用。
+- Important durability settings and checksum failures, where data checksums are enabled.
+- The size and growth of database files, WAL, and logs.
+- Checkpoint counts and duration.
+- Buffers allocated and written per second, block accesses, and storage reads, also expressed in bytes. The deployment shown here used 8,192-byte PostgreSQL pages and 4,096-byte filesystem blocks.
 
-#### 复制
+#### Exporters
 
-- 当前节点的Replication配置
+The exporter section monitors the monitoring components themselves:
 
-- 复制延迟：以秒计，以字节计的复制延迟，复制槽堆积量
+- Exporter availability, uptime, and scrapes per minute.
+- Duration, emitted metric count, and error count for each monitoring query.
 
-- 下游节点对应的Walsender统计
+![Exporter self-monitoring](11.webp)
 
-- 各种LSN进度，综合展示集群的复制状况与持久化状态。
+## PostgreSQL cluster monitoring
 
-- 下游节点数量统计，可以看出复制中断的问题
+The cluster dashboard is the view I use most often. This deployment serves databases as clusters. Bringing instance and service metrics together makes it easier to check service status.
 
-![图片](06.webp)
+Most cluster charts extend the instance charts: they compare instances and add cluster- and service-level aggregates.
 
-#### 事务
+### Cluster overview
 
-事务部分用于洞悉实例中的活动情况，包括TPS，响应时间，锁等。
+The cluster overview adds:
 
-- TPS概览信息：TPS，TPS与过去两天的DoD环比。DB事务数与回滚数
+- Timeline and leadership. Failover or switchover changes the primary and advances the timeline.
+- Replication topology, including synchronous and asynchronous links.
+- Current cluster load and its 1-, 5-, and 15-minute averages, plus each node's 1-minute load.
+- Cluster alerts and events.
 
-- 回滚事务数量与回滚率
+![Cluster overview](12.webp)
 
-- TPS详情：绿色条带为±1σ，黄色条带为±3σ，以过去30分钟作为计算标准，通常超出黄色条带可认为TPS波动过大
+### Cluster replication
 
-- Xact RT，事务平均响应时间，从连接池抓取。绿色条带为±1σ，黄色条带为±3σ。
+The cluster dashboard summarizes the replication topology, including:
 
-- TPS与RT的偏离程度，是一个无量纲的可横向比较的值，越大表示指标抖动越厉害，计算方式为：(μ/σ)^2
+- The primary and cascading replication nodes, synchronous-commit settings, synchronous standby names, downstream-node counts, and configured standby limits.
+- Paired WAL sender and receiver entries for each replication link.
+- Replication lag in seconds and bytes, and WAL retained by slots. For example, at a WAL generation rate of 10–100 MB/s, one second of lag corresponds to roughly 10–100 MB of WAL.
+- Lag measured from the replica side.
+- The number of replicas, useful when a backup or replica initialization changes the expected topology.
+- LSN positions across the cluster, showing replication and durability progress.
 
-- 按照DB细分的TPS与事务响应时间，通常一个实例只有一个DB，但少量实例有多个DB。
+![Cluster replication](13.webp)
 
-- 事务数，回滚数（TPS来自连接池，而这两个指标直接来自DB本身）
+### Node metrics
 
-- 锁的数量，按模式聚合（8种表锁），按大类聚合（读锁，写锁，排他锁）
+Host metrics are grouped by PostgreSQL cluster.
 
-![图片](07.webp)
+![Cluster node metrics](14.webp)
 
-#### 查询
+### Transactions and queries
 
-大多数指标与事务中的指标类似，不过统计单位从事务变成了查询语句。查询部分可用于分析实例上的慢查询，定位性能瓶颈。
+These charts resemble the instance views, with additional service-level aggregation. A cluster in this setup usually offered `primary` and `standby` services.
 
-- QPS 每秒查询数，与Query RT查询平均响应时间，以及这两者的波动程度，QPS的周期环比等
+![Cluster transactions and queries](15.webp)
 
-- 生产环境对查询平均响应时间有要求：1ms为红线，100ms就该约谈了。
+The remaining metrics are similar to those in the instance dashboard.
 
-![图片](08.webp)
+## Slow-query analysis
 
-#### 语句
+The slow-query view starts with an overview of queries on the instance. Hover over a query ID to see its SQL, or click it to open Query Detail.
 
-语句展示了查询中按语句细分的指标。每条语句（查询语法树抽离常量变量后如果一致，则算同一条查询）都会有一个查询ID，可以在慢查询平台中获取到具体的语句与详细指标与统计。
+The detailed view has formatted SQL on the left and key metrics on the right:
 
-- 左侧慢查询列表是按`pg_stat_statments`中的平均响应时间从大到小排序的，点击查询ID会自动跳转到慢查询平台
+- Queries per second.
+- Current average response time.
+- Average rows returned per call.
+- Average block I/O time per call.
+- Mean, standard deviation, minimum, and maximum response time over the statistics period.
+- Calls, rows returned, and execution time in the last day, plus total calls since the statistics were reset.
 
-- 这里列出的查询，是累计查询耗时最长的32个查询，但排除只有零星调用的长耗时单次查询与监控查询。
+Charts below show these metrics over the selected time range.
 
-- 右侧包括了每个查询的实时QPS，平均响应时间。按照RT与总耗时的排名。
-
-#### 后端进程
-
-后端进程用于显示与PG本身的连接，后端进程相关的统计指标。特别是按照各种维度进行聚合的结果，特别适合定位雪崩，慢查询，其他疑难杂症。
-
-- 后端进程数按种类聚合，后端进程按状态聚合，后端进程按DB聚合，后端进程按等待事件类型聚合。
-
-- 活跃状态的进程/连接，在事务中空闲的连接，长事务。
-
-![图片](09.webp)
-
-#### 连接池
-
-连接池部分与后端进程部分类似，但全都是从Pgbouncer中间件上获取的监控指标
-
-- 连接池后端连接的状态：活跃，刚用过，空闲，测试过，登录状态。
-
-- 分别按照User，按照DB，按照Pool（User:DB）聚合的前端连接，用于排查异常连接问题。
-
-- 等待客户端数（重要），以及队首客户端等待的时长，用于定位连接堆积问题。
-
-- 连接池可用连接使用比例。
-
-#### 数据库概览
-
-Database部分主要来自`pg_stat_database`与`pg_database`，包含数据库相关的指标：
-
-- WAL Rate，标识数据库的写入负载，每秒产生的WAL字节数量。
-
-- Buffer Hit Rate，数据库 ShareBuffer 命中率，未命中的页面将从操作系统PageCache和磁盘获取。
-
-- 每秒增删改查的记录条数
-
-- 临时文件数量与临时文件大小，可以定位大型查询问题。
-
-![图片](10.webp)
-
-#### 持久化
-
-持久化主要包含数据落盘，Checkpoint，块访问相关的指标
-
-- 重要的持久化参数，比如是否出现数据校验和验证失败（如果启用可以检测到数据腐坏）
-
-- 数据库文件（DB，WAL，Log）的大小与增速。
-
-- 检查点的数量与检查点耗时。
-
-- 每秒分配的块，与每秒刷盘的块。每秒访问的块，以及每秒从磁盘中读取的块。（以字节计，注意一个Buffer Page是8192，一个Disk Block是4096）
-
-#### 监控Exporter
-
-Exporter展示了监控系统组件本身的监控指标，包括：
-
-- Exporter是否存活，Uptime，Exporter每分钟被抓取的次数
-
-- 每个监控查询的耗时，产生的指标数量与错误数量。
-
-![图片](11.webp)
-
-## DB监控：PG集群
-
-PG集群监控是最常用的Dashboard，因为PG以集群为单位提供服务，因此Cluster集合了最完整全面的信息。
-
-大多数监控图都是实例级监控的泛化与上卷，即从展示单个实例内的细节，变为展现集群内每个实例的信息，以及集群和服务层次聚合后的指标。
-
-### 集群概览
-
-Cluster级别的集群概览相比实例级别多了一些东西：
-
-- 时间线与领导权，当数据库发生Failover或Switchover时，时间线会步进，领导权会发生变化。
-
-- 集群拓扑，集群拓扑展现了集群中的复制拓扑，以及采用的复制方式（同步/异步）。
-
-- 集群负载，包括整个集群实时、1分钟、5分钟、15分钟的负载情况。以及集群中每个节点的Load1
-
-- 集群报警与事件。
-
-![图片](12.webp)
-
-### 集群复制
-
-Cluster级别的Dashboard与Instance级别Dashboard最重要的区别之一就是提供了整个集群的复制全景。包括：
-
-- 集群中的主库与级联桥接库。集群是否启用同步提交，同步从库名称。桥接库与级联库数量，最大从库配置
-
-- 成对出现的Walsender与Walreceiver列表，体现一对主从关系的复制状态
-
-- 以秒和字节衡量的复制延迟（通常1秒的复制延迟对应10M~100M不等的字节延迟），复制槽堆积量。
-
-- 从库视角的复制延迟
-
-- 集群中从库的数量，备份或拉取从库时可以从这里看到异常。
-
-- 集群的LSN进度，用于整体展示集群的复制状态与持久化状态。
-
-![图片](13.webp)
-
-### 节点指标
-
-PG机器的相关指标，按照集群进行聚合。
-
-![图片](14.webp)
-
-### 事务与查询
-
-与实例级别的类似，但添加了Service层次的聚合（一个集群通常提供`primary`与`standby`两种Service）。
-
-![图片](15.webp)
-
-其他指标与实例级别差别不大。\
-
-## DB监控：PG慢查询平台
-
-显示慢查询相关的指标，上方是本实例的查询总览。鼠标悬停查询ID可以看到查询语句，点击查询ID会跳转到对应的查询细分指标页（Query Detail）。
-
-- 左侧是格式化后的查询语句，右侧是查询的主要指标，包括
-
-  - 每秒查询数量：QPS
-
-  - 实时的平均响应时间（RT Realtime）
-
-  - 每次查询平均返回的行数
-
-  - 每次查询平均用于BlockIO的时长
-
-  - 响应时间的均值，标准差，最小值，最大值（自从上一次统计周期以来）
-
-  - 查询最近一天的调用次数，返回行数，总耗时。以及自重置以来的总调用次数。
-
-- 下方是指定时间段的查询指标图表，是概览指标的细化。
-
-![图片](16.webp)
+![Slow-query detail](16.webp)

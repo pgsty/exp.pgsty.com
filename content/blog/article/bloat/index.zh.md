@@ -3,55 +3,39 @@ title: "关系膨胀的监控与治理"
 date: 2018-10-06
 authors: [vonng]
 summary: >
-  PostgreSQL使用了MVCC作为主要并发控制技术，它有很多好处，但也会带来一些其他的影响，例如关系膨胀。
+  用统计信息估算 PostgreSQL 表与索引的膨胀，再用 VACUUM FULL 或 pg_repack 回收空间。
 tags: [PostgreSQL, PG管理]
 ---
 
-PostgreSQL使用了MVCC作为主要并发控制技术，它有很多好处，但也会带来一些其他的影响，例如关系膨胀。关系（表与索引）膨胀会对数据库性能产生负面影响，并浪费磁盘空间。为了使PostgreSQL始终保持在最佳性能，有必要及时对膨胀的关系进行垃圾回收，并定期重建过度膨胀的关系。
+本文写于 2018 年，介绍当时基于统计信息估算膨胀及安排维护的方法。
 
-在实际操作中，垃圾回收并没有那么简单，这里有一系列的问题：
-
-* 关系膨胀的原因？
-* 关系膨胀的度量？
-* 关系膨胀的监控？
-* 关系膨胀的处理？
-
-本文将详细说明这些问题。
+PostgreSQL 使用 MVCC，让事务读取不同的行版本。旧版本可能使表和索引占用的空间超过活数据所需。日常清理让空间可以复用，重写关系则能将多余空间归还文件系统。本文介绍如何衡量膨胀，并选择重整时机。
 
 ---------------------
 
 ## 关系膨胀概述
 
-假设某个关系实际占用存储100G，但其中有很多空间被死元组，碎片，空闲区域浪费，如果将其压实为一个新的关系，占用空间变为60G，那么就可以近似认为该关系的膨胀率是 (100 - 60)  / 100 = 40%。
+若一个关系占用 100 GB，压实后的副本只需 60 GB，则估算膨胀率为 `(100 - 60) / 100 = 40%`。
 
-普通的 `VACUUM` 不能解决表膨胀的问题，死元组本身能够被并发 `VACUUM` 机制回收，但它产生的碎片，留下的空洞却不可以。比如，即使删除了许多死元组，也无法减小表的大小。久而久之，关系文件被大量空洞填满，浪费了大量的磁盘空间。
+普通 `VACUUM` 会回收死元组占用的空间，让表内后续写入复用，也可能截断文件末尾的空页。它不会跨整张表压紧活元组，因此活页之间的空闲空间通常仍留在关系文件中。
 
-`VACUUM FULL` 命令可以回收这些空间，它将旧表文件中的活元组复制到新表中，通过重写整张表的方式将表压实。但在实际生产中，因为该操作会持有表上的 `AccessExclusiveLock`，阻塞业务正常访问，因此在不间断服务的情况下并不适用，`pg_repack` 是一个实用的第三方插件，能够在线上业务正常进行的同时进行无锁的 `VACUUM FULL`。
+`VACUUM FULL` 将活元组复制到新文件中，把表压实。操作期间持有 `AccessExclusiveLock`，阻塞读写。`pg_repack` 允许大部分读写继续进行，但在初始化和最终切换时仍需短暂获取排他锁。
 
-不幸的是，关于什么时候需要进行 `VACUUM FULL` 处理膨胀并没有一个最佳实践。DBA需要针对自己的业务场景制定清理策略。但无论采用何种策略，实施这些策略的机制都是类似的：
-
-* 监控，检测，衡量关系的膨胀程度
-* 依据关系的膨胀程度，时机等因素，处理关系膨胀。
-
-这里有几个关键的问题，首先是，如何定义关系的膨胀率？
+先测量膨胀程度，再选择需要重写的关系。根据负载、可用磁盘和维护窗口设定处理阈值与时间。
 
 ---------------------
 
 ## 关系膨胀的度量
 
-衡量关系膨胀的程度，首先需要定义一个指标：**膨胀率（bloat rate）**。
+用 `1 - 紧实大小 / 实际大小` 估算膨胀率。紧实大小包括活元组，以及必需的页面、元组和对齐开销。
 
-膨胀率的计算思想是：通过统计信息估算出目标表如果处于 **紧实（Compact）** 状态所占用的空间，而实际使用空间超出该紧实空间部分的占比，就是膨胀率。因此膨胀率可以被定义为 1 - (活元组占用字节总数 / 关系占用字节总数)。
+PostgreSQL 可以提供关系的实际大小。下一步是测量或估算活元组所需的空间。
 
-例如，某个表实际占用存储100G，但其中有很多空间被死元组，碎片，空闲区域浪费，如果将其压实为一张新表，占用空间变为60G，那么膨胀率就是 1 - 60/100 = 40%。
+### 测量元组与空闲空间
 
-关系的大小获取较为简单，可以直接从系统目录中获取。所以问题的关键在于，**活元组的字节总数** 这一数据如何获取。
+`pgstattuple` 扫描关系，报告活元组、死元组和空闲空间。`tuple_percent` 的范围是 0–100，所以 `1 - tuple_percent / 100` 才是活元组以外空间的比例，其中还包含必需的存储开销。下方样例将其命名为 `bloat`，但它不等于重写后能回收的精确比例。
 
-### 膨胀率的精确计算
-
-PostgreSQL自带了 `pgstattuple` 模块，可用于精确计算表的膨胀率。譬如这里的 `tuple_percent` 字段就是元组实际字节占关系总大小的百分比，用1减去该值即为膨胀率。
-
-```sql
+```text
 vonng@[local]:5432/bench# select *,
                           1.0 - tuple_len::numeric / table_len as bloat
                           from pgstattuple('pgbench_accounts');
@@ -69,53 +53,48 @@ vonng@[local]:5432/bench# select *,
 └────────────────────┴────────────────────────┘
 ```
 
-`pgstattuple` 对于精确地判断表与索引的膨胀情况非常有用，具体细节可以参考官方文档：https://www.postgresql.org/docs/current/static/pgstattuple.html。
+字段定义见 [PostgreSQL 10 的 `pgstattuple` 文档](https://www.postgresql.org/docs/10/pgstattuple.html)。B-tree 索引还可以使用该扩展中的 `pgstatindex` 函数。
 
-此外，PostgreSQL还提供了两个自带的扩展，`pg_freespacemap` 与 `pageinspect`，前者可以用于检视每个页面中的空闲空间大小，后者则可以精确地展示关系中每个数据页内物理存储的内容。如果希望检视关系的内部状态，这两个插件非常实用，详细使用方法可以参考官方文档：
+另外两个随 PostgreSQL 提供的扩展可用于检查关系存储：
 
-https://www.postgresql.org/docs/current/static/pgfreespacemap.html
+- [pg_freespacemap](https://www.postgresql.org/docs/10/pgfreespacemap.html)：查看各页记录的空闲空间。
+- [pageinspect](https://www.postgresql.org/docs/10/pageinspect.html)：读取单个页面的内容。
 
-https://www.postgresql.org/docs/current/static/pageinspect.html
+日常监控通常用估算值筛选需要进一步检查的关系。精确测量活元组需要扫描整个关系，对大量表重复扫描会增加 I/O 开销。
 
-不过在绝大多数情况下，我们并不会太在意膨胀率的精确度。在实际生产中对膨胀率的要求并不高：第一位有效数字是准确的，就差不多够用了。另一方面，要想精确地知道活元组占用的字节总数，需要对整个关系执行一遍扫描，这会对线上系统的IO产生压力。如果希望对所有表的膨胀率进行监控，也不适合使用这种方式。
+PostgreSQL 9.5 在 `pgstattuple` 扩展中加入了 `pgstattuple_approx` 函数，通过估算部分数值减少扫描量。实际开销取决于需要读取多少页面。
 
-例如一个200G的关系，使用 `pgstattuple` 插件执行精确的膨胀率估算大致需要5分钟时间。在9.5及后续版本，`pgstattuple` 插件还提供了 `pgstattuple_approx` 函数，以精度换速度。但即使使用估算，也需要秒级的时间。
-
-监控膨胀率，最重要的要求是速度快，影响小。因此当我们需要对很多数据库的很多表同时进行监控时，需要对膨胀率进行 **快速估算**，避免对业务产生影响。
+频繁监控大量表时，使用基于统计信息的估算；需要精确测量时，再扫描选定的关系。
 
 ---------------------
 
 ## 膨胀率的估算
 
-PostgreSQL为每个关系都维护了很多的统计信息，利用统计信息，可以快速高效地估算数据库中所有表的膨胀率。估算膨胀率需要使用表与列上的统计信息，直接使用的统计指标有三个：
+估算使用表和列统计中的三个值：
 
 * 元组的平均宽度 `avgwidth`：从列级统计数据计算而来，用于估计紧实状态占用的空间。
 * 元组数：`pg_class.reltuples`：用于估计紧实状态占用的空间
 * 页面数：`pg_class.relpages`：用于测算实际使用的空间
 
-而计算公式也很简单：
+估算公式为：
 
 ```c
 1 - (reltuples * avgwidth) / (block_size - pageheader) / relpages
 ```
 
-这里 `block_size` 是页面大小，默认为8182，`pageheader` 是首部占用的大小，默认为24字节。页面大小减去首部大小就是可以用于元组存储的实际空间，因此 `(reltuples * avgwidth)` 给出了元组的估计总大小，而除以前者后，就可以得到预计需要多少个页面才能紧实地存下所有的元组。最后，期待使用的页面数量，除以实际使用的页面数量，就是 **利用率**，而1减去利用率，就是膨胀率。
+这里 `block_size` 是页面大小，默认为8192，`pageheader` 是首部占用的大小，默认为24字节。页面大小减去首部大小就是可以用于元组存储的实际空间，因此 `(reltuples * avgwidth)` 给出了元组的估计总大小，而除以前者后，就可以得到预计需要多少个页面才能紧实地存下所有的元组。最后，期待使用的页面数量，除以实际使用的页面数量，就是 **利用率**，而1减去利用率，就是膨胀率。
 
 ### 难点
 
-这里的关键，在于如何使用统计信息估算元组的平均长度，而为了实现这一点，我们需要克服三个困难：
+估算元组平均长度时，需要考虑：
 
 * 当元组中存在空值时，首部会带有空值位图。
 * 首部与数据部分存在Padding，需要考虑边界对齐。
 * 一些字段类型也存在对齐要求
 
-但好在，膨胀率本身就是一种估算，只要大致正确即可。
-
 ### 计算元组的平均长度
 
-为了理解估算的过程，首先需要理解PostgreSQL中数据页面与元组的的内部布局。
-
-首先来看元组的 **平均长度**，PG中元组的布局如下图所示。
+下图展示 PostgreSQL 的元组布局，用于估算元组的平均长度。
 
 ![](page-tuple.png)
 
@@ -124,7 +103,7 @@ PostgreSQL为每个关系都维护了很多的统计信息，利用统计信息�
 * 定长的行指针（4字节，严格来说这不算元组的一部分，但它与元组一一对应）
 * 变长的首部
   * 固定长度部分23字节
-  * 当元组中存在空值时，会出现空值位图，每个字段占一位，故其长度为字段数除以8。
+  * 当元组中存在空值时，会出现空值位图，每个字段占一位，故其字节数为字段数除以 8 后向上取整。
   * 在空值位图后需要填充至 `MAXALIGN`，通常为8。
   * 如果表启用了 `WITH OIDS` 选项，元组还会有一个4字节的OID，但这里我们不考虑该情况。
 * 数据部分
@@ -145,7 +124,7 @@ avg_size_tuple = 4 + avg_size_hdr + avg_size_data
 * 带有空值位图的首部平均长度（带有填充）：`nullhdr`
 * 带有空值的元组比例：`nullfrac`
 
-而估算首部平均长度的公式，也非常简单：
+首部平均长度的估算公式为：
 
 ```python
 avg_size_hdr =  nullhdr * nullfrac + normhdr * (1 - nullfrac)
@@ -157,10 +136,10 @@ avg_size_hdr =  nullhdr * nullfrac + normhdr * (1 - nullfrac)
 avg_size_hdr =  nullhdr * nullfrac +  24 * (1 - nullfrac)
 ```
 
-计算某值被补齐至8字节边界的长度，可以使用以下公式进行高效计算：
+将长度向上取整至 8 字节的倍数，可用：
 
 ```python
-padding = lambda x : x + 7 >> 3 << 3
+padding = lambda x: ((x + 7) >> 3) << 3
 ```
 
 ### 计算数据部分的平均长度
@@ -192,57 +171,60 @@ max   | 1
 sum   | 1733.76873471724
 ```
 
+`max(null_frac)` 只是“行内存在 NULL 的比例”的近似值。各列统计并不描述 NULL 在不同列之间的重叠关系。
+
 ### 整合
 
-将上面三节的逻辑整合，得到以下的存储过程，给定一个表，返回其膨胀率。
+以下函数组合上述估算，假定按 8 字节对齐，并使用服务器实际块大小。缺少统计时返回 NULL。函数只估算堆表；TOAST、fillfactor 和列对齐都会影响结果。
 
 ```sql
 CREATE OR REPLACE FUNCTION public.pg_table_bloat(relation regclass)
- RETURNS double precision
- LANGUAGE plpgsql
+RETURNS double precision
+LANGUAGE plpgsql
 AS $function$
 DECLARE
   _schemaname text;
-  tuples      BIGINT := 0;
-  pages       INTEGER := 0;
-  nullheader  INTEGER:= 0;
-  nullfrac    FLOAT := 0;
-  datawidth   INTEGER :=0;
-  avgtuplelen FLOAT :=24;
+  _tablename  text;
+  tuples      double precision;
+  pages       integer;
+  nullheader  double precision;
+  nullfrac    double precision;
+  datawidth   double precision;
+  avgtuplelen double precision;
+  blocksize   integer := current_setting('block_size')::integer;
 BEGIN
-  SELECT
-    relnamespace :: RegNamespace,
-    reltuples,
-    relpages
-  into _schemaname, tuples, pages
-  FROM pg_class
-  Where oid = relation;
+  SELECT n.nspname, c.relname, c.reltuples, c.relpages
+    INTO _schemaname, _tablename, tuples, pages
+    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.oid = relation;
 
-  SELECT
-    23 + ceil(count(*) >> 3),
-    max(null_frac),
-    ceil(sum((1 - null_frac) * avg_width))
-  into nullheader, nullfrac, datawidth
-  FROM pg_stats
-  where schemaname = _schemaname and tablename = relation :: text;
+  IF pages = 0 THEN RETURN 0; END IF;
+  IF pages IS NULL OR tuples < 0 THEN RETURN NULL; END IF;
 
-  SELECT (datawidth + 8 - (CASE WHEN datawidth%8=0 THEN 8 ELSE datawidth%8 END)) -- avg data len
-    + (1 - nullfrac) * 24 + nullfrac * (nullheader + 8 - (CASE WHEN nullheader%8=0 THEN 8 ELSE nullheader%8 END))
-    INTO avgtuplelen;
+  SELECT 23 + ceil(count(*) / 8.0),
+         max(null_frac),
+         sum((1 - null_frac) * avg_width)
+    INTO nullheader, nullfrac, datawidth
+    FROM pg_stats
+    WHERE schemaname = _schemaname AND tablename = _tablename
+      AND NOT inherited;
 
-  raise notice '% %', nullfrac, datawidth;
+  IF datawidth IS NULL THEN RETURN NULL; END IF;
 
-  RETURN 1 - (ceil(tuples * avgtuplelen / 8168)) / pages;
+  avgtuplelen := 4 + ceil(datawidth / 8.0) * 8
+    + (1 - nullfrac) * 24 + nullfrac * ceil(nullheader / 8.0) * 8;
+
+  RETURN greatest(0, 1 - ceil(tuples * avgtuplelen / (blocksize - 24)) / pages);
 END;
-$function$
+$function$;
 ```
 
 ### 批量计算
 
-对于监控而言，我们关注的往往不仅仅是一张表，而是库中所有的表。因此，可以将上面的膨胀率计算逻辑重写为批量计算的查询，并定义为视图便于使用：
+对全库监控，可将基于目录统计的批量估算定义为视图。下面是独立的 B-tree 索引膨胀估算示例：
 
 ```sql
-DROP VIEW IF EXISTS monitor.pg_bloat_indexes CASCADE;
+CREATE SCHEMA IF NOT EXISTS monitor;
 CREATE OR REPLACE VIEW monitor.pg_bloat_indexes AS
   WITH btree_index_atts AS (
       SELECT
@@ -254,7 +236,7 @@ CREATE OR REPLACE VIEW monitor.pg_bloat_indexes AS
         pg_index.indexrelid,
         indexclass.relam,
         tableclass.relname                                                          AS tablename,
-        (regexp_split_to_table((pg_index.indkey) :: TEXT, ' ' :: TEXT)) :: SMALLINT AS attnum,
+        generate_series(1, pg_index.indnatts)                                        AS attnum,
         pg_index.indexrelid                                                         AS index_oid
       FROM ((((pg_index
         JOIN pg_class indexclass ON ((pg_index.indexrelid = indexclass.oid)))
@@ -386,17 +368,17 @@ COMMENT ON VIEW monitor.pg_bloat_indexes IS 'index bloat monitor';
 
 ```
 
-虽然看上去很长，但查询该视图获取全库（3TB）所有表的膨胀率，计算只需要50ms。而且只需要访问统计数据，不需要访问关系本体，占用实例的IO。
+在原来的 3 TB 数据库中，这个视图查询约需 50 ms。它读取目录统计，而非扫描每个索引页；目录访问和关系大小查询仍有开销，过期或不完整的统计也会影响结果。此估算适合筛选需要进一步检查的索引。
 
 ---------------------
 
 ## 表膨胀的处理
 
-如果只是玩具数据库，或者业务允许每天有很长的停机维护时间，那么简单地在数据库中执行 `VACUUM FULL` 就可以了。但 `VACUUM FULL` 需要表上的排它读写锁，但对于需要不间断运行的数据库，我们就需要用到 `pg_repack` 来处理表的膨胀。
+维护窗口允许独占表时，可以使用 `VACUUM FULL`。需要在线重整时，`pg_repack` 可以缩短持有排他锁的时间。
 
-* 主页：http://reorg.github.io/pg_repack/
+* [pg_repack 文档](https://reorg.github.io/pg_repack/)
 
-`pg_repack` 已经包含在了PostgreSQL官方的yum源中，因此可以直接通过 `yum install pg_repack` 安装。
+原 PostgreSQL 10 环境使用下面的 PGDG 软件包。实际安装时选择与 PostgreSQL 大版本对应的软件包：
 
 ```bash
 yum install pg_repack10
@@ -406,108 +388,109 @@ yum install pg_repack10
 
 ### `pg_repack` 的使用
 
-与大多数PostgreSQL客户端程序一样，`pg_repack` 也通过类似的参数连接至PostgreSQL服务器。
+`pg_repack` 使用常见的 PostgreSQL 客户端连接参数。
 
 在使用 `pg_repack` 之前，需要在待重整的数据库中创建 `pg_repack` 扩展
 
 ```sql
-CREATE EXTENSION pg_repack
+CREATE EXTENSION pg_repack;
 ```
 
-然后就可以正常使用了，几种典型的用法：
+命令示例：
 
 ```bash
-# 完全清理整个数据库，开5个并发任务，超时等待10秒
-pg_repack -d <database> -j 5 -T 10
+# 重整 mydb，用 5 个工作连接并行建索引，等锁最多 10 秒
+pg_repack -d mydb -j 5 -T 10 --no-kill-backend
 
-# 清理mydb中一张特定的表mytable，超时等待10秒
-pg_repack mydb -t public.mytable -T 10
+# 重整指定表；等锁 10 秒后仍有冲突则跳过
+pg_repack mydb -t public.mytable -T 10 --no-kill-backend
 
 # 清理某个特定的索引 myschema.myindex，注意必须使用带模式的全名
-pg_repack mydb -i myschema.myindex
+pg_repack mydb -i myschema.myindex --no-kill-backend
 ```
 
-详细的用法可以参考官方文档。
+`-T` 控制等锁时间，不限制整个任务的执行时间。未加 `--no-kill-backend` 时，`pg_repack` 可能取消冲突查询，随后终止仍有冲突的会话。完整重整表还需要主键，或全部列均为 NOT NULL 的适用唯一索引。详见[参数说明](https://reorg.github.io/pg_repack/#options)。
 
 ---------------------
 
 ### `pg_repack` 的策略
 
-通常，如果业务存在峰谷周期，则可以选在业务低谷器进行整理。`pg_repack` 执行比较快，但很吃资源。在高峰期执行可能会影响整个数据库的性能表现，也有可能会导致复制滞后。
+将 `pg_repack` 安排在业务低峰期。它会消耗 CPU、磁盘 I/O 和额外存储，也可能增加查询延迟与复制延迟。
 
-例如，可以利用上面两节提供的膨胀率监控视图，每天挑选膨胀最为严重的若干张表和若干索引进行自动重整。
+例如，可以在低峰期选择待处理表。下面的视图提供调度示例所需的列，`total_mb` 是表当前占用的磁盘空间，含索引和 TOAST，单位为 MiB：
+
+```sql
+CREATE OR REPLACE VIEW monitor.pg_bloat_tables AS
+SELECT current_database() AS datname,
+       n.nspname,
+       c.relname,
+       pg_total_relation_size(c.oid) / 1048576.0 AS total_mb,
+       b.ratio * 100 AS bloat_pct
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+CROSS JOIN LATERAL (SELECT public.pg_table_bloat(c.oid) AS ratio) b
+WHERE c.relkind = 'r'
+  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND n.nspname NOT LIKE 'pg_toast%';
+```
+
+以下 shell 函数按行返回表名，并将每个带引号的参数视为一个完整表名：
 
 ```bash
-#--------------------------------------------------------------#
-# Name: repack_tables
-# Desc: repack table via fullname
-# Arg1: database_name
-# Argv: list of table full name
-# Deps: psql
-#--------------------------------------------------------------#
-# repack single table
-function repack_tables(){
-    local db=$1
+repack_tables() {
+    local db=$1 relname old_size new_size
     shift
-
-    log_info "repack ${db} tables begin"
-    log_info "repack table list: $@"
-
-    for relname in $@
-    do
-        old_size=$(psql ${db} -Atqc "SELECT pg_size_pretty(pg_relation_size('${relname}'));")
-        # kill_queries ${db}
-        log_info "repack table ${relname} begin, old size: ${old_size}"
-        pg_repack ${db} -T 10 -t ${relname}
-        new_size=$(psql ${db} -Atqc "SELECT pg_size_pretty(pg_relation_size('${relname}'));")
-        log_info "repack table ${relname} done , new size: ${old_size} -> ${new_size}"
+    for relname in "$@"; do
+        old_size=$(psql -X -d "$db" -v ON_ERROR_STOP=1 -v relation="$relname" -At <<'SQL'
+SELECT pg_size_pretty(pg_total_relation_size(:'relation'::regclass));
+SQL
+) || return
+        printf 'Repack %s: %s before\n' "$relname" "$old_size"
+        pg_repack --dbname="$db" --table="$relname" --wait-timeout=10 --no-kill-backend || return
+        new_size=$(psql -X -d "$db" -v ON_ERROR_STOP=1 -v relation="$relname" -At <<'SQL'
+SELECT pg_size_pretty(pg_total_relation_size(:'relation'::regclass));
+SQL
+) || return
+        printf 'Repack %s: %s -> %s\n' "$relname" "$old_size" "$new_size"
     done
-
-    log_info "repack ${db} tables done"
 }
 
-#--------------------------------------------------------------#
-# Name: get_bloat_tables
-# Desc: find bloat tables in given database match some condition
-# Arg1: database_name
-# Echo: list of full table name
-# Deps: psql, monitor.pg_bloat_tables
-#--------------------------------------------------------------#
-function get_bloat_tables(){
-    echo $(psql ${1} -Atq <<-'EOF'
-    WITH bloat_tables AS (
-        SELECT
-          nspname || '.' || relname as relname,
-          actual_mb,
-          bloat_pct
-        FROM monitor.pg_bloat_tables
-        WHERE nspname NOT IN ('dba', 'monitor', 'trash')
-        ORDER BY 2 DESC,3 DESC
-    )
-    -- 64 small + 16 medium + 4 large
-    (SELECT relname FROM bloat_tables WHERE actual_mb < 256 AND bloat_pct > 40 ORDER BY bloat_pct DESC LIMIT 64) UNION
-    (SELECT relname FROM bloat_tables WHERE actual_mb BETWEEN 256 AND 1024  AND bloat_pct > 30 ORDER BY bloat_pct DESC LIMIT 16) UNION
-    (SELECT relname FROM bloat_tables WHERE actual_mb BETWEEN 1024 AND 4096  AND bloat_pct > 20 ORDER BY bloat_pct DESC  LIMIT 4);
-EOF
+get_bloat_tables() {
+    psql -X -d "$1" -v ON_ERROR_STOP=1 -At <<'SQL'
+WITH bloat_tables AS (
+    SELECT format('%I.%I', nspname, relname) AS relname,
+           total_mb, bloat_pct
+    FROM monitor.pg_bloat_tables
+    WHERE nspname NOT IN ('dba', 'monitor', 'trash')
 )
+(SELECT relname FROM bloat_tables
+ WHERE total_mb < 256 AND bloat_pct > 40
+ ORDER BY bloat_pct DESC LIMIT 64)
+UNION
+(SELECT relname FROM bloat_tables
+ WHERE total_mb >= 256 AND total_mb < 1024 AND bloat_pct > 30
+ ORDER BY bloat_pct DESC LIMIT 16)
+UNION
+(SELECT relname FROM bloat_tables
+ WHERE total_mb >= 1024 AND total_mb <= 4096 AND bloat_pct > 20
+ ORDER BY bloat_pct DESC LIMIT 4);
+SQL
 }
 ```
 
-这里，设置了三条规则：
+以下大小门槛均指当前磁盘用量，包含表、索引和 TOAST：
 
-* 从小于256MB，且膨胀率超过40%的小表中，选出TOP64
-* 从256MB到1GB之间，且膨胀率超过40%的中表中，选出TOP16
-* 从1GB到4GB之间，且膨胀率超过20%的大表中，选出TOP4
+* 从小于 256 MiB，且膨胀率超过40%的小表中，选出TOP64
+* 从 256 MiB 到 1 GiB 之间，且膨胀率超过 30% 的中表中，选出TOP16
+* 从 1 GiB 到 4 GiB 之间，且膨胀率超过20%的大表中，选出TOP4
 
-选出这些表，每天凌晨低谷自动进行重整。超过4GB的表手工处理。
-
-但何时进行重整，还是取决于具体的业务模式。
+此示例在凌晨业务低峰期自动重整选定的表，总磁盘用量超过 4 GiB 的表手工处理。请按实际负载调整执行时间。
 
 ---------------------
 
 ### `pg_repack` 的原理
 
-`pg_repack` 的原理相当简单，它会为待重建的表创建一份副本。首先取一份全量快照，将所有活元组写入新表，并通过触发器将所有针对原表的变更同步至新表，最后通过重命名，使用新的紧实副本替换老表。而对于索引，则是通过PostgreSQL的 `CREATE(DROP) INDEX CONCURRENTLY` 完成的。
+`pg_repack` 创建紧实副本，并用触发器记录并发变更。重放变更后，通过系统目录交换存储。只重整索引时，先并发创建替代索引，再交换并删除旧索引。
 
 **重整表**
 
@@ -517,26 +500,22 @@ EOF
 4. 将老表中的数据复制到新的空表中。
 5. 在新表上创建同样的索引
 6. 将日志表中的增量变更应用到新表上
-7. 通过重命名的方式切换新旧表
-8. 将旧的，已经被重命名掉的表 `DROP` 掉。
+7. 通过系统目录交换表、索引和 TOAST 存储
+8. 删除旧存储。
 
 **重整索引**
 
 1. 使用 `CREATE INDEX CONCURRENTLY` 在原表上创建新索引，保持与旧索引相同的定义。
-2. `Analyze` 新索引，并将旧索引设置为无效，在数据目录中将新旧索引交换。
+2. 在系统目录中交换新旧索引。
 3. 删除旧索引。
 
 ---------------------
 
-### `pg_repack` 的注意事项
+### `pg_repack` 的运行检查
 
-- 重整开始之前，最好取消掉所有正在进行的 `Vacuum` 任务。
-- 对索引做重整之前，最好能手动清理掉可能正在使用该索引的查询
+- 避开长事务和冲突的维护任务。先检查等锁情况，再决定是否取消会话。
+- 为替代表、索引和变更日志预留磁盘。项目文档建议，完整重整时可用空间约为原表及其索引大小的两倍。
+- 在复制和建索引的整个过程中监控 WAL、复制延迟和磁盘余量。WAL 并非只在最终切换时产生。
+- 中断后，先按已安装版本的清理说明检查残留对象，再重试。临时对象名称和清理行为因版本而异。
 
-- 如果出现异常的情况（譬如中途强制退出），有可能会留下未清理的垃圾，需要手工清理。可能包括：
-  - 临时表与临时索引建立在与原表/索引同一个schema内
-  - 临时表的名称为：`${schema_name}.table_${table_oid}`
-  - 临时索引的名称为：`${schema_name}.index_${table_oid}}`
-  - 原始表上可能会残留相关的触发器，需要手动清理。
-- 重整特别大的表时，需要预留至少与该表及其索引相同大小的磁盘空间，需要特别小心，手动检查。
-- 当完成重整，进行重命名替换时，会产生巨量的WAL，有可能会导致复制延迟，而且无法取消。
+安排维护前请查阅 [pg_repack 前置条件与实现说明](https://reorg.github.io/pg_repack/)。

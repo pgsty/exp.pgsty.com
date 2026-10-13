@@ -1,146 +1,161 @@
 ---
-title: "如何用Pigsty监控现有PostgreSQL (RDS/PolarDB/自建)？"
+title: "使用 Pigsty 监控现有 PostgreSQL：RDS、PolarDB 与自建数据库"
 date: 2023-09-17
 authors: [vonng]
 summary: >
-  如何使用 Pigsty 监控云数据库服务，例如 PolarDB / RDS for PostgreSQL，或者自建的现有PG数据库？
+  在 ECS 上部署 Pigsty，并接入已有 PostgreSQL 数据库，以阿里云 PolarDB 与 RDS for PostgreSQL 为例。
 tags: [Pigsty, 监控, RDS]
 ---
 
-**Pigsty 是一个开箱即用的 PostgreSQL 发行版，与本地优先的 RDS 开源替代**。但它也可以单独作为一个 PostgreSQL/主机监控系统来使用。本文以阿里云为例，介绍了用一台 ECS 安装部署 Pigsty，并用于监控云上的 **PolarDB** 与 **RDS for PostgreSQL**，为现有数据库带来极致的观测能力。
+本文记录 2023 年 9 月的 Pigsty 与阿里云使用流程，命令、价格和界面均对应当时版本。
 
-[嵌入媒体](https://mp.weixin.qq.com/mp/readtemplate?t=pages/video_player_tmpl&action=mpvideo&auto=0&vid=wxv_3109126349086162945)
+Pigsty 是一个 PostgreSQL 发行版，也可以单独用于监控 PostgreSQL 与主机。本文以阿里云为例，在一台 ECS 上安装 Pigsty，再接入已有的 PolarDB 与 RDS for PostgreSQL。
 
-## 快速上手
+[视频教程](https://mp.weixin.qq.com/mp/readtemplate?t=pages/video_player_tmpl&action=mpvideo&auto=0&vid=wxv_3109126349086162945)
 
-使用 Pigsty 教程分为四个步骤：
+## 操作流程
 
-1.申请用于部署 Pigsty 的 ECS 服务器2.在 ECS 服务器上完整单机安装 Pigsty3.配置 PolarDB / RDS 的监控用户、模式、视图、黑白名单4.将 RDS / PolarDB for PG 接入 Pigsty 监控系统中
+教程分为四步：
 
-只要您有阿里云账号，使用按量付费模式（需要账户余额¥100以上），费用大致为 ¥4 / 小时，一小时内收工。
+1. 创建用于部署 Pigsty 的 ECS 服务器。
+2. 在 ECS 上完整安装单机版 Pigsty。
+3. 配置 PolarDB / RDS 的监控用户、模式、视图与访问名单。
+4. 将数据库实例接入 Pigsty 监控。
 
-## Why Pigsty
+当时使用按量付费资源需要阿里云账户余额超过 ¥100，本例资源费用约为 ¥4 / 小时。
 
-**在讲 How 之前先说 Why**。为什么要用一个额外的监控系统来做这件事？难道各家云厂商不是已经提供 RDS 监控了吗？没有错，只不过各家云厂商的 RDS PostgreSQL 的监控实在太简单了：这种程度的监控，对于回答数据库活着还是死了这件事也许足够了，但对于稍微高级一丁点儿的管理工作：性能优化，故障诊断都无能为力。
+## 为什么增加这套监控？
 
-![图片](01.webp)
+云服务已经提供 RDS 监控。我在使用时，还需要更多指标来分析慢查询、诊断故障和评估容量，因此增加了这套监控。
 
-![图片](02.webp)
+![云数据库监控示例](01.webp)
 
-Pigsty 的监控系统便是为了解决这个问题而生的。Pigsty 提供了基于开源的 Grafana / Prometheus 现代可观测性技术栈做监控的最佳实践。整套系统同样被设计为一键拉起，开箱即用的 INFRA 模块。Pigsty 所管理的任何组件都会被自动纳入监控之中，包括主机节点，负载均衡 HAProxy，数据库 Postgres，连接池 Pgbouncer，元数据库 ETCD，KV缓存 Redis，对象存储 MinIO，……，以及整套监控基础设施本身。大量的 Grafana 监控面板与预置告警规则会让你的系统观测能力有质的提升。
+![云监控详情](02.webp)
 
-![图片](03.webp)
+Pigsty 使用 Grafana 与 Prometheus，并将它们打包为可统一安装的 INFRA 模块。Pigsty 管理的主机、HAProxy、PostgreSQL、PgBouncer、etcd、Redis、MinIO，以及监控基础设施本身，都会纳入监控。预置面板和告警规则用于查看运行状态与排查问题。
 
-Pigsty提供的监控面板概览\
+![Pigsty 监控面板概览](03.webp)
 
-无论是故障分析还是慢查询优化、无论是水位评估还是资源规划，Pigsty 为您提供全面的数据支撑，真正做到数据驱动。在 Pigsty 中，超过三千类监控指标被用于描述整个系统的方方面面，并被进一步加工、聚合、处理、分析、提炼并以符合直觉的可视化模式呈现在您的面前。从全局大盘总览，到某个数据库实例中单个对象（表，索引，函数）的增删改查详情都能一览无余。您可以随意上卷下钻横向跳转，浏览系统现状与历史趋势，并预测未来的演变。
+当时的完整系统使用三千多类指标，覆盖数据库与配套组件。面板按集群、实例和对象组织数据，可以查看表、索引、函数的活动，也可以汇总到集群层面。页面链接用于切换视图，时间范围选择器用于比较当前状态与历史趋势。
 
-![图片](04.webp)
+![监控层次与页面导航](04.webp)
 
-对于现有的 PostgreSQL 数据库特别是 RDS 云数据库来说，虽然 Pigsty 拿不到主机监控数据，也没有高可用/连接池等组件的监控数据，也缺少原生的数据库日志。但能利用好 PostgreSQL 本身的监控指标，已经有着足够强大的力量了。
+监控现有 PostgreSQL，特别是托管云数据库时，可获得的数据取决于服务提供的访问接口。这种接入方式通常没有主机、高可用组件、连接池和原生数据库日志数据，主要使用 PostgreSQL 自身的指标。
 
-您可以查阅公开Demo：https://demo.pigsty.cc 来了解 Pigsty 监控系统提供的能力。
+可以通过[公开演示](https://demo.pigsty.cc)查看监控界面。
 
-### 使用 Terraform 申请 ECS 服务器
+## 创建 ECS 服务器
 
-单机安装 Pigsty 需要一台 x86_64 ECS 云服务器，EL 7-9操作系统（建议使用 Rocky 8.6/9.1），规格最小 1C2G 。您可以直接在控制台上申请资源，或者使用 Pigsty 提供的 Terraform 模板一键完成资源申请与置备。默认配置会使用固定的 `10.10.10.10` IP地址与密码 `PigstyDemo4`，并分配一个公网IP以供访问。
+本例使用 x86_64 ECS，操作系统范围为 EL 7–9，当时推荐 Rocky Linux 8.6 或 9.1，最低配置为 1 核 CPU、2 GB 内存。可以在云控制台创建，也可以使用 Pigsty 提供的 Terraform 模板。
 
-![图片](05.webp)
+演示模板使用内网地址 `10.10.10.10` 和示例密码 `PigstyDemo4`，并分配一个公网 IP。
 
-![图片](06.webp)
+![ECS 资源配置](05.webp)
 
-------------------------------------------------------------------------
+![Terraform 资源置备](06.webp)
 
-### 在ECS上完整安装单机版 Pigsty
+## 在 ECS 上安装单机版 Pigsty
 
-登陆 ECS 后，可以通过以下命令完成 Pigsty 的单机安装
+登录 ECS 后，当时的安装流程如下：
 
-    bash -c "$(curl -fsSL https://get.pigsty.cc/latest)"   # 下载 Pigsty
-    cd ~/pigsty; ./bootstrap;                              # 提示下载离线软件包
-    ./configure                                            # 配置 Pigsty
-    vi pigsty.yml  # 定制一些配置，比如修改各种密码
-    ./install.yml  # 完成完整的单机安装，使用离线包完整安装约10分钟
+```bash
+bash -c "$(curl -fsSL https://get.pigsty.cc/latest)"  # 下载 Pigsty
+cd ~/pigsty
+./bootstrap                                        # 下载离线软件包
+./configure                                        # 配置 Pigsty
+vi pigsty.yml                                      # 设置密码等本地配置
+./install.yml                                      # 安装单机环境
+```
 
-Pigsty的详细安装过程介绍：https://pigsty.cc/doc/#/zh/INSTALL，整个过程耗时约十几分钟。
+使用离线包时，本例完整安装耗时约十分钟。当前流程见 [Pigsty 安装指南](https://pigsty.cc/docs/setup/install/)。
 
-安装完成后，您可以通过 ECS 公网 IP 地址上的 3000 端口访问监控系统 Grafana，监控界面中会显示出完整的自我监控。例如本例中：http://59.110.161.154:3000 ，默认用户名密码为：`admin` / `pigsty`。
+安装后，通过 ECS 公网地址的 3000 端口访问 Grafana。面板中已经包含新环境自身的监控数据。本例使用默认账号 `admin` / `pigsty`。
 
-![图片](07.webp)
+![安装后的 Grafana](07.webp)
 
-我们建议您使用域名/https访问 Pigsty 的 Web 界面，注意在生产环境使用时，我们强烈建议您修改默认密码，并谨慎对公网暴露界面。
+使用域名和 HTTPS 访问 Web 界面。更换示例密码，并限制监控系统的访问来源。
 
-![图片](08.webp)
+![Pigsty Web 访问](08.webp)
 
-------------------------------------------------------------------------
+## 配置 PolarDB / RDS 监控
 
-### 配置 PolarDB / RDS PG 监控
+Exporter 需要一个从 ECS 可访问的数据库连接地址、具有所需读取权限的监控账号，以及所选采集器使用的扩展。
 
-PolarDB 的配置细节在此不再赘述，关键是要有一个给监控用户使用的连接串，可以从 ECS 上访问 PolarDB 主库 / 从库，并确保相关监控用户具有足够的读取权限，以及相关监控扩展已经完成安装。
+本例的 PolarDB 配置步骤是：
 
-•创建集群，确保 PolarDB 与ECS在同一个可用区/子网内，可以从ECS访问PolarDB。•创建集群账号：管理用户 `dbuser_dba`，高权限账号，用来对集群进行进一步的配置。•添加集群访问白名单：将 ECS 内网IP地址 `10.10.10.10` 添加到集群白名单中。•创建一个业务数据库，这里以 `test` 为例。
+1. 创建 ECS 可以访问的集群。本例使用同一可用区和子网。
+2. 创建管理账号 `dbuser_dba`，用于初始配置。
+3. 将 ECS 内网地址 `10.10.10.10` 加入集群访问名单。
+4. 创建数据库，本例名为 `test`。
 
-配置好数据库集群的账号、白名单、数据库之后，使用高权限管理用户连接至新创建的数据库
+用管理账号连接数据库，将示例主机名替换为实际集群地址，并按提示输入密码：
 
-    $ psql postgres://dbuser_dba:DBUser_DBA@pc-2ze379wb1d4irc18x.polardbpg.rds.aliyuncs.com:1921/postgres
+```bash
+psql -h your-cluster.polardbpg.rds.aliyuncs.com -p 1921 -U dbuser_dba -d test -W
+```
 
-使用高权限用户创建专用监控用户，当然您也可以在控制台创建。
+用此账号创建专用监控用户，也可以通过云控制台创建。
 
-![图片](09.webp)
+![监控账号配置](09.webp)
 
-强烈建议安装 `pg_stat_statements` 扩展，它可以提供非常重要的关于查询的
+安装 `pg_stat_statements`，获取查询调用次数与执行耗时等语句级统计。
 
-------------------------------------------------------------------------
+## 将现有数据库接入监控
 
-## 将现有PG数据库接入监控
+在 `pigsty.yml` 中填写数据库实例的身份与连接信息。当时的配置位置是 `all.children.infra.vars.pg_exporters`：字典的键为唯一分配的本地 Exporter 端口，值为目标实例的配置。
 
-为了将 RDS for PostgreSQL 实例与 PolarDB 实例纳入监控，您需要将这些目标实例的身份信息与连接信息告诉 Pigsty。编辑 `pigsty.yml` 配置文件，在 `all.children.infra.vars.pg_exporters` 定义这些待监控的远程数据库实例，这是一个字典，Key 为唯一分配的本地监控组件端口号，Value为目标实例的配置信息。
+![远程 Exporter 配置](10.webp)
 
-![图片](10.webp)
+本例接入三个集群：
 
-这里，我们接入了一个一主一从的 PolarDB 集群，并将其命名为 `pg-polar`，一个基础版（单节点）的 RDS for PostgreSQL 实例并命名为 `pg-rds`，以及一个高可用版本并带有一个只读节点的 RDS 集群 `pg-rdsha`。其配置如下所示，并不是所有参数都是必须的，通常来说，只有 `pg_cluster`，`pg_seq`，与 `pg_host` （`pg_port`，如果不是5432） 是需要修改的，其他参数可以按需指定覆盖。
+- `pg-polar`：一主一从的 PolarDB 集群。
+- `pg-rds`：基础版单节点 RDS for PostgreSQL 实例。
+- `pg-rdsha`：带有一个只读节点的高可用 RDS 集群。
 
-定义好这些配置选项后，您可以使用以下命令，将其纳入到 Pigsty 的监控系统中：
+上图展示了配置。通常需要修改 `pg_cluster`、`pg_seq` 与 `pg_host`；端口不是 5432 时，还需要设置 `pg_port`。其他参数按需覆盖。
 
-        bin/pgmon-add pg-polar
-        bin/pgmon-add pg-rds
-        bin/pgmon-add pg-rdsha
+定义目标后，将各集群加入监控：
 
-然后，您就可以在 Pigsty 监控系统中看到这三个新集群了。
+```bash
+bin/pgmon-add pg-polar
+bin/pgmon-add pg-rds
+bin/pgmon-add pg-rdsha
+```
 
-![图片](11.webp)
+随后可以在 Pigsty 中看到这三个集群。
 
-点击浅灰蓝色的集群名/实例名，即可跳转到对应集群/实例 PGRDS 监控面板上：
+![接入后的数据库集群](11.webp)
 
-![图片](12.webp)
+点击浅蓝色的集群名或实例名，打开对应的 PGRDS 面板。
 
-![图片](13.webp)
+![PGRDS 集群面板](12.webp)
 
-点击浅灰蓝色的集群名/实例名，即可跳转到对应集群/实例 PGRDS 监控面板上：
+![PGRDS 实例面板](13.webp)
 
-首屏包含了最为关键的信息，集群实例成员，存活状态，数据库列表与导航，13个核心监控指标。点击都可以展开更详细的信息。\
+首屏显示集群成员、存活状态、数据库列表与导航，以及 13 个核心指标。点击面板可以查看详情。
 
-![图片](14.webp)
+![核心数据库指标](14.webp)
 
-在 PGRDS Cluster 与 PGRDS Instance 之间，可以方便地在图表元素上点击跳转，快速上卷下钻。
+通过图表中的链接，可以在 PGRDS Cluster 与 PGRDS Instance 之间切换，查看集群汇总或单个实例。
 
-![图片](15.webp)
+![集群与实例导航](15.webp)
 
-同时，您依然可以复用 Overview / Database 层次的所有监控面板，查阅数据库内部的详细细节，比如每一类查询的 QPS / RT，或者每个表上的增删改查：
+Overview 与 Database 面板也可用于这些实例，展示各类查询的 QPS、响应时间，以及每张表的读写活动。
 
-![图片](16.webp)
+![数据库概览](16.webp)
 
-![图片](17.webp)
+![查询指标](17.webp)
 
-![图片](18.webp)
+![数据库对象指标](18.webp)
 
-![图片](19.webp)
+![表活动](19.webp)
 
-Pigsty的监控系统还允许您直接访问数据库的 Catalog （可选），从系统视图中查阅统计数据。例如锁等待 / TopSQL 等。
+配置可选的数据库数据源后，还可以直接查询系统目录，查看当前锁等待与 Top SQL。
 
-![图片](20.gif)
+![系统目录查询](20.gif)
 
-![图片](21.webp)
+![SQL 与锁统计](21.webp)
 
-更多监控系统的细节就不在此展开了，欢迎访问 Pigsty 文档：  https://pigsty.cc ，或者访问 Demo 在线体验：https://demo.pigsty.cc 。点击“查看原文”，访问 Bilibili 视频版教程。
+更多细节见 [Pigsty 文档](https://pigsty.cc)、[公开演示](https://demo.pigsty.cc)与本文开头的视频教程。
 
-如果您对 Pigsty 与 PostgreSQL 感兴趣，也欢迎微信搜索 pigsty-cc 添加 Pigsty 小助手，加入 PGSQL x Pigsty 交流群中。
+加入 PGSQL × Pigsty 交流群，可在微信搜索 `pigsty-cc` 联系 Pigsty 小助手。

@@ -1,83 +1,90 @@
 ---
-title: "PostgreSQL Server Log Regular Configuration"
+title: "PostgreSQL Server Log Configuration"
 date: 2018-02-06
 authors: [vonng]
 summary: >
-  It's recommended to configure PostgreSQL's log format as CSV for easy analysis, and it can be directly imported into PostgreSQL data tables.
+  CSV logs can be imported into PostgreSQL tables or queried through file_fdw for analysis.
 tags: [PostgreSQL, PG Admin, Monitoring]
 ---
 
-It's recommended to configure PostgreSQL's log format as CSV for easy analysis, and it can be directly imported into PostgreSQL data tables.
+This article was written in 2018. The table definitions below use the 23-column PostgreSQL 10 CSV format, and the Filebeat example uses the legacy `prospectors` configuration.
 
-## Log-Related Configuration Items
+CSV logs can be imported into PostgreSQL tables or queried through `file_fdw` for analysis.
+
+## Log Configuration
 
 ```ini
-log_destination ='csvlog'
-logging_collector =on
-log_directory ='log'
-log_filename ='postgresql-%a.log'
-log_min_duration_statement =1000
-log_checkpoints =on
-log_lock_waits =on
-log_statement ='ddl'
-log_replication_commands =on
-log_timezone ='UTC'
-log_autovacuum_min_duration =1000
+log_destination = 'csvlog'
+logging_collector = on
+log_directory = 'log'
+log_filename = 'postgresql-%a.log'
+log_min_duration_statement = 1000
+log_checkpoints = on
+log_lock_waits = on
+log_statement = 'ddl'
+log_replication_commands = on
+log_timezone = 'UTC'
+log_autovacuum_min_duration = 1000
 
-track_io_timing =on
-track_functions =all
-track_activity_query_size =16384
+track_io_timing = on
+track_functions = all
+track_activity_query_size = 16384
 ```
+
+The last three settings collect runtime statistics; they do not control log output.
+`logging_collector` and `track_activity_query_size` require a server restart.
+The weekday filename repeats each week. Configure rotation and retention to match
+how long you need to keep the files.
 
 ## Log Collection
 
-If you need to collect logs from external sources, consider using filebeat.
+The original setup used Filebeat to forward local files to Kafka. Replace the
+paths and broker address with your own. This legacy example starts at the end of
+existing files and joins lines by a timestamp pattern, with a 20-line limit. It
+does not provide general CSV record framing for arbitrary multiline messages.
 
 ```yaml
 filebeat.prospectors:
+  - type: log
+    enabled: true
+    paths:
+      - /pg/data/log/postgresql-*.csv
+    document_type: db-trace
+    tail_files: true
+    multiline.pattern: '^20\d\d-\d\d-\d\d'
+    multiline.negate: true
+    multiline.match: after
+    multiline.max_lines: 20
 
-## input
-- type: log
-enabled: true
-paths:
-- /var/lib/postgresql/data/pg_log/postgresql-*.csv
-document_type: db-trace
-tail_files: true
-multiline.pattern: '^20\d\d-\d\d-\d\d'
-multiline.negate: true
-multiline.match: after
-multiline.max_lines: 20
 max_cpus: 1
 
-## modules
 filebeat.config.modules:
-path: ${path.config}/modules.d/*.yml
-reload.enabled: false
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
 
-## queue
 queue.mem:
-events: 1024
-flush.min_events: 0
-flush.timeout: 1s
+  events: 1024
+  flush.min_events: 0
+  flush.timeout: 1s
 
-## output
 output.kafka:
-hosts: ["10.10.10.10:9092","x.x.x.x:9092"]
-topics:
-- topic: 'log.db'
+  hosts: ["kafka.example.com:9092"]
+  topics:
+    - topic: 'log.db'
 ```
 
 ## CSV Log Format
 
-Very interesting idea - converting CSV logs into PostgreSQL tables is very convenient for analysis.
-
-The original CSV log format definition is as follows:
+PostgreSQL can query its logs as rows. The following table matches the
+[PostgreSQL 10 CSV fields](https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG).
+Later server versions add columns; use the table definition for the server that
+wrote the log:
 
 ```sql
-Log table structure definition
+-- Log table structure
 create table postgresql_log
 (
-  log_time               timestamp,
+  log_time               timestamp(3) with time zone,
   user_name              text,
   database_name          text,
   process_id             integer,
@@ -106,22 +113,26 @@ create table postgresql_log
 
 ## Importing Logs
 
-Logs are well-structured CSV (CSV allows multi-line records), you can directly use the COPY command to import them.
+Import a closed CSV log file with `COPY`. The server must be able to read the
+file. For a file on the client machine, use psql’s `\copy`. Import complete files after rotation, and import each file only once.
 
 ```sql
-COPY postgresql_log FROM '/var/lib/pgsql/data/pg_log/postgresql.log' CSV DELIMITER ',';
+COPY postgresql_log FROM '/pg/data/log/postgresql-Mon.csv' WITH (FORMAT csv);
 ```
 
 ## Mapping Logs
 
-Of course, besides copying logs directly to data tables for analysis, there's another method that allows PostgreSQL to directly map its local CSVLOG as a foreign table for SQL-based direct access.
+Use `file_fdw` to query local CSV files without copying them into a table. Run the
+setup with the required extension and server-file privileges. The example assumes
+English weekday names and existing files under `/pg/data/log`; adjust the paths
+to match the log output. Query an individual child table if some weekday files
+do not yet exist.
 
 ```sql
 CREATE SCHEMA IF NOT EXISTS monitor;
 
--- search path for su
-ALTER ROLE postgres SET search_path = public, monitor;
-SET search_path = public, monitor;
+-- This session only
+SET search_path = monitor, pg_catalog;
 
 -- extension
 CREATE EXTENSION IF NOT EXISTS file_fdw WITH SCHEMA monitor;
@@ -168,9 +179,11 @@ CREATE FOREIGN TABLE IF NOT EXISTS monitor.pg_log_sun() INHERITS (monitor.pg_log
 
 ```
 
-## Processing Logs
+## Extracting Log Fields
 
-You can use the following stored procedures to further extract statement execution times from log messages:
+These functions extract duration, statement text, and IPv4-shaped text from
+English log messages. Durations are in milliseconds. They handle the message
+patterns shown here, not every extended-query or localized message format:
 
 ```sql
 CREATE OR REPLACE FUNCTION extract_duration(statement TEXT)
@@ -183,7 +196,7 @@ BEGIN
   IF found_duration
   THEN
     RETURN (SELECT regexp_matches [1] :: FLOAT
-            FROM regexp_matches(statement, 'duration: (.*) ms')
+            FROM regexp_matches(statement, '^duration: ([0-9]+(?:\.[0-9]+)?) ms')
             LIMIT 1);
   ELSE
     RETURN NULL;
