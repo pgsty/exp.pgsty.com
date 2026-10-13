@@ -2,89 +2,69 @@
 title: "我们最终没有做的 PostgreSQL 可观测性产品"
 linkTitle: "可观测性产品转向"
 date: "2026-08-13T14:17:01+08:00"
-lastmod: "2026-08-24T12:17:38+08:00"
+lastmod: "2026-10-13T00:00:00+08:00"
 authors: [Vonng]
-description: "为什么我们探索过 local-first PostgreSQL 事故工作台，最后却把目标收缩为 PG Exporter 内部的 CSV 日志指标"
-summary: "已于 2026-08-24 被取代。研究确认了 CSV、持久状态与基数要求，随后否决新工作台、Agent、仓库与品牌，转而在 PG Exporter 内实现有限指标。"
+description: "为什么独立事故工作台最终变为 PG Exporter 内的 CSV 日志采集器"
+summary: "已于 2026-08-24 被取代。CSV 解析和持久状态要求纳入有限的日志指标功能，独立产品提案终止。"
 categories: [design]
 tags: [设计, 产品, PostgreSQL, 可观测性]
 ---
 
-> **决策状态：** 2026-08-24 被进程内 PostgreSQL CSV 日志指标方案取代。<br>
-> **研究日期：** 2026-08-13。<br>
-> **仍然有效：** CSV framing、轮转、SQLSTATE、隐私和有限基数结论。<br>
-> **不再适用：** 新产品、仓库、binary、品牌、交互查询工具、TUI、Agent 或日志发送管道。
+我们最初考虑做一个本地 PostgreSQL 事故工作台：读取结构化日志，重建会话时间线，提供交互过滤与终端界面，后续再作为 Agent 运行。
 
-在收敛 PostgreSQL 日志指标范围之前，我们探索过一个大得多的产品：local-first 事故工作台。它可以检查结构化日志、重建 session 时间线、提供交互过滤与终端界面，并最终演进成节点信号 Agent。
+> **状态：** 已于 2026-08-24 被 [PostgreSQL 日志指标](/zh/design/postgres-log-metrics/)方案取代。<br>
+> **决策日期：** 2026-08-13 开始研究；2026-08-24 调整范围。<br>
+> **最后核验：** 2026-10-13。<br>
+> **范围：** 独立 PostgreSQL 事故工作台与 Agent 提案。<br>
+> **交付进度：** 止于提案，未实现、发布或部署。
 
-这次探索之所以有价值，恰恰是因为产品没有被做出来。它把任何正确 PostgreSQL 日志 parser 都需要面对的事实，与会改变 PG Exporter 产品类别和运维模型的野心分开了。
+眼前需求更小：从 PostgreSQL 日志中提取可靠的运维指标。最终选择是在 PG Exporter 中增加后台采集器。本文记录保留的研究结论，以及放弃独立产品的原因。
 
-## 最初的假设 {#original-hypothesis}
+## 最初提案 {#original-hypothesis}
 
-用户问题真实存在。事故发生时，DBA 往往拥有本机 PostgreSQL 日志，却没有在中央平台准备好查询。一个理解 PostgreSQL CSV record、SQLSTATE、session、轮转和多行字段的工具，可以在不上传 SQL 文本、不先部署后端的前提下给出有用时间线。
+事故发生时，DBA 可能只有本机日志，没有集中日志服务。理解 PostgreSQL CSV、SQLSTATE、会话与轮转的工具，可以在不上传 SQL 文本的情况下生成时间线。
 
-当时设想的工作台强调：
+提案包括：
 
-- 正确解析 PostgreSQL 14+ CSV，而不是使用逐物理行正则；
-- 按时间、severity、SQLSTATE、database、user、application 与 session 过滤；
-- 跨 rename rotation 保留上下文；
-- 在没有 Web 服务的机器上提供 terminal-first 工作流；
-- 默认本地处理，保护隐私；
-- 从同一 parser 产生低基数 Prometheus 指标；
-- 未来可能增加持久游标和多输出的 daemon。
+- PostgreSQL 14+ CSV 解析，包括多行字段；
+- 按时间、严重级别、SQLSTATE、数据库、用户、应用和会话过滤；
+- 跨重命名日志文件保留上下文；
+- 交互式终端界面；
+- 本地处理与低基数 Prometheus 指标；
+- 后续增加持久游标和多个输出目标的守护进程。
 
-这是一个自洽的产品想法，也远大于眼前需求。
+## 保留的结论 {#retained-findings}
 
-## 研究确认了什么 {#retained-findings}
+PostgreSQL 14 到 18 文档给出了相同的 26 列 CSV 布局。示例导入表以 `(session_id, session_line_num)` 为主键。CSV 字段可包含逗号、引号和换行，因此解析器必须读取完整记录。
 
-几项结论在转向后仍然成立。
+SQLSTATE 比本地化消息文本稳定，是错误分类的主要依据。检查点、自动清理、锁等待、临时文件和连接消息，需要针对支持版本和语言测试匹配规则。
 
-PostgreSQL 14 到 18 文档给出相同的 26 字段 CSV 布局，其中包含 `session_id`、`session_line_num`、`backend_type`、leader PID 与 query ID。PostgreSQL 的示例导入表使用 `(session_id, session_line_num)` 作为主键。CSV 字段可以包含逗号、引号和换行，因此逐物理行 scanner 不是正确 parser。
+原始 SQL、用户名、数据库名、客户端地址和会话标识不适合作为默认指标标签。它们会暴露源数据，并使序列数量随工作负载变化。固定事件类别和有限分布更适合 Prometheus。
 
-SQLSTATE 比本地化 message 文本稳定，是错误分类的第一依据。Message grammar 仍适合 checkpoint、autovacuum、lock wait、temporary file 与连接事件等有限 PostgreSQL 事件，但必须版本化并有测试。
+轮转、部分写入、重启恢复和游标持久化决定计数是否可靠，必须从一开始就纳入功能契约。
 
-原始 query、detail、hint、context、user、database、application、client address、PID、session、transaction ID 与文件路径都不适合作为默认 metric label。Prometheus 适合有限计数和分布，不是日志索引的替代品。
+## 调整范围的原因 {#rejected-product}
 
-轮转、部分写入、重启恢复与游标持久化是产品需求，不只是 parser 实现细节。重启后静默重计或漏计的工具，会产生比没有工具更糟的证据。
+工作台需要独立的命令、输出结构、界面、软件包、文档和发布周期。Agent 还需要队列、重试、保留策略和服务管理。这些职责超过了指标导出器的范围。
 
-## 为什么否决更大的产品 {#rejected-product}
+PG Exporter 已有抓取目标、`/metrics`、打包和 Pigsty 集成；开发中的协调层也提供组件健康指标。有限范围的日志采集器可以复用这些能力，满足眼前需求。
 
-决定性问题不是技术可行性，而是范围与责任。
+因此，我们停止独立产品、仓库和品牌工作，将交互调查与日志发送移出范围。
 
-工作台需要独立命令、输出 schema、UX、软件包、文档、支持表面与发布周期。有状态 Agent 还会引入服务管理、升级、队列、背压、重试、磁盘保留、安全政策与发送 SLO。TUI 和日志索引优化人工调查，Prometheus Exporter 优化有限的机器可读状态。把它们放进同一个 MVP，会延迟最小有用结果，也更难证明可靠性。
+## 替代方案 {#replacement}
 
-新产品也没有得到必须独立存在的验证。眼前请求不是“搜索全部日志”或“把日志送到另一个后端”，而是“从 PostgreSQL 结构化日志提取少量可靠运维指标”。PG Exporter 已经拥有这项工作需要的 target identity、`/metrics`、软件包、组件健康与 Pigsty 集成。
+2026-08-24 的决策是：
 
-品牌和仓库工作因此成为干扰。过早给推测中的产品命名，会让架构显得比用户价值更确定。设计审查最终选择删除整个公开命名表面，而不是继续打磨它。
+> 为 PG Exporter 增加默认关闭的 PostgreSQL CSV 日志后台采集器，在现有 `/metrics` 端点发布有限的运维指标。
 
-## 替代决策 {#replacement}
+替代方案保留完整 CSV 解析、文件身份、轮转与截断处理、持久游标与聚合值、原子持久化、不可变快照、固定标签和明确的输入缺口指标。
 
-2026-08-24，目标被有意收缩为：
+日志发送、交互查询、会话时间线、任意正则表达式和自动根因分析仍不在范围内。实现契约见 [PostgreSQL 日志指标](/zh/design/postgres-log-metrics/)。
 
-> 在现有 PG Exporter 进程里增加一个默认关闭的 PostgreSQL CSV 后台 collector，只在现有 `/metrics` 上暴露有限的运维指标。
+## 何时重新评估 {#why-keep-it}
 
-替代方案明确排除日志发送、OTLP、VictoriaLogs、Kafka、Web UI、TUI、全文搜索、session timeline、任意用户正则、自动根因分析和其他组件日志。
-
-它保留真正决定可信度的难题：完整 CSV framing、文件身份、rename 与 truncate、持久游标加累计值、原子持久化、不可变快照、固定标签、序列上限与显式 gap。
-
-最终工程契约见[把 PostgreSQL CSV 日志转成持久指标](/zh/design/postgres-log-metrics/)。
-
-## 为什么保留被取代的记录 {#why-keep-it}
-
-删除探索过程会隐藏这些诱人功能为何缺席；直接发布原始研究同样会误导读者，因为其中包含已经被推翻的命名工作、市场快照与产品建议。
-
-这篇校准后的记录只保留有用因果链：
-
-```text
-真实事故工作流
-    -> 正确 CSV 与 session 研究
-    -> 范围过大的工作台与 Agent 提案
-    -> 范围和所有权审查
-    -> PG Exporter 内部的有限日志指标
-```
-
-未来维护者不应仅因为交互调查听起来有价值就重新打开大产品路线。只有在用户确实需要现有日志栈无法提供的本地查询体验、至少两个真实消费者验证了事件模型，并且有人愿意承担独立产品生命周期时，才值得重新评估。
+独立工作台需要一个现有日志工具无法满足的本地调查场景，也需要用户验证事件模型，以及维护者承担发布和支持周期。在这些需求明确之前，PG Exporter 继续提供聚合指标。
 
 ## 来源 {#sources}
 
-本文保留的稳定外部事实来自 PostgreSQL 自身的 CSV 日志定义：[PostgreSQL 14](https://www.postgresql.org/docs/14/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG) 与 [PostgreSQL 18](https://www.postgresql.org/docs/18/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG)。原研究中的产品与品牌快照有意不再转载。
+CSV 要求来自 [PostgreSQL 14](https://www.postgresql.org/docs/14/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG) 与 [PostgreSQL 18](https://www.postgresql.org/docs/18/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-CSVLOG) 官方日志文档。替代方案的源码边界和测试证据记录在链接的设计文章中。

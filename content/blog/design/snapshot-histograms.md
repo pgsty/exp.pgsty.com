@@ -2,34 +2,29 @@
 title: "Snapshot Histograms Are Gauges, Not Counters"
 linkTitle: "Snapshot Histograms"
 date: "2026-07-11T22:06:29+08:00"
-lastmod: "2026-08-28T00:00:00+08:00"
+lastmod: "2026-10-13T00:00:00+08:00"
 authors: [Vonng]
-description: "Why PG Exporter rebuilds SQL distributions on every query and exposes their buckets, count, and sum as gauge series"
-summary: "Shipped in v1.4.0. PG Exporter rebuilds SQL distributions on every real query and exposes their cumulative buckets, count, and sum as Gauge series rather than pretending they are monotonic counters."
+description: "Why SQL snapshot distributions expose bucket, count, and sum as Gauge series"
+summary: "Shipped in v1.4.0. Each SQL execution builds a fresh distribution. Buckets, count, and sum are Gauges and can decrease between scrapes."
 categories: [design]
 tags: [Design, Histogram, Prometheus, PostgreSQL]
 ---
 
-> **Decision status:** Shipped in [`v1.4.0`](https://github.com/pgsty/pg_exporter/releases/tag/v1.4.0).<br>
-> **Decision date:** 2026-07-11; amended on 2026-07-17 before release.<br>
-> **Applies to:** `HISTOGRAM` columns and the bundled `pg_xact_age` collector in PG Exporter v1.4.0 and later.<br>
-> **Release boundary:** this article describes a released source and metric contract; dashboards and recording rules remain consumer responsibilities.
+A scalar metric cannot describe the distribution of a changing population. One 30-minute transaction and one hundred 18-second transactions have the same total age, but different counts, maxima, and operational effects.
 
-PG Exporter originally mapped each SQL result cell to a scalar Gauge or Counter. That model could answer questions such as “how old is the oldest transaction?”, but it could not preserve the shape of the current population. A database with one 30-minute transaction and a database with one hundred 18-second transactions could produce the same maximum while requiring very different action.
+> **Status:** Shipped in [v1.4.0](/release/v1.4.0/).<br>
+> **Decision date:** 2026-07-11; revised on 2026-07-17.<br>
+> **Last verified:** 2026-10-13.<br>
+> **Scope:** `HISTOGRAM` columns and the `pg_xact_age` collector in stable `v1.4.1`, checked against development commit `c0ba58a`.<br>
+> **Delivery:** Implementation, merge, release tag, and package publication completed. Focused local tests passed. Deployment and production operation remain unverified.
 
-The first Histogram design added a distribution without turning PG Exporter into a stateful event processor. Its defining decision is simple:
+A PG Exporter snapshot Histogram groups the observations returned by one SQL execution. Each execution starts a new distribution. The exporter exposes its buckets, count, and sum as Gauge series because their values can decrease.
 
-> A PG Exporter Histogram is a distribution rebuilt from the rows returned by one real SQL query execution. It describes the current population, not observations accumulated since process start.
+## Time semantics {#temporal-contract}
 
-That sentence determines the exposition type, cache behavior, failure semantics, PromQL, and bucket policy.
+Open transactions appear when they start, move between age buckets, and disappear when they finish. This differs from a cumulative Histogram that counts events over time.
 
-## The temporal contract {#temporal-contract}
-
-The reference population is open transactions. A transaction appears when it starts, moves to older buckets as time passes, and disappears when it commits or rolls back. The number of observations and every cumulative bucket may rise or fall between scrapes.
-
-Ordinary instrumented Prometheus histograms are cumulative counters: their bucket, count, and normally their sum series increase over time. Prometheus therefore teaches users to apply `rate()` before computing request rates or time-window distributions. That assumption is wrong for a fresh SQL snapshot.
-
-PG Exporter consequently emits the logical Histogram as ordinary Gauge series:
+The output has the familiar bucket layout:
 
 ```text
 pg_xact_age_seconds_bucket{datname="app",le="10"} 5
@@ -39,9 +34,7 @@ pg_xact_age_seconds_count{datname="app"} 11
 pg_xact_age_seconds_sum{datname="app"} 214
 ```
 
-The familiar names and cumulative `le` buckets preserve compatibility with `histogram_quantile()`. The Gauge type preserves the truth that all values may decrease. This is a deliberate semantic compromise: the output looks like a classic histogram family but is not a counter histogram.
-
-Never apply `rate()`, `irate()`, `increase()`, or counter-reset logic to these series. Query the current distribution directly:
+All three families are Gauges. Buckets are cumulative across their upper bounds within this snapshot, not across scrapes. Use `histogram_quantile()` directly:
 
 ```promql
 histogram_quantile(
@@ -50,7 +43,7 @@ histogram_quantile(
 )
 ```
 
-The current mean is equally direct:
+For the current mean age, divide sum by count:
 
 ```promql
 sum by (datname) (pg_xact_age_seconds_sum)
@@ -58,9 +51,11 @@ sum by (datname) (pg_xact_age_seconds_sum)
 sum by (datname) (pg_xact_age_seconds_count)
 ```
 
-## Configuration and SQL contract {#configuration-contract}
+Do not use `rate()`, `irate()`, or `increase()` on these snapshot series. Those functions interpret decreases as counter resets.
 
-The design adds one user-facing usage, `HISTOGRAM`:
+## Configuration and SQL {#configuration-contract}
+
+Declare an observation column with `usage: HISTOGRAM` and explicit bucket bounds:
 
 ```yaml
 - seconds:
@@ -69,39 +64,33 @@ The design adds one user-facing usage, `HISTOGRAM`:
     description: Open transaction age snapshot in seconds
 ```
 
-Each non-NULL value in the configured column is one observation. Rows with the same complete label tuple belong to the same distribution. Multiple Histogram columns in one query aggregate independently.
+Each non-NULL value is one observation. Rows with the same complete label tuple belong to one distribution. Multiple Histogram columns aggregate independently.
 
-Buckets are inclusive finite upper bounds. Configuration loading rejects an empty list, duplicates, non-increasing order, `NaN`, and infinities. PG Exporter appends `+Inf`; users must not configure it. The generated `le` label and the derived `_bucket`, `_count`, and `_sum` names are reserved, so collisions fail before scraping.
+Bucket upper bounds are inclusive, finite, and strictly increasing. Configuration loading rejects empty lists, duplicates, `NaN`, and infinities. PG Exporter adds `+Inf` automatically. The `le` label and generated `_bucket`, `_count`, and `_sum` names are reserved; conflicting configuration is rejected.
 
-`scale` is applied before bucket assignment and summation. Timestamp and Boolean values follow the existing scalar conversion path and are exempt from scaling. An explicit `default` converts NULL into an observation; otherwise NULL is ignored.
+`scale` applies before bucket assignment and summation. Timestamp and Boolean values use the scalar conversion rules and are not scaled. An explicit `default` turns NULL into an observation; otherwise NULL is ignored.
 
-## Query, cache, and atomicity {#atomicity}
+## Query, cache, and failure behavior {#atomicity}
 
-A real SQL execution starts with empty accumulators. PG Exporter groups observations, assigns finite buckets, produces cumulative counts, and materializes the result only after the complete result set is valid.
+Each SQL execution starts with empty accumulators. PG Exporter groups observations, calculates cumulative buckets, and publishes metrics after reading the complete result.
 
-If the query fails, a required column is missing, or any observation cannot be converted to a finite number, no scalar or Histogram family from that execution is published. The failure is atomic at the collector-query boundary.
+A query error, missing required column, or non-finite observation rejects the whole query result, including its scalar metrics. A failed refresh replaces the cached result with an empty result; it does not retain the previous distribution.
 
-A cache hit reuses the previous immutable result. It does not add the same observations again. A subsequent real query creates a new snapshot from zero; no Histogram state survives between executions. Reloading configuration discards the old collector and its cached snapshot, including an old bucket layout.
+A cache hit returns the previous result without adding observations. The next SQL execution starts from zero. Reload discards the old collector and cache, including the old bucket layout.
 
-These rules keep Histogram semantics aligned with the declarative collector model: SQL remains the source of truth, TTL controls query execution, and the exporter does not invent a second time domain.
+## Alternatives and non-goals {#alternatives}
 
-## Why explicit Gauge series won {#alternatives}
+- `prometheus.NewConstHistogram` labels the data as a counter Histogram. Its time semantics do not match a changing SQL population.
+- OpenMetrics GaugeHistogram describes the semantics directly, but would require a different exposition contract for this feature. Explicit Gauges work with the existing classic text endpoint.
+- Native Histograms address storage and resolution. They do not change whether observations describe events or a current population.
+- SQL could produce pre-aggregated buckets, but each collector would need to repeat the grouping logic.
+- Retaining observations between scrapes would require event identity, restart handling, and duplicate prevention. Persistent event collection is outside this design; [log Histograms](/design/postgres-log-metrics/) have a separate contract.
 
-Several apparently simpler alternatives were rejected:
+## Reference collector and validation {#reference-collector}
 
-- `prometheus.NewConstHistogram` creates counter-like Histogram metadata. It can encode the numbers but misstates their temporal behavior.
-- A formal OpenMetrics GaugeHistogram would express the semantics more precisely, but PG Exporter served the classic Prometheus text format and did not require an OpenMetrics-only mode for one collector type.
-- Native Histograms solve different storage and resolution problems. They do not turn a changing SQL population into a cumulative event stream.
-- Pre-aggregating buckets in SQL would duplicate grouping logic in every collector and create two configuration contracts.
-- Retaining observations across scrapes would change “current database state” into “events seen by this exporter process”, with restart, persistence, and double-counting obligations.
+`pg_xact_age` groups open transaction age and idle-in-transaction age by database. It selects client backends and uses a 10-second TTL. Its bucket grids support current quantiles, counts above a threshold, and mean age.
 
-The selected design is narrower: raw SQL observations in, one current distribution out.
-
-## Reference collector and bucket evolution {#reference-collector}
-
-The first implementation was refined before release around `pg_xact_age`, a per-database distribution of open transaction age and idle-in-transaction age. The final collector filters to client backends and uses logarithmic-style bucket grids suitable for instant operational questions: current quantiles, population above a threshold, and current mean.
-
-The following pgbench workload was used to create several query and hold-time bands for live acceptance. It is reproduced here because the original design directory is no longer the documentation authority:
+This pgbench workload creates several query and idle-in-transaction duration bands. Use it on a test database to observe transactions entering and leaving the buckets:
 
 ```sql
 \set query_band random(1, 4)
@@ -132,10 +121,10 @@ SELECT pg_current_xact_id(), pg_sleep(:query_ms / 1000.0);
 COMMIT;
 ```
 
-The important evidence was not a particular benchmark number. It was that bucket populations moved and disappeared as transactions advanced, cache hits did not accumulate them, and reload installed a new layout without retaining old samples.
+Tests cover independent Histogram columns, NULL handling, scaling, bucket boundaries, and query failures. They also cover cache reuse, deterministic output, concurrent collection, and reload.
 
 ## Consequences {#consequences}
 
-The design gives users aggregatable current distributions without a stateful exporter. In return, users must understand that the `_bucket`, `_count`, and `_sum` suffixes do not imply counter temporality here. Documentation, dashboards, and alerts must state that distinction explicitly.
+The exporter provides aggregatable current distributions without keeping event history. Dashboard queries must use snapshot semantics even though the series use familiar Histogram suffixes.
 
-The complete collector syntax is maintained in [Collector Configuration](/config/#histogram-columns-histogram), and the shipped implementation is summarized in the [v1.4.0 release note](/release/v1.4.0/). Prometheus' documentation remains the authority for ordinary counter histograms and explains why their usual `rate()`-based queries depend on monotonic counts: [Histograms and summaries](https://prometheus.io/docs/practices/histograms/).
+See [Collector Configuration](/config/#histogram-columns-histogram) for syntax and [v1.4.0](/release/v1.4.0/) for the release. Prometheus explains ordinary cumulative Histogram queries in [Histograms and summaries](https://prometheus.io/docs/practices/histograms/).

@@ -13,6 +13,8 @@ cascade:
   images: [img/pg_exporter-design.webp]
 ---
 
-Design records explain why PG Exporter works the way it does. Each article separates the decision, implementation, release, package, deployment, and production-verification gates so an accepted design is never mistaken for a shipped feature.
+Design records explain PG Exporter’s architecture, alternatives, and tradeoffs. Each record states its status, source boundary, and last verification date.
 
-Use the [manuals](/docs/) for current product behavior and the [release archive](/release/) for shipped versions. Use this section for the reasoning, alternatives, invariants, and evidence behind those outcomes.
+Snapshot Histograms shipped in v1.4.0. Composite mode, cached pgBackRest metrics, and PostgreSQL log metrics are implemented in the development branch and are not in stable v{{< param version >}}. The separate observability-product proposal was superseded.
+
+Use the [manuals](/docs/) for stable-release procedures and the [release archive](/release/) for shipped changes.

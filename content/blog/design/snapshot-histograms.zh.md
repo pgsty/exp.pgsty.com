@@ -2,34 +2,29 @@
 title: "快照直方图是 Gauge，不是 Counter"
 linkTitle: "快照直方图"
 date: "2026-07-11T22:06:29+08:00"
-lastmod: "2026-08-28T00:00:00+08:00"
+lastmod: "2026-10-13T00:00:00+08:00"
 authors: [Vonng]
-description: "为什么 PG Exporter 每次查询都重新构造 SQL 分布，并用 Gauge 序列暴露 bucket、count 与 sum"
-summary: "已随 v1.4.0 发布。PG Exporter 在每次真实查询时重建 SQL 分布，并用 Gauge 暴露累计 bucket、count 与 sum，不把当前总体伪装成单调 Counter。"
+description: "为什么 SQL 快照分布将桶、计数与总和输出为 Gauge 序列"
+summary: "已随 v1.4.0 发布。每次 SQL 执行重建分布；桶、计数和总和均为 Gauge，可在抓取之间下降。"
 categories: [design]
 tags: [设计, Histogram, Prometheus, PostgreSQL]
 ---
 
-> **决策状态：** 已随 [`v1.4.0`](https://github.com/pgsty/pg_exporter/releases/tag/v1.4.0) 发布。<br>
-> **决策日期：** 2026-07-11；发布前于 2026-07-17 完成修订。<br>
-> **适用范围：** PG Exporter v1.4.0 及后续版本中的 `HISTOGRAM` 列与内置 `pg_xact_age` 采集器。<br>
-> **发布边界：** 本文描述已经发布的源码与指标契约；Dashboard 与 recording rule 仍由消费者负责。
+一个标量指标无法描述变化中的总体分布。一个 30 分钟事务与一百个 18 秒事务的总年龄相同，但数量、最大年龄和运维影响不同。
 
-PG Exporter 最初把每个 SQL 结果单元映射成标量 Gauge 或 Counter。它能回答“最老事务有多老”，却无法保留当前总体的分布形状。一个 30 分钟事务与一百个 18 秒事务可能具有相同最大值，但需要完全不同的处置方式。
+> **状态：** 已随 [v1.4.0](/zh/release/v1.4.0/) 发布。<br>
+> **决策日期：** 2026-07-11；2026-07-17 修订。<br>
+> **最后核验：** 2026-10-13。<br>
+> **范围：** 稳定版 `v1.4.1` 的 `HISTOGRAM` 列与 `pg_xact_age` 采集器，并对照开发提交 `c0ba58a` 核验。<br>
+> **交付进度：** 已实现、合并、打标签并发布软件包。针对性本地测试已通过；部署与生产运行未核验。
 
-第一版 Histogram 在不把 PG Exporter 变成有状态事件处理器的前提下补上了分布能力。它的核心决策只有一句话：
+PG Exporter 快照直方图对一次 SQL 执行返回的观测值分组。每次执行都重建分布。由于值可能下降，桶、计数和总和都以 Gauge 序列输出。
 
-> PG Exporter Histogram 是一次真实 SQL 查询返回的全部行所重建的分布。它描述当前总体，而不是 exporter 进程启动以来累计看到的观测。
+## 时间语义 {#temporal-contract}
 
-这句话决定了 exposition 类型、缓存、失败语义、PromQL 与 bucket 策略。
+事务开始时进入总体，随时间增长移入更大的年龄桶，结束时离开总体。这与持续累计事件的 Histogram 不同。
 
-## 时间语义契约 {#temporal-contract}
-
-参考总体是打开中的事务。事务开始时出现，随着时间经过移入更老的 bucket，在提交或回滚后消失。观测数和每个累计 bucket 都可能在两次抓取之间上升或下降。
-
-普通 Prometheus Histogram 是累计 Counter：bucket、count，通常还有 sum，都会随时间增加。因此 Prometheus 的常规查询会先使用 `rate()`，再计算请求速率或时间窗口分布。这个假设不适用于每次重新生成的 SQL 快照。
-
-所以 PG Exporter 把逻辑 Histogram 暴露成普通 Gauge 序列：
+输出沿用常见的桶结构：
 
 ```text
 pg_xact_age_seconds_bucket{datname="app",le="10"} 5
@@ -39,9 +34,7 @@ pg_xact_age_seconds_count{datname="app"} 11
 pg_xact_age_seconds_sum{datname="app"} 214
 ```
 
-熟悉的命名和累计 `le` bucket 仍可供 `histogram_quantile()` 使用；Gauge 类型则如实表达所有值都可能下降。这是一项有意的语义折衷：输出具有经典 Histogram 的形状，但不是 Counter Histogram。
-
-不要对这些序列应用 `rate()`、`irate()`、`increase()` 或 Counter reset 逻辑。应直接查询当前分布：
+这三个指标族都是 Gauge。桶内计数按当前快照的上界累计，不跨抓取累计。直接使用 `histogram_quantile()`：
 
 ```promql
 histogram_quantile(
@@ -50,7 +43,7 @@ histogram_quantile(
 )
 ```
 
-当前平均值同样直接计算：
+当前平均年龄由总和除以计数得到：
 
 ```promql
 sum by (datname) (pg_xact_age_seconds_sum)
@@ -58,9 +51,11 @@ sum by (datname) (pg_xact_age_seconds_sum)
 sum by (datname) (pg_xact_age_seconds_count)
 ```
 
-## 配置与 SQL 契约 {#configuration-contract}
+不要对这些快照序列使用 `rate()`、`irate()` 或 `increase()`。这些函数会把数值下降解释为计数器重置。
 
-设计只增加一个用户可见的 usage：`HISTOGRAM`。
+## 配置与 SQL {#configuration-contract}
+
+用 `usage: HISTOGRAM` 声明观测列，并指定桶上界：
 
 ```yaml
 - seconds:
@@ -69,39 +64,33 @@ sum by (datname) (pg_xact_age_seconds_count)
     description: Open transaction age snapshot in seconds
 ```
 
-配置列中的每个非 NULL 值都是一次观测。具有相同完整标签元组的行属于同一个分布；同一查询中的多个 Histogram 列彼此独立聚合。
+每个非 NULL 值是一次观测。完整标签元组相同的行归入同一分布；多个 Histogram 列独立聚合。
 
-Bucket 是有限、包含上界的边界。配置加载阶段会拒绝空列表、重复值、非递增顺序、`NaN` 与无穷值。PG Exporter 自动追加 `+Inf`，用户不能自行配置。生成的 `le` 标签及 `_bucket`、`_count`、`_sum` 派生名称都是保留表面，冲突必须在抓取前失败。
+桶包含上界，边界必须有限且严格递增。配置加载时拒绝空列表、重复值、`NaN` 和无穷值。PG Exporter 自动追加 `+Inf`。`le` 标签及生成的 `_bucket`、`_count`、`_sum` 名称为保留名称，冲突配置会被拒绝。
 
-`scale` 在 bucket 分配与求和之前生效；时间戳与布尔值沿用标量转换路径，不应用 scale。显式 `default` 会把 NULL 转成一次观测，否则忽略 NULL。
+`scale` 在分桶和求和前生效。时间戳与布尔值沿用标量转换规则，不进行缩放。显式 `default` 将 NULL 转为观测值；未指定时忽略 NULL。
 
-## 查询、缓存与原子性 {#atomicity}
+## 查询、缓存与失败行为 {#atomicity}
 
-每次真实 SQL 执行都从空 accumulator 开始。PG Exporter 对观测分组、分配有限 bucket、计算累计计数，并只在完整结果集验证成功后物化指标。
+每次 SQL 执行都从空累加器开始。PG Exporter 对观测分组、计算累计桶，并在读完全部结果后发布指标。
 
-如果查询失败、缺少必需列，或任意观测无法转换成有限数值，本次执行中的标量与 Histogram family 都不会发布。失败在 collector query 边界上是原子的。
+查询出错、缺少必需列或出现非有限观测值时，整份查询结果都被拒绝，包括同一查询的标量指标。刷新失败会将缓存替换为空结果，不保留上一份分布。
 
-缓存命中只复用上一份不可变结果，不会再次累计同一批观测。下一次真实查询从零构造新快照，Histogram 状态不会跨执行保留。配置重载会丢弃旧 collector 与旧缓存，包括旧 bucket 布局。
+缓存命中直接返回上一份结果，不追加观测。下一次 SQL 执行从零开始。重载丢弃旧采集器和缓存，包括旧桶布局。
 
-这些规则让 Histogram 继续服从声明式 collector 模型：SQL 是权威数据源，TTL 决定查询是否执行，exporter 不发明第二个时间域。
+## 备选方案与非目标 {#alternatives}
 
-## 为什么选择显式 Gauge 序列 {#alternatives}
+- `prometheus.NewConstHistogram` 将数据标为 Counter Histogram，其时间语义不适合变化中的 SQL 总体。
+- OpenMetrics GaugeHistogram 能直接表达该语义，但需要为此功能改变输出协议。显式 Gauge 可沿用经典文本端点。
+- Native Histogram 解决存储和分辨率问题，不改变观测是事件还是当前总体这一事实。
+- 在 SQL 中预聚合桶，会让每个采集器重复分组逻辑。
+- 跨抓取保留观测需要事件身份、重启处理和去重。持久事件采集不在本设计范围内；[日志 Histogram](/zh/design/postgres-log-metrics/) 使用独立契约。
 
-几种看似更简单的方案被明确否决：
+## 参考采集器与验证 {#reference-collector}
 
-- `prometheus.NewConstHistogram` 会产生 Counter 风格的 Histogram 元数据；数值虽能编码，时间语义却是错误的。
-- OpenMetrics GaugeHistogram 能更精确地表达语义，但 PG Exporter 使用经典 Prometheus 文本，没有理由为了一个采集类型引入 OpenMetrics 专用模式。
-- Native Histogram 解决的是存储和分辨率问题，不会把不断变化的 SQL 总体变成累计事件流。
-- 在 SQL 中预聚合 bucket 会让每个 collector 重复分组逻辑，并产生第二套配置契约。
-- 跨抓取保留观测会把“当前数据库状态”改成“本 exporter 进程曾看到的事件”，随之引入重启、持久化和重复计数义务。
+`pg_xact_age` 按数据库统计未结束事务的年龄和事务内空闲时长，只选择客户端后端，TTL 为 10 秒。其桶边界支持计算当前分位数、超过阈值的数量和平均年龄。
 
-最终方案刻意保持狭窄：输入原始 SQL 观测，输出一份当前分布。
-
-## 参考采集器与 bucket 演进 {#reference-collector}
-
-第一版实现发布前围绕 `pg_xact_age` 完成修订：按数据库统计打开事务年龄与 idle-in-transaction 年龄，只保留 client backend，并采用适合即时运维问题的类对数 bucket 网格。目标查询是当前分位数、超过阈值的当前总体与当前均值。
-
-以下 pgbench workload 用于制造多档 query time 与 hold time，验证实时分布。原设计目录不再承担文档权威，因此在这里保留可复现实例：
+以下 pgbench 脚本产生多档查询时长和事务内空闲时长。可在测试数据库中运行，观察事务进入和离开各桶：
 
 ```sql
 \set query_band random(1, 4)
@@ -132,10 +121,10 @@ SELECT pg_current_xact_id(), pg_sleep(:query_ms / 1000.0);
 COMMIT;
 ```
 
-关键证据不是某个 benchmark 数字，而是：事务推进时 bucket 总体会移动和消失；缓存命中不会重复累计；重载新布局时不会保留旧样本。
+实现与测试覆盖多个 Histogram 列独立聚合、NULL、缩放、桶边界、查询失败、缓存复用、确定性输出、并发采集与重载。
 
-## 结果与代价 {#consequences}
+## 运维影响 {#consequences}
 
-这个设计让用户无需有状态 exporter 就能得到可聚合的当前分布。代价是用户必须理解：这里的 `_bucket`、`_count`、`_sum` 后缀并不代表 Counter 时间语义。文档、Dashboard 与告警必须明确说明这一点。
+Exporter 无需保存事件历史，就能提供可聚合的当前分布。虽然序列使用常见 Histogram 后缀，仪表盘查询仍须遵循快照语义。
 
-完整语法由[采集器配置](/zh/config/#直方图列histogram)维护，已经交付的实现见 [v1.4.0 发布注记](/zh/release/v1.4.0/)。Prometheus 官方文档仍是普通 Counter Histogram 的权威，并解释了常规 `rate()` 查询为何依赖单调 count：[Histograms and summaries](https://prometheus.io/docs/practices/histograms/)。
+完整语法见[采集器配置](/zh/config/#直方图列histogram)，发布内容见 [v1.4.0](/zh/release/v1.4.0/)。普通累计 Histogram 的查询方法见 Prometheus [Histograms and summaries](https://prometheus.io/docs/practices/histograms/)。

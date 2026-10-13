@@ -2,104 +2,84 @@
 title: "Caching pgBackRest Metrics Outside the Scrape Path"
 linkTitle: "Cached pgBackRest Metrics"
 date: "2026-08-23T19:34:09+08:00"
-lastmod: "2026-08-28T00:00:00+08:00"
+lastmod: "2026-10-13T00:00:00+08:00"
 authors: [Vonng]
-description: "Why PG Exporter executes pgBackRest in a bounded background worker and serves an immutable last-good snapshot"
-summary: "Implemented but unreleased. A bounded background worker validates pgBackRest output and atomically publishes a last-good snapshot, keeping command and repository latency outside Prometheus requests."
+description: "Run pgBackRest in a bounded background worker and serve the latest valid metrics snapshot"
+summary: "Implemented but unreleased. Background collection keeps command and repository latency out of Prometheus requests. Failed refreshes retain the last valid backup state."
 categories: [design]
 tags: [Design, pgBackRest, Prometheus, Reliability]
 ---
 
-> **Decision status:** Implemented in a development line; not present in `main`, a tag, or a published package as of 2026-08-28.<br>
+`pgbackrest info --output=json` reports backup state. The command can contact remote repositories and wait for storage. Running it during a Prometheus request would add that delay to database monitoring.
+
+> **Status:** Implemented but unreleased.<br>
 > **Decision date:** 2026-08-23.<br>
-> **Applies to:** the optional `--pgbackrest` cached component inside the Composite exporter.<br>
-> **Release boundary:** source-level behavior has been implemented and tested; public release, packaging, deployment, and retirement of a standalone exporter remain unverified.
+> **Last verified:** 2026-10-13.<br>
+> **Scope:** Optional `--pgbackrest` component at source commit `c0ba58a`; absent from stable `v1.4.1`.<br>
+> **Delivery:** Local tests passed. Not merged into `main` or tagged; packages, deployment, and production operation remain unverified.
 
-pgBackRest exposes rich backup state through `pgbackrest info --output=json`, but it exposes that state through a command, not a low-latency metrics endpoint. The command may inspect local configuration, contact remote repositories, wait on storage, emit large JSON, or fail for reasons unrelated to PostgreSQL SQL metrics.
-
-Executing it during every Prometheus request would couple the availability and latency of the primary database scrape to backup infrastructure. The selected design therefore treats pgBackRest as a cached component:
+PG Exporter therefore runs pgBackRest in a background worker. The worker validates the result and publishes an immutable snapshot. `/metrics` reads the latest snapshot without waiting for a command.
 
 ```text
 background worker
-    -> pgbackrest version
-    -> pgbackrest info --output=json
-    -> strict validation and metric construction
-    -> atomic immutable snapshot
+    -> detect pgBackRest version
+    -> run info --output=json
+    -> validate and build metrics
+    -> publish snapshot
 
 /metrics request
-    -> load current snapshot
-    -> merge below PostgreSQL, Patroni, and PgBouncer
+    -> read snapshot
+    -> merge with other sources
 ```
 
-The command path and scrape path never wait for one another.
+## Execution limits {#bounded-execution}
 
-## Bounded command execution {#bounded-execution}
+The worker executes the configured program directly, without a shell.
 
-The collector executes the configured binary directly, without a shell. The production defaults are:
-
-| Control | Default | Contract |
+| Control | Default | Rule |
 | --- | ---: | --- |
-| Command | `pgbackrest` | Executed directly with fixed arguments |
-| Refresh interval | 2 minutes | Must be at least 10 seconds |
-| Refresh timeout | 30 seconds | Covers one background refresh |
-| Standard output | 16 MiB | Hard limit; overflow cancels the command |
-| Standard error | 64 KiB | Hard diagnostic limit |
+| Command | `pgbackrest` | Fixed version and info arguments |
+| Refresh interval | 2 minutes | Minimum 10 seconds |
+| Refresh timeout | 30 seconds | One deadline for version detection and info |
+| Standard output | 16 MiB | Overflow cancels the command |
+| Standard error | 64 KiB | Overflow cancels the command |
 
-The worker first detects the pgBackRest version, preferring numeric output and falling back to the older text form when necessary. It then runs `info --output=json`. Version and JSON shape are validated together because supported fields and known compatibility cases vary across pgBackRest releases.
-
-Limits are part of the security and reliability contract. A corrupt repository, unexpected command, or hostile wrapper must not allocate unbounded memory or leave a child process running after overflow. The runner also uses a short wait delay after cancellation so process cleanup cannot stall indefinitely.
+The worker first runs `version --output=num`. For older versions, it falls back to `version`. It then runs `info --output=json`. Cancellation stops the direct child process; a one-second wait delay bounds cleanup of output pipes.
 
 ## Validate before publication {#validation}
 
-A successful command is not yet a successful refresh. The JSON must satisfy the expected document shape, bounded object counts, numeric constraints, stanza and repository relationships, and metric-name and label rules. The resulting Prometheus families are normalized before publication.
+A zero command exit status is not sufficient. The output must have the expected JSON structure, valid numeric fields, and consistent stanza and repository references. Validation also limits the input to 256 stanzas and 4,096 backups, and the output to 20,000 samples and 4 MiB of Prometheus text.
 
-Only a complete valid candidate replaces the current snapshot. Prometheus requests can then use a cheaper merge path: the cached families have already passed full client-library validation, so each database scrape checks ownership and headers without revalidating the entire backup payload.
+Only a complete valid result replaces the snapshot. Metric families are validated before publication, so the scrape path only needs to check their headers and ownership.
 
-The Composite ownership order remains:
+pgBackRest follows PostgreSQL, process self-metrics, Patroni, and PgBouncer in the [Composite ownership order](/design/composite-exporter/#family-ownership). A conflicting family is omitted and marks the component down. Other valid families remain available.
 
-```text
-PostgreSQL > Patroni > PgBouncer > pgBackRest > PostgreSQL Log
-```
+## Retain the last successful result {#last-good}
 
-A pgBackRest family that conflicts with a higher-priority owner is omitted and marks the component down. It cannot append samples to the existing family and cannot make the PostgreSQL gather fatal.
+After the first successful refresh, a command, timeout, parse, or limit error preserves the previous business metrics. The component reports `up=0`, increments its error counter, and keeps the previous last-success timestamp.
 
-## Last-good semantics {#last-good}
+Backup-age gauges are recalculated from the retained JSON during failed background refreshes. They continue to reflect elapsed time at the refresh interval. `/metrics` does not parse JSON or execute pgBackRest.
 
-After one successful refresh, a later command, timeout, parse, or limit failure keeps the previous business families. The component reports `up=0`, increments a bounded error reason, and preserves the timestamp of the last success.
+Before the first success, no backup business metrics are available. PostgreSQL and the other valid sources continue to work.
 
-This is not “pretend the backup source is healthy”. It is a deliberate split between two facts:
+## Health and concurrent requests {#health}
 
-- the newest refresh failed;
-- the last valid backup state is still useful if its age is visible.
+Component health uses `component="pgbackrest"`. `up` describes the latest collection result; the last-success timestamp shows how old the backup data is. Command failures use `exec`, output limits use `limit` for standard output, and parse or merge errors use their corresponding reasons. Standard-error overflow is classified as an execution error.
 
-Relative backup-age gauges continue to advance during a failure. The worker retains the last valid JSON and version and may rebuild only those time-relative values in the background. `/metrics` itself never reparses JSON or executes pgBackRest.
+Overlapping scrapes can read the same snapshot. They do not start another command or update the stored component-health history. Metric conflicts still follow the Composite ownership rule.
 
-Before the first successful refresh there is no last-good business snapshot to serve. Health stays down and the endpoint still returns PostgreSQL plus any other valid components.
+## Alternatives and non-goals {#alternatives}
 
-## Health and overlapping scrapes {#health}
+Running the command on every scrape would couple Prometheus timeouts and concurrent requests to repository work. A background worker gives command execution a separate timeout and refresh interval.
 
-The cached component participates in the common health surface with `component="pgbackrest"`. Its failure reasons include command execution and resource limit in addition to connection-independent parse and gather failures.
+A separate exporter offers process isolation but adds a service, port, package, and target. The integrated component offers another deployment option. It does not migrate existing deployments automatically.
 
-An overlapping Prometheus request does not queue behind a full Composite scrape. It reads the same atomic pgBackRest snapshot and includes it when its families do not conflict. Cached data therefore remains available during overlap without starting a second command or mutating component health from the request path.
+A generic shell-command plugin was rejected because pgBackRest requires specific JSON validation, version handling, metric definitions, and recovery rules. This component accepts a pgBackRest executable, not arbitrary command templates.
 
-## Why not run on every scrape {#alternatives}
+## Verification and operation {#consequences}
 
-Running the command on demand would provide superficially fresher data, but would produce several undesirable contracts:
+`exporter/pgbackrest.go` owns command execution and snapshot publication; `exporter/pgbackrest_metrics.go` owns JSON validation and metrics. Tests cover version fallback, malformed and oversized output, timeout, last-success retention, family conflicts, and shutdown.
 
-- Prometheus timeout would become a backup-command timeout.
-- Concurrent scrapes could execute concurrent repository inspections.
-- Repository latency could hide PostgreSQL metrics.
-- A scrape storm could amplify load on local and remote storage.
-- Command output size and process cleanup would become HTTP-handler concerns.
+The service user needs permission to run pgBackRest and read its configuration and repository credentials. The PG Exporter package does not bundle pgBackRest. Use the host's backup installation.
 
-A separate exporter process provides stronger process isolation, but retains another port, target, package, and health model. Composite mode offers a migration option without claiming that every environment must retire the standalone process immediately.
-
-A universal command-plugin framework was also rejected. pgBackRest's JSON, version compatibility, security, metrics, and last-good semantics are domain-specific. Treating it as arbitrary shell output would weaken validation while making an unstable plugin API part of the product.
-
-## Operational consequences {#consequences}
-
-Enabling the component grants the PG Exporter service permission to execute pgBackRest and read its configuration. The official PG Exporter package does not need to bundle the pgBackRest binary; the executable and repository credentials remain owned by the host's backup installation.
-
-Operators must alert on component health and last-success age, not merely the continued presence of backup metrics. They must also validate the final package and service user against real repositories before replacing a standalone exporter. Source tests, a tagged release, a packaged binary, a Pigsty target change, and production parity are separate acceptance gates.
-
-The surrounding coordinator and failure rules are documented in [One Endpoint, Several Sources](/design/composite-exporter/).
+Alert on component health and last-success age. Existing backup metrics can remain visible after collection fails. Before replacing a standalone exporter, compare both outputs against the same repository under the intended service user.

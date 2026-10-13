@@ -23,8 +23,8 @@ cascade:
   sidebar_enabled: false
 ---
 
-This archive contains one article for every `pg_exporter` repository tag, newest first: **35 tagged versions** from `v0.0.1` through `v{{< param version >}}`.
+This archive covers all **35 repository tags**, from `v0.0.1` to `v{{< param version >}}`, with one English and Chinese note per version.
 
-GitHub currently has 33 formal Release objects. The two early tag-only versions, `v0.0.1` and `v0.0.5`, are preserved here as historical notes and are clearly marked inside their articles. Dates use the GitHub publication timestamp when a Release exists, otherwise the source tag timestamp, normalized to Asia/Shanghai (`UTC+08:00`).
+Of these versions, 33 have GitHub Releases; `v0.0.1` and `v0.0.5` have Git tags only. Dates use the release time, or the commit time for tag-only versions, in Asia/Shanghai (`UTC+08:00`).
 
-Download current artifacts from the [latest GitHub Release](https://github.com/pgsty/pg_exporter/releases/latest), or use the [download guide](/download/) to compare package repositories, archives, containers, Pigsty, and source builds.
+For current packages and installation commands, use [Downloads](/download/).
