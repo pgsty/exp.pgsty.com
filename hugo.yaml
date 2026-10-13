@@ -70,36 +70,36 @@ languages:
           pre: <i class='fa-solid fa-book'></i>
         - identifier: docs-start
           parent: docs
-          name: Quick Start
+          name: Getting Started
           weight: 10
           pageRef: /start
           params:
             icon: fa-solid fa-rocket
-            description: Export the first PostgreSQL metrics in five minutes
-        - identifier: docs-deploy
+            description: Install the exporter and verify the first scrape
+        - identifier: docs-intro
           parent: docs
-          name: Deployment
+          name: Introduction
           weight: 20
-          pageRef: /deploy
+          pageRef: /intro
           params:
-            icon: fa-solid fa-server
-            description: Run securely with systemd, containers, and Prometheus
-        - identifier: docs-config
+            icon: fa-solid fa-lightbulb
+            description: Understand PG Exporter's model, data path, and boundaries
+        - identifier: docs-install
           parent: docs
-          name: Collector Configuration
+          name: Installation
           weight: 30
-          pageRef: /config
+          pageRef: /install
           params:
-            icon: fa-solid fa-code
-            description: Define version-aware metrics with YAML and SQL
-        - identifier: docs-api
+            icon: fa-solid fa-cloud-arrow-down
+            description: Install from packages, archives, containers, Pigsty, or source
+        - identifier: docs-reference
           parent: docs
-          name: HTTP API
+          name: Reference
           weight: 40
-          pageRef: /api
+          pageRef: /cmd
           params:
-            icon: fa-solid fa-plug
-            description: Metrics, health, planning, statistics, and reload endpoints
+            icon: fa-solid fa-terminal
+            description: Command-line flags, environment variables, defaults, and precedence
         - identifier: blog
           name: Blog
           weight: 20
@@ -162,36 +162,36 @@ languages:
           pre: <i class='fa-solid fa-book'></i>
         - identifier: docs-start
           parent: docs
-          name: 快速上手
+          name: 上手
           weight: 10
           pageRef: /start
           params:
             icon: fa-solid fa-rocket
-            description: 用五分钟导出第一组 PostgreSQL 指标
-        - identifier: docs-deploy
+            description: 安装导出器并验证首次抓取
+        - identifier: docs-intro
           parent: docs
-          name: 生产部署
+          name: 简介
           weight: 20
-          pageRef: /deploy
+          pageRef: /intro
           params:
-            icon: fa-solid fa-server
-            description: 使用 systemd、容器与 Prometheus 安全运行
-        - identifier: docs-config
+            icon: fa-solid fa-lightbulb
+            description: 了解 PG Exporter 的模型、数据路径与边界
+        - identifier: docs-install
           parent: docs
-          name: 采集器配置
+          name: 安装
           weight: 30
-          pageRef: /config
+          pageRef: /install
           params:
-            icon: fa-solid fa-code
-            description: 使用 YAML 与 SQL 定义版本感知的指标
-        - identifier: docs-api
+            icon: fa-solid fa-cloud-arrow-down
+            description: 通过软件包、压缩包、容器、Pigsty 或源码安装
+        - identifier: docs-reference
           parent: docs
-          name: HTTP API
+          name: 参考
           weight: 40
-          pageRef: /api
+          pageRef: /cmd
           params:
-            icon: fa-solid fa-plug
-            description: 指标、健康、规划、统计与重载端点
+            icon: fa-solid fa-terminal
+            description: 命令行参数、环境变量、默认值与优先级
         - identifier: blog
           name: 博客
           weight: 20
@@ -289,7 +289,7 @@ params:
     - img/pg-exporter-social-card.png
   logo: img/pg-exporter.png
   version: 1.4.1
-  metric_families: 600
+  metric_definitions: 460
   collector_files: 58
   tagged_versions: 35
   copyright:
@@ -337,6 +337,8 @@ params:
   offline_search_max_results: 10
 
   ui:
+    preset: paper
+    preset_menu: [paper, slate, ink, terminal]
     blog_index_size: 60
     # Let a reader cycle a blog index through rows, cards, and the compact
     # table. The release archive publishes the table form; the toggle keeps the

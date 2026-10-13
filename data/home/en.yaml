@@ -4,7 +4,6 @@ sections:
   - hero
   - metrics
   - capabilities
-  - principles
   - type: cards
     key: delivery
     id: download
@@ -13,8 +12,8 @@ sections:
 hero:
   eyebrow: PostgreSQL + PgBouncer → Prometheus
   title: PG Exporter
-  desc: '**PostgreSQL observability, expressed in SQL.** Define metrics in YAML and SQL; let one exporter select the right collector for each target version, role, and extension set.'
-  note: 600+ metrics · PostgreSQL 10–19+ · PgBouncer 1.8–1.25+
+  desc: 'Export PostgreSQL and PgBouncer metrics to Prometheus. Define collectors in YAML and SQL. PG Exporter selects queries for the target version, role, and installed extensions.'
+  note: v1.4.1 · 460 metric definitions · PostgreSQL and PgBouncer
   actions:
     - label: Download
       url: download/
@@ -27,92 +26,84 @@ hero:
   image:
     light: img/architecture-light.svg
     dark: img/architecture-dark.svg
-    alt: 'PG Exporter architecture: PostgreSQL, PgBouncer, Patroni, and pgBackRest collected by one PG Exporter process that serves merged metrics on :9630/metrics to Prometheus and VictoriaMetrics'
+    alt: 'PG Exporter v1.4.1: each process collects one PostgreSQL instance or PgBouncer target and serves metrics to Prometheus or VictoriaMetrics'
   media:
     ratio: 1fr 0.94fr
     max_width: 500px
     hide_below: md
 
 metrics:
-  eyebrow: Shipped surface
-  title: Useful defaults, backed by inspectable definitions
-  desc: Product coverage rather than adoption counters; every number maps to the current source tree or release archive.
-  columns: 4
+  eyebrow: Stable release
+  title: Start with the bundled collectors
+  desc: The bundled SQL queries cover activity, replication, WAL, locks, database objects, and selected extensions.
+  columns: 3
   link_label: Inspect
   items:
-    - value: 600+
-      label: Metrics
-      desc: in the merged default config
+    - value: 460
+      label: Metric definitions
+      desc: across the bundled SQL collectors
       icon: fa-solid fa-chart-line
       url: collectors/
     - value: 58
       label: Collector files
-      desc: versioned YAML + SQL definitions
+      desc: YAML files, including the schema reference
       icon: fa-solid fa-file-code
       url: collectors/
-    - value: 10–19+
+    - value: 10–19
       label: PostgreSQL
-      desc: covered by the default bundle
+      desc: collector branches in the default bundle
       icon: fa-solid fa-database
       url: compatibility/
-    - value: 35
-      label: Documented tags
-      desc: v0.0.1 through v1.4.1
-      icon: fa-solid fa-clock-rotate-left
-      url: release/
 
 capabilities:
   eyebrow: Why PG Exporter
-  title: Metric logic database engineers can read
-  desc: Collector behavior is data. The runtime owns discovery, planning, caching, failure isolation, and encoding.
+  title: Define what to collect
+  desc: Write the SQL and describe its result columns. PG Exporter runs the queries and converts their results to Prometheus metrics.
   items:
     - ref: 01 / DECLARE
       title: Define metrics in YAML + SQL
       url: config/
-      motto: Change the collector, not the binary
+      motto: Add metrics without rebuilding
       bullets:
         - Map columns to GAUGE, COUNTER, HISTOGRAM, and LABEL.
-        - Set TTL, timeout, skip, and fatal behavior per collector.
-        - Keep custom collectors beside the shipped ones.
-      value: The metric contract stays readable to the database team.
+        - Set a cache TTL and query timeout for each collector.
+        - Load bundled and custom collectors from one directory.
       visual:
         type: code
         title: collector.yml
         aria_label: Declarative PG Exporter collector example
         lines:
           - { class: v, text: 'pg_example:' }
-          - { class: k, prefix: '  query: ', text: 'SELECT value FROM view' }
-          - { class: k, prefix: '  min_version: ', text: '100000' }
-          - { class: k, prefix: '  tags: ', text: '[cluster, primary]' }
-          - { class: k, prefix: '  ttl: ', text: '10' }
-          - { class: k, prefix: '  timeout: ', text: '0.1' }
+          - { class: k, prefix: '  query: ', text: 'SELECT count(*) AS count FROM pg_stat_activity' }
+          - { class: k, text: '  metrics:' }
+          - { class: k, text: '    - count:' }
+          - { class: k, text: '        usage: GAUGE' }
+          - { class: k, text: '        description: Number of connections' }
     - ref: 02 / PLAN
       title: The right query per target
       url: intro/
-      motto: One binary, target-aware execution
+      motto: Select queries for each target
       bullets:
-        - Match version, recovery role, database, user, and extensions.
-        - Branch a collector instead of freezing it at the oldest version.
-        - Ask `/explain` why a branch was chosen or skipped.
-      value: Compatibility is decided at runtime, not in release notes.
+        - Select collectors by version, role, and tags.
+        - Use separate query branches when server versions differ.
+        - Use `/explain` to inspect the selected collectors.
       visual:
         type: code
-        title: GET /explain
-        aria_label: PG Exporter dynamic planning result
+        title: Selection rules
+        aria_label: Collector selection rules, shown as an illustration
         lines:
-          - { class: ok, prefix: '✓ ', text: 'pg_wal / primary / PG17' }
-          - { class: ok, prefix: '✓ ', text: 'pg_stat_statements / 1.11' }
-          - { class: c, prefix: '– ', text: 'pg_replica / role mismatch' }
-          - { class: c, prefix: '– ', text: 'pgbouncer / target mismatch' }
+          - { class: c, text: 'version: min_version ≤ v < max_version' }
+          - { class: c, text: 'tags: role and operator tags' }
+          - { class: c, text: 'predicate: SQL returns true' }
+          - { class: c, text: '/explain: selected queries' }
     - ref: 03 / OPERATE
       title: Observe the exporter itself
       url: api/
-      motto: Scrapes are only one part of the runtime
+      motto: Check collection and target health
       bullets:
-        - See duration, errors, and cache state in `/stat`.
+        - See query duration, error counts, and cache hits in `/stat`.
         - Reload configuration without restarting the process.
         - Use health and primary/replica endpoints for probes.
-      value: The exporter exposes the evidence needed to operate it.
       visual:
         type: components
         columns: 2
@@ -122,62 +113,48 @@ capabilities:
           - { icon: fa-solid fa-chart-line, title: /metrics, detail: Scrape output, url: api/#get-metrics }
           - { icon: fa-solid fa-heart-pulse, title: /up, detail: Target health, url: api/#get-up }
           - { icon: fa-solid fa-route, title: /primary · /replica, detail: Role routing, url: api/#traffic-routing }
-          - { icon: fa-solid fa-magnifying-glass, title: /explain, detail: Planning verdicts, url: api/#get-explain }
-          - { icon: fa-solid fa-gauge-high, title: /stat, detail: Runtime evidence, url: api/#get-stat }
+          - { icon: fa-solid fa-magnifying-glass, title: /explain, detail: Selected queries, url: api/#get-explain }
+          - { icon: fa-solid fa-gauge-high, title: /stat, detail: Query statistics, url: api/#get-stat }
           - { icon: fa-solid fa-rotate, title: /reload, detail: Hot reload, url: api/#get-reload--post-reload }
 
-principles:
-  eyebrow: Production fit
-  title: A small binary with clear operational boundaries
-  columns: 3
-  items:
-    - icon: fa-solid fa-battery-full
-      title: Batteries included
-      desc: Start with broad PostgreSQL and PgBouncer coverage, then replace only the definitions you need to own.
-    - icon: fa-solid fa-sliders
-      title: Precise control
-      desc: Version gates, predicates, timeouts, cache TTLs, failure policy, and constant labels are all explicit.
-    - icon: fa-solid fa-boxes-stacked
-      title: Deploy your way
-      desc: Use RPM/DEB packages, release archives, containers, Pigsty automation, or a source build.
 
 delivery:
   eyebrow: Download and deploy
-  title: Choose the path that matches your environment
-  desc: Every route runs the same PG Exporter binary and declarative collector model. The difference is lifecycle ownership.
+  title: Choose an installation method
+  desc: Packages include a systemd service. Archives and containers let you manage the process yourself. Pigsty configures the monitoring stack.
   columns: 4
   link_label: Compare methods
   items:
     - name: Linux packages
       icon: fa-solid fa-box-archive
       meta: Recommended for services
-      desc: Install `pg-exporter` from the Pigsty APT/YUM repository or a versioned RPM/DEB; get systemd integration and `/etc/default/pg_exporter`.
+      desc: Install with APT or YUM. The package includes a systemd service and its configuration.
       url: download/
     - name: Release archives
       icon: fa-solid fa-file-zipper
       meta: Linux · macOS · Windows
-      desc: Download a pinned binary, merged config, service examples, license, and checksums from the GitHub release.
+      desc: Download the binary and collector configuration for your operating system.
       url: download/
     - name: Container image
       icon: fa-brands fa-docker
       meta: amd64 · arm64
-      desc: Run the multi-architecture `pgsty/pg_exporter` image and mount only the configuration or CA material you need.
+      desc: Run `pgsty/pg_exporter` with Docker or Kubernetes.
       url: download/
     - name: Pigsty or source
       icon: fa-solid fa-code-branch
       meta: Integrated or custom
-      desc: Let Pigsty deliver the complete monitoring stack, or build the tagged source with its declared Go toolchain.
+      desc: Deploy a monitoring stack with Pigsty, or build PG Exporter from source.
       url: download/
 
 cta:
-  title: Go from download to `pg_up 1`.
-  desc: Pick an artifact, configure one connection URL, then verify the exporter before adding the Prometheus scrape.
+  title: Collect your first metrics
+  desc: Follow the quick start to install PG Exporter and connect it to PostgreSQL.
   actions:
     - label: Download PG Exporter
       url: download/
       icon: fa-solid fa-download
       style: primary
-    - label: Five-minute quick start
+    - label: Quick start
       url: start/
       icon: fa-solid fa-rocket
       style: ghost

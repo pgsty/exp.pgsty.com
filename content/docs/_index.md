@@ -10,42 +10,38 @@ search_keywords: [pg_exporter, postgres exporter, PostgreSQL monitoring, PgBounc
 search_boost: 1.6
 ---
 
-**PG Exporter** is an advanced PostgreSQL and PgBouncer metrics exporter for Prometheus-compatible monitoring systems. It combines built-in availability and role metrics with a declarative SQL collector engine, so the metric surface can evolve independently of the Go binary.
+PG Exporter collects PostgreSQL and PgBouncer metrics for Prometheus. These manuals describe **[v{{< param version >}}](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})**.
 
-These docs target the latest stable release, **[v{{< param version >}}](https://github.com/pgsty/pg_exporter/releases/tag/v{{< param version >}})**. They are maintained as a standalone, bilingual manual and are deliberately more detailed than the former Pigsty module pages.
+## Start here {#start-here}
 
-## Start Here {#start-here}
-
-- [Introduction](/intro/) — Understand the architecture, execution model, and operational boundaries.
-- [Quick Start](/start/) — Get a working exporter and Prometheus target in about five minutes.
-- [Download](/download/) — Choose, install, enable, and verify a package, archive, container, Pigsty, or source build.
-- [Installation](/install/) — Look up the complete artifact and repository reference.
-- [Compatibility](/compatibility/) — Check PostgreSQL, PgBouncer, OS, CPU, package, and container support.
+- [Introduction](/intro/) — How the exporter fits into your monitoring system.
+- [Quick start](/start/) — Install the exporter and collect your first metrics.
+- [Download](/download/) — Choose a package, binary archive, or container image.
 {.cards}
 
-## Run It in Production {#run-it-in-production}
+## Run in production {#run-it-in-production}
 
-- [Production Deployment](/deploy/) — Flags, environment variables, systemd, Docker, Kubernetes, discovery, scraping, and alerting.
-- [Security](/security/) — Least-privilege database access, secrets, TLS, HTTP authentication, and network exposure.
-- [Troubleshooting](/troubleshooting/) — A symptom-driven runbook using logs, `/up`, `/explain`, `/stat`, and config validation.
+- [Deployment](/deploy/) — Run a service and connect Prometheus.
+- [Security](/security/) — Configure database permissions, credentials, and TLS.
+- [Troubleshooting](/troubleshooting/) — Diagnose connection errors, missing metrics, and slow scrapes.
 {.cards}
 
-## Understand and Extend It {#understand-and-extend-it}
+## Configure the exporter {#understand-and-extend-it}
 
-- [Collector Configuration](/config/) — The complete YAML schema: queries, tags, predicates, TTL, timeout, labels, counters, gauges, and snapshot histograms.
-- [Bundled Collectors](/collectors/) — All 58 definition files, collector groups, prerequisites, cost, and cardinality considerations.
-- [HTTP API](/api/) — Metrics, health, role-routing, reload, explain, statistics, version, and landing endpoints.
-- [Development](/development/) — Build, test, change collectors, regenerate merged configs, and understand release artifacts.
-- [Release Notes](/release/) — One bilingual article per tagged version, newest first.
+- [Collector configuration](/config/) — Define SQL queries, metrics, and collection settings.
+- [Bundled collectors](/collectors/) — Find available metrics and their prerequisites.
+- [Command reference](/cmd/) — Look up flags, environment variables, and defaults.
+- [HTTP API](/api/) — Check health, inspect collection, and reload configuration.
+- [Compatibility](/compatibility/) — Check database versions, platforms, and architectures.
 {.cards}
 
-## Documentation Contract
+## Development and releases
 
-- Commands and paths are checked against the current `pg_exporter` source tree and the v{{< param version >}} release artifacts.
-- Stable-release behavior is the default contract. Unreleased `main` behavior is called out explicitly when relevant.
-- PostgreSQL 19 collector branches are included, but PostgreSQL's own release status still determines whether a target is suitable for production.
-- The English and Simplified Chinese pages are paired; use the language switcher to move between equivalent pages.
+- [Development](/development/) — Build the exporter, change collectors, and run tests.
+- [Design records](/design/) — Read architecture decisions and plans for unreleased features.
+- [Release notes](/release/) — Find changes and artifacts for each version.
+{.cards}
 
-Open the Command Palette from any page with {{< kbd "Ctrl" "K" >}} on Windows/Linux or {{< kbd "⌘" "K" >}} on macOS. Type `>` to browse site and page commands without loading the search index. The optional Open in ChatGPT and Open in Claude actions are external handoffs; activating one sends the current page URL, including any query string or fragment, to that service.
+Open search with {{< kbd "Ctrl" "K" >}} on Windows/Linux or {{< kbd "⌘" "K" >}} on macOS.
 
-For source code, issues, and contributions, visit [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter).
+Source code and issues are at [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter).

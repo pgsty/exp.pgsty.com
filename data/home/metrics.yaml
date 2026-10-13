@@ -1,19 +1,21 @@
-# Landing page counters. These are product facts, not adoption numbers. Every
-# value must remain traceable to a source page in this site.
+# Product facts verified against pg_exporter v1.4.1 (3fae4b0) on 2026-10-13.
+# These values describe the configuration, not the output of one scrape.
+# Count distinct <collector name>_<renamed column or SQL column> for GAUGE,
+# COUNTER, and HISTOGRAM columns in the tagged pg_exporter.yml. Each SQL
+# histogram counts as one definition; its bucket/count/sum series are gauges.
+metric_definitions: 460
+collector_branches: 96
+collector_namespaces: 59
 
-# Approximate metric-family count exposed by the default merged config.
-metric_families: 600
-
-# YAML definition files shipped under pg_exporter/config/.
+# YAML files under config/, including 0000-doc.yml (the schema reference).
 collector_files: 58
 
-# Default collector branches cover PostgreSQL 10 through 19+.
-postgres_range: "10-19+"
+# Version branches in the stable configuration; not a future-version guarantee.
+postgres_range: "10-19"
 
-# Git tags represented by one release-note post per language.
+# One release article per Git tag, in each language.
 tagged_versions: 35
 
-# The current stable release, named in the /download/ hero. Landing data cannot
-# interpolate params.version, so bump this together with `params.version` in
-# hugo.yaml and the checksums in data/download/pg-exporter.yaml.
+# Keep params.version, download checksums, homepage notes, and quick-start
+# VERSION examples in sync. Landing YAML does not interpolate Hugo params.
 release_version: "v1.4.1"

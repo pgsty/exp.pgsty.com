@@ -7,138 +7,106 @@ icon: fa-solid fa-plug
 categories: [参考]
 ---
 
-`pg_exporter` 在监听端口（默认 `:9630`）上暴露四类 HTTP 端点：指标、健康检查、流量路由与运维管理。全部端点如下：
+`pg_exporter` 默认在 `:9630` 提供指标、健康检查和管理端点。本页适用于稳定版 **v{{< param version >}}**。用 `--web.listen-address` 设置监听地址，详见[命令参考](/zh/cmd/)。
 
-| 端点                         | 方法       | 描述                                          |
-|----------------------------|----------|---------------------------------------------|
-| [`/metrics`](#get-metrics) | GET      | Prometheus 指标端点（路径可经 `--web.telemetry-path` 修改） |
-| [`/up`](#健康检查)             | GET      | 存活检查；别名 `/health`、`/liveness`、`/readiness`、`/read` |
-| [`/primary`](#流量路由)        | GET      | 主库检查；别名 `/leader`、`/master`、`/read-write`、`/rw` |
-| [`/replica`](#流量路由)        | GET      | 从库检查；别名 `/standby`、`/slave`、`/read-only`、`/ro` |
-| [`/reload`](#运维端点)         | GET/POST | 热重载采集器配置                                    |
-| [`/explain`](#运维端点)        | GET      | 展示各采集器的规划裁决结果                               |
-| [`/stat`](#运维端点)           | GET      | 各采集器的运行统计（命中/错误/耗时）                         |
-| `/version`                 | GET      | 版本与构建信息（文本）                                 |
-| `/`                        | GET      | 落地页，链接到指标端点                                 |
+| 端点 | 方法 | 结果 |
+|:---|:---|:---|
+| [`/metrics`](#get-metrics) | GET | Prometheus 指标；用 `--web.telemetry-path` 修改路径 |
+| [`/up`](#健康检查) | GET、HEAD | 主连接目标的可用状态；别名 `/health`、`/liveness`、`/readiness`、`/read` |
+| [`/primary`](#流量路由) | GET、HEAD | 主库角色；别名 `/leader`、`/master`、`/read-write`、`/rw` |
+| [`/replica`](#流量路由) | GET、HEAD | 从库角色；别名 `/standby`、`/slave`、`/read-only`、`/ro` |
+| [`/reload`](#运维端点) | GET、POST | 重载采集器配置 |
+| [`/explain`](#get-explain) | GET | 主连接选中的采集器的纯文本说明 |
+| [`/stat`](#get-stat) | GET | 主连接采集器运行统计，纯文本格式 |
+| [`/version`](#get-version) | GET | 版本与构建信息，纯文本格式 |
+| `/` | GET | 含指标链接的 HTML 页面 |
 {.full-width}
 
-健康与路由端点的判定基于后台探测缓存的角色状态（`primary` / `replica` / `down` / `starting` / `unknown`），不会在每次 HTTP 请求时同步查询数据库——探针风暴不会穿透到数据库。
-
---------
+表中列出各端点的常用方法，只有 `/reload` 会明确拒绝其他方法。v1.4.1 会将未匹配路径交给根页面处理，配置探针时请使用表中的路径。
 
 ## 指标端点
 
 ### GET /metrics
 
-暴露所有采集指标的主端点，格式为 Prometheus 格式。
-
-#### 请求
+每次请求都会采集主目标及自动发现数据库的指标。采集器缓存有效时，直接返回缓存结果。
 
 ```bash
-curl http://localhost:9630/metrics
+curl -fsS http://127.0.0.1:9630/metrics
 ```
 
-#### 响应
+响应示例：
 
 ```prometheus
 # HELP pg_up last scrape was able to connect to the server: 1 for yes, 0 for no
 # TYPE pg_up gauge
 pg_up 1
-
 # HELP pg_version server version number
 # TYPE pg_version gauge
-pg_version 140000
-
+pg_version 180000
 # HELP pg_in_recovery server is in recovery mode? 1 for yes 0 for no
 # TYPE pg_in_recovery gauge
 pg_in_recovery 0
-
-# HELP pg_exporter_build_info A metric with a constant '1' value labeled with version, revision, branch, goversion, builddate, goos, and goarch from which pg_exporter was built.
-# TYPE pg_exporter_build_info gauge
-pg_exporter_build_info{version="v{{< param version >}}",branch="main",revision="<git-sha>",builddate="<build-date>",goversion="go1.26.5",goos="linux",goarch="amd64"} 1
-
-# ... 更多指标
 ```
 
-#### 响应格式
+数据库故障时，端点仍可能返回 HTTP 200，正文中 `pg_up` 为 0。检查 HTTP 状态时也要检查指标。普通采集器出错后，本轮不输出该采集器的结果，其他采集器继续执行。致命采集器出错后，停止该数据库的后续采集。HTTP 500 表示指标汇总或编码失败，例如指标定义冲突。
 
-指标遵循 Prometheus 暴露格式：
+### 自监控指标
 
-```text
-# HELP <metric_name> <description>
-# TYPE <metric_name> <type>
-<metric_name>{<label_name>="<label_value>",...} <value> <timestamp>
-```
+PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`。`--namespace` 可以修改此类前缀，但不会改变 YAML 中定义的指标名。
 
-#### 自监控指标
-
-除 YAML 采集器定义的业务指标外，`/metrics` 还暴露 exporter 自身的运行指标（可用 `--disable-intro` 关闭 `pg_exporter_*` 部分；前缀随 `--namespace` 变化，PgBouncer 模式下为 `pgbouncer_`）：
-
-| 指标 | 标签 | 描述 |
-|------|------|------|
-| `pg_up` | — | 能连上目标库为 1，否则为 0 |
-| `pg_version` | — | `server_version_num` 格式的服务器版本号 |
-| `pg_in_recovery` | — | 处于恢复模式（从库）为 1 |
-| `pg_exporter_build_info` | version, revision, ... | 恒为 1，构建信息在标签中 |
-| `pg_exporter_up` | — | exporter 存活即为 1 |
-| `pg_exporter_uptime` | — | exporter 启动以来的秒数 |
-| `pg_exporter_scrape_total_count` / `_error_count` | — | 累计抓取次数 / 失败次数 |
-| `pg_exporter_scrape_duration` | — | 最近一次抓取耗时（秒） |
-| `pg_exporter_last_scrape_time` | — | 最近一次抓取的时间戳 |
-| `pg_exporter_server_scrape_*` | datname | 每个目标库的抓取耗时与成败计数 |
-| `pg_exporter_query_scrape_duration` | datname, query | 每个采集器的最近执行耗时 |
-| `pg_exporter_query_scrape_total_count` / `_error_count` | datname, query | 每个采集器的执行 / 失败计数 |
-| `pg_exporter_query_scrape_hit_count` / `_metric_count` | datname, query | 每个采集器返回的行数 / 产出的指标数 |
-| `pg_exporter_query_scrape_predicate_skip_count` | datname, query | 因谓词不满足而跳过的次数 |
-| `pg_exporter_query_cache_ttl` | datname, query | 采集器结果缓存的 TTL |
+| 指标 | 类型 | 标签 | 含义 |
+|:---|:---|:---|:---|
+| `pg_up` | Gauge | — | 主目标最近一次抓取没有连接错误或致命采集器错误时为 1 |
+| `pg_version` | Gauge | — | 主目标的版本号 |
+| `pg_in_recovery` | Gauge | — | 从库为 1，主库为 0；在 `pg_up = 1` 时使用 |
+| `pg_exporter_build_info` | Gauge | version、revision、branch、builddate、goversion、goos、goarch | 恒为 1，标签记录构建信息 |
+| `pg_exporter_up` | Gauge | — | 恒为 1 |
+| `pg_exporter_uptime` | Gauge | — | exporter 初始化以来的秒数 |
+| `pg_exporter_scrape_total_count` | Counter | — | 采集轮数 |
+| `pg_exporter_scrape_error_count` | Counter | — | 主目标出现连接错误或致命采集器错误的轮数 |
+| `pg_exporter_scrape_duration` | Gauge | — | 最近一轮完整采集的耗时，单位秒 |
+| `pg_exporter_last_scrape_time` | Gauge | — | 最近一轮采集结束时的 Unix 时间戳 |
+| `pg_exporter_server_scrape_duration` | Gauge | datname | 数据库最近一轮采集的耗时，单位秒 |
+| `pg_exporter_server_scrape_total_seconds` | Gauge | datname | 数据库累计采集耗时，单位秒 |
+| `pg_exporter_server_scrape_total_count` | Gauge | datname | 数据库采集轮数 |
+| `pg_exporter_server_scrape_error_count` | Gauge | datname | 数据库连接错误或致命采集器错误次数 |
+| `pg_exporter_query_scrape_total_count` | Gauge | datname、query | 采集器调用次数，含缓存命中和谓词跳过 |
+| `pg_exporter_query_scrape_error_count` | Gauge | datname、query | 采集器调用报错次数 |
+| `pg_exporter_query_scrape_hit_count` | Gauge | datname、query | 结果缓存命中次数 |
+| `pg_exporter_query_scrape_metric_count` | Gauge | datname、query | 采集器当前结果中的样本数 |
+| `pg_exporter_query_scrape_duration` | Gauge | datname、query | 最近一次实际执行耗时，单位秒；缓存命中时保留原值 |
+| `pg_exporter_query_scrape_predicate_skip_count` | Gauge | datname、query | 谓词返回 false、NULL 或零行而跳过的次数 |
+| `pg_exporter_query_cache_ttl` | Gauge | datname、query | 结果缓存剩余有效期，单位秒 |
 {.full-width}
 
-用 `pg_exporter_query_scrape_duration` 与 `_error_count` 可以直接定位慢采集器与故障采集器，等价于 `/stat` 的机器可读版本。
+这些序列也会附加配置的固定标签。v1.4.1 将数据库和采集器级别的累计计数暴露为 Gauge。服务器重新规划时会重置采集器统计，配置重载也会触发这一过程。数据库连接对象重建时会重置该数据库的统计。
 
---------
+`--disable-intro` 会隐藏表中所有内置指标，包括 `pg_up`。YAML 指标、Go/进程指标和 HTTP 健康检查仍然可用。
 
 ## 健康检查
 
-健康检查端点提供多种方式来监控 PG Exporter 和目标数据库的状态。
-
 ### GET /up
 
-简单的存活检查（基于后台探针缓存状态，不会在每次 HTTP 请求时主动探测数据库）。
+`/up` 返回主连接目标的缓存健康状态。exporter 每秒探测一次目标，抓取完成后也会更新状态。HTTP 健康请求只读取缓存，不执行 SQL。
 
-#### 响应码
-
-| 状态码 | 状态 | 描述 |
-|--------|------|------|
-| 200 | OK | 目标可用（primary/replica） |
-| 503 | Service Unavailable | 目标不可用（down/starting/unknown） |
-{.full-width}
-
-#### 示例
+| 响应正文 | HTTP 状态 | 含义 |
+|:---|:---|:---|
+| `primary` | 200 | 目标可达，且未处于恢复模式 |
+| `replica` | 200 | 目标可达，且处于恢复模式 |
+| `starting` | 503 | PostgreSQL 在健康探测时返回 SQLSTATE `57P03` |
+| `down` | 503 | 目标探测失败 |
+| `unknown` | 503 | 尚无健康状态 |
 
 ```bash
-# 检查服务是否正常
-curl -I http://localhost:9630/up
-
-HTTP/1.1 200 OK
-Content-Type: text/plain; charset=utf-8
+curl -i http://127.0.0.1:9630/up
 ```
 
-### GET /health
-
-`/up` 的别名，行为相同。
-
-```bash
-curl http://localhost:9630/health
-```
-
-### GET /liveness 与 GET /readiness
-
-为 Kubernetes 探针习惯提供的路径别名，行为与 `/up` 完全一致（同一处理器）：
+`/health`、`/liveness`、`/readiness` 和 `/read` 使用同一处理器，检查的是数据库目标，而非 exporter 进程本身。在 Kubernetes 中，如果希望数据库故障只影响就绪状态、不重启 exporter，可使用 TCP 存活探针和 HTTP 就绪探针：
 
 ```yaml
 livenessProbe:
-  httpGet: { path: /liveness, port: 9630 }
-  initialDelaySeconds: 30
+  tcpSocket: { port: 9630 }
+  initialDelaySeconds: 5
   periodSeconds: 10
 readinessProbe:
   httpGet: { path: /readiness, port: 9630 }
@@ -146,242 +114,106 @@ readinessProbe:
   periodSeconds: 5
 ```
 
-注意二者语义相同：目标数据库不可达时都会返回 503。若不希望"数据库宕机导致 exporter Pod 被重启"，liveness 探针可以改用 TCP 探测监听端口。
-
---------
-
 ## 流量路由
 
-这些端点专为负载均衡器和代理设计，根据服务器角色路由流量。
+角色检查使用主连接 PostgreSQL 目标的 `pg_is_in_recovery()`。它们判断角色和连通性，不检查应用权限或事务只读设置。
+
+| 缓存状态 | `/primary` | `/replica` | `/read` |
+|:---|:---|:---|:---|
+| `primary` | 200 | 404 | 200 |
+| `replica` | 404 | 200 | 200 |
+| `down`、`starting`、`unknown` | 503 | 503 | 503 |
+
+响应正文为状态名称。在 PgBouncer 模式下，`SHOW VERSION` 探测成功会被映射为 `primary`，并不代表连接池后端 PostgreSQL 的角色。按角色路由时，应使用直接连接 PostgreSQL 的 exporter。
 
 ### GET /primary
 
-检查服务器是否为主库（primary）实例。
-
-#### 响应码
-
-| 状态码 | 状态                  | 描述                            |
-|-----|---------------------|-------------------------------|
-| 200 | OK                  | 服务器是主库且接受写入                   |
-| 404 | Not Found           | 服务器不是主库（是从库）                  |
-| 503 | Service Unavailable | 服务器不可用（down/starting/unknown） |
-{.full-width}
-
-#### 别名
-
-- `/leader`
-- `/master`
-- `/read-write`
-- `/rw`
-
-#### 示例
-
-```bash
-# 检查服务器是否为主库
-curl -I http://localhost:9630/primary
-
-# 在 HAProxy 配置中使用
-backend pg_primary
-  option httpchk GET /primary
-  server pg1 10.0.0.1:5432 check port 9630
-  server pg2 10.0.0.2:5432 check port 9630
-```
+别名：`/leader`、`/master`、`/read-write`、`/rw`。
 
 ### GET /replica
 
-检查服务器是否为从库（standby）实例。
-
-#### 响应码
-
-| 状态码 | 状态                  | 描述                            |
-|-----|---------------------|-------------------------------|
-| 200 | OK                  | 服务器是从库且处于恢复状态                 |
-| 404 | Not Found           | 服务器不是从库（是主库）                  |
-| 503 | Service Unavailable | 服务器不可用（down/starting/unknown） |
-{.full-width}
-
-#### 别名
-
-- `/standby`
-- `/read-only`
-- `/ro`
-
-`/slave` 仍兼容，但建议优先使用 `/replica`。
-
-#### 示例
-
-```bash
-# 检查服务器是否为从库
-curl -I http://localhost:9630/replica
-
-# 在负载均衡器配置中使用
-backend pg_replicas
-  option httpchk GET /replica
-  server pg2 10.0.0.2:5432 check port 9630
-  server pg3 10.0.0.3:5432 check port 9630
-```
+别名：`/standby`、`/slave`、`/read-only`、`/ro`。
 
 ### GET /read
 
-检查服务器是否可以处理读流量（主库和从库都可以）。
+`/up` 的别名，主库和从库均可返回成功。
 
-#### 响应码
+### HAProxy 示例
 
-| 状态码 | 状态                  | 描述                            |
-|-----|---------------------|-------------------------------|
-| 200 | OK                  | 服务器正常运行且可以处理读请求               |
-| 503 | Service Unavailable | 服务器不可用（down/starting/unknown） |
-{.full-width}
-
-#### 示例
-
-```bash
-# 检查服务器是否可以处理读请求
-curl -I http://localhost:9630/read
-
-# 将读流量路由到任何可用服务器
-backend pg_read
-  option httpchk GET /read
-  server pg1 10.0.0.1:5432 check port 9630
-  server pg2 10.0.0.2:5432 check port 9630
-  server pg3 10.0.0.3:5432 check port 9630
-```
-
---------
-
-## 运维端点
-
-### GET /reload / POST /reload
-
-在不重启导出器的情况下重新加载配置。
-
-#### 请求
-
-```bash
-# 推荐 POST
-curl -X POST http://localhost:9630/reload
-
-# 兼容 GET
-curl http://localhost:9630/reload
-```
-
-#### 响应
-
-```text
-server reloaded
-```
-
-#### 响应码
-
-| 状态码 | 状态                    | 描述                                |
-|-----|-----------------------|-----------------------------------|
-| 200 | OK                    | 配置重新加载成功                          |
-| 500 | Internal Server Error | 重新加载失败（返回 `fail to reload: ...`）  |
-| 405 | Method Not Allowed    | 非 GET/POST 方法（`Allow: GET, POST`） |
-{.full-width}
-
-#### 使用场景
-
-- 更新采集器定义
-- 更改查询参数
-- 修改缓存 TTL 值
-- 添加或移除采集器
-
-> [!NOTE] 注意
-> 重载会刷新采集器配置和查询计划；如需修改进程级参数（例如监听地址、CLI 参数），仍需重启导出器。
-
-> [!WARNING] 安全建议
-> `/reload`、`/explain`、`/stat` 都属于管理端点。若 exporter 不仅在本机或可信内网使用，建议通过 `--web.config.file` 启用认证/TLS，或在反向代理 / 防火墙层限制访问。
-
-### GET /explain
-
-显示所有已配置采集器的查询执行规划信息。
-
-#### 请求
-
-```bash
-curl http://localhost:9630/explain
-```
-
-#### 响应
-
-```text
-##
-# SYNOPSIS
-#       pg.pg_primary_only_*
-#
-# DESCRIPTION
-#       PostgreSQL basic information (on primary)
-#
-# OPTIONS
-#       Tags       [cluster, primary]
-#       TTL        1
-#       Priority   110
-#       Timeout    100ms
-#       Fatal      true
-#       Version    100000 ~ higher
-#       Source     pg_exporter.yml
-
-...
-```
-
-### GET /stat
-
-显示运行时统计信息，包括采集器执行时间和成功/失败计数。
-
-#### 请求
-
-```bash
-curl http://localhost:9630/stat
-```
-
-#### 响应
-
-```text
-name                     total      hit        error      skip       metric     ttl/s  duration/ms
-pg                       12         0          0          0          15         1      4.231000
-pg_db                    12         11         0          0          28         10     0.153000
-pg_activity              12         0          1          0          8          0      7.842000
-...
-```
-
-此端点对于识别慢速或有问题的采集器非常有用。
-
---------
-
-## 在负载均衡器中使用
-
-### HAProxy 配置示例
+在每个 PostgreSQL 实例旁运行 exporter。客户端流量发送到 5432 端口，健康检查发送到 9630 端口：
 
 ```haproxy
-# 主库后端 - 用于写流量
 backend pg_primary
   mode tcp
   option httpchk GET /primary
   http-check expect status 200
   server pg1 10.0.0.1:5432 check port 9630 inter 3000 fall 2 rise 2
-  server pg2 10.0.0.2:5432 check port 9630 inter 3000 fall 2 rise 2 backup
+  server pg2 10.0.0.2:5432 check port 9630 inter 3000 fall 2 rise 2
 
-# 从库后端 - 用于读流量
 backend pg_replicas
   mode tcp
   balance roundrobin
   option httpchk GET /replica
   http-check expect status 200
-  server pg2 10.0.0.2:5432 check port 9630 inter 3000 fall 2 rise 2
-  server pg3 10.0.0.3:5432 check port 9630 inter 3000 fall 2 rise 2
-
-# 读后端 - 用于任何可以处理读请求的服务器
-backend pg_read
-  mode tcp
-  balance leastconn
-  option httpchk GET /read
-  http-check expect status 200
   server pg1 10.0.0.1:5432 check port 9630 inter 3000 fall 2 rise 2
   server pg2 10.0.0.2:5432 check port 9630 inter 3000 fall 2 rise 2
-  server pg3 10.0.0.3:5432 check port 9630 inter 3000 fall 2 rise 2
 ```
 
-### 关于 Nginx
+将 `/replica` 换为 `/read`，即可让读流量使用任意可用角色。
 
-Nginx 开源版不支持基于旁路端口的主动 HTTP 健康检查（`health_check` 指令是 NGINX Plus 功能），且代理 PostgreSQL 流量需要 `stream` 模块而非 `http` 代理。按角色路由 PostgreSQL 流量请优先使用上面的 HAProxy 方案，或 Patroni + vip-manager 等方案。
+## 运维端点
+
+### GET /reload / POST /reload
+
+用 POST 重载当前选择的配置文件或目录：
+
+```bash
+curl -fsS -X POST http://127.0.0.1:9630/reload
+```
+
+| HTTP 状态 | 响应 | 含义 |
+|:---|:---|:---|
+| 200 | `server reloaded` | 新定义已生效，下次抓取时重新规划 |
+| 500 | `fail to reload: ...` | 重载被拒绝，继续使用之前的定义 |
+| 405 | `method not allowed` | 请用 GET 或 POST；响应头包含 `Allow: GET, POST` |
+
+重载会替换采集器定义，清除其缓存和查询统计，使旧计划失效。重载不会执行新 SQL。完成后抓取 `/metrics`，检查采集器错误。目录加载可以跳过无效文件并加载其他有效文件，应检查日志中的 `skip config` 警告。
+
+Unix 上还可以发送 `SIGHUP` 或 `SIGUSR1` 重载。修改连接 URL、固定标签、Tag 或监听地址需要重启进程。通过防火墙、反向代理或 `--web.config.file` 限制管理访问，详见[安全指南](/zh/security/)。
+
+### GET /explain
+
+返回主连接选中的采集器的纯文本定义，包括 SQL、标签、TTL、超时和指标映射。首次规划前和刚完成重载时，输出为空。先执行一次抓取：
+
+```bash
+curl -fsS http://127.0.0.1:9630/metrics >/dev/null
+curl -fsS http://127.0.0.1:9630/explain
+```
+
+此端点不执行 PostgreSQL `EXPLAIN` 或谓词查询，不列出被排除的分支，也不包含自动发现数据库的计划。分支排除原因见调试日志。查看其他数据库的计划时，用 `pg_exporter --explain --fail-fast --url=...` 直接连接该数据库。
+
+### GET /stat
+
+返回主连接选中的采集器的纯文本统计表：
+
+```bash
+curl -fsS http://127.0.0.1:9630/stat
+```
+
+```text
+name                     total      hit        error      skip       metric     ttl/s  duration/ms
+pg                       12         0          0          0          15         1      4.231000
+pg_db                    12         11         0          0          28         0      0.153000
+```
+
+`total` 是调用次数，`hit` 是缓存命中次数，`error` 是报错次数，`skip` 是谓词跳过次数。`metric` 是当前样本数，`ttl/s` 是取整后的剩余缓存秒数，`duration/ms` 是最近一次实际执行耗时。比较所有自动发现数据库时，使用 `pg_exporter_query_*` 指标。
+
+### GET /version
+
+返回版本、提交、分支、Go 版本、构建日期、操作系统和架构：
+
+```bash
+curl -fsS http://127.0.0.1:9630/version
+```
+
+验证部署时，用此端点确认正在运行的二进制版本。

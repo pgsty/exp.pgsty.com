@@ -1,72 +1,50 @@
 ---
 title: "项目简介"
 linkTitle: "项目简介"
-description: "pg_exporter 做什么、一次抓取如何完成动态规划，以及它的运维边界"
+description: "PG Exporter 如何采集指标，以及如何接入监控系统"
 weight: 10
 icon: fa-solid fa-lightbulb
 categories: [概念]
 ---
 
-`pg_exporter` 将 PostgreSQL 与 PgBouncer 的运行状态转换为 Prometheus 指标。与把所有查询固化在代码里的 exporter 不同，它的大部分指标面由 YAML 声明：一个采集器定义 SQL、结果列、标签、指标类型、准入条件、超时与缓存策略。
+PG Exporter 读取 PostgreSQL 或 PgBouncer 的统计信息，并将其转换为 Prometheus 指标。Prometheus 通过 HTTP 抓取并存储这些指标，用于查询、仪表盘和告警。
 
-这种设计同时带来两点好处：
+每个导出器进程监控一个 PostgreSQL 实例或一个 PgBouncer 实例。同时监控两者时，需要运行两个进程。
 
-- 发布版本自带覆盖广泛、经过测试的默认指标集；
-- 本地团队无需重建二进制，就能新增、删除或特化指标。
+## 如何采集指标
 
-## 数据路径
+一个采集器由一条 SQL 查询及其 YAML 定义组成。YAML 定义告诉导出器如何将查询结果列转换为指标和标签。
 
-一次常规抓取会经过六个阶段：
+首次抓取时，导出器根据目标的版本、主备角色和已安装扩展选择采集器。PostgreSQL 数据库自动发现功能还可以连接同一实例内的其他数据库。
 
-1. **选择目标**：PostgreSQL URL 来自 `--url`、环境变量、密钥文件或本地优先默认值。
-2. **发现事实**：exporter 获取服务器版本、恢复角色、数据库清单、扩展、Schema 与运维人员提供的标签。
-3. **动态规划**：对每个指标命名空间，选择版本范围、角色标签、自定义标签与谓词都匹配目标的采集器分支。
-4. **执行查询**：按每个采集器的超时与可选结果缓存策略执行 SQL。
-5. **转换指标**：将结果列转换为 Label、Gauge、Counter 或快照直方图指标族。
-6. **暴露结果**：通过可配置的 Prometheus 端点（默认 `/metrics`）返回内置指标与查询驱动指标。
+Prometheus 请求 `/metrics` 时，导出器执行选中的查询并返回指标。每个采集器可以缓存一段时间的结果，这段时间称为 TTL。TTL 到期前，后续抓取会复用缓存。
 
-健康检查与角色路由端点读取后台探测缓存，不会为每个 HTTP 请求重新查询数据库。因此，健康检查风暴不会转化为数据库连接风暴。
+导出器提供 HTTP 指标端点，Prometheus 保存历史数据，Grafana 等仪表盘工具负责展示。
 
-## 两层指标
+## 可以监控什么
 
-### 内置 exporter 指标
+内置采集器覆盖活动会话、复制、WAL、锁、事务、数据库对象及部分扩展，数据来自 PostgreSQL 监控视图和 PgBouncer 管理命令。[内置采集器](/zh/collectors/)列出了指标及所需权限。
 
-Go 二进制始终能够暴露核心可用性与自监控指标，例如：
+导出器也会报告自身状态。例如，`pg_up` 表示主数据库抓取是否完成且没有致命错误，`pg_version` 表示数据库版本，`pg_in_recovery` 表示主备角色。
 
-- `pg_up`、`pg_version` 与 `pg_in_recovery`；
-- `pg_exporter_build_info` 与 exporter 运行时间；
-- 抓取次数、失败、耗时、缓存 TTL 与逐查询统计。
+## 自定义采集
 
-只有在明确希望隐藏 exporter 自监控指标时才使用 `--disable-intro`；它不会删除 YAML 定义的业务指标。
+先使用内置配置 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.4.1/pg_exporter.yml)，需要更多指标时再添加查询。每个采集器都可以单独设置选择条件、超时与缓存 TTL。
 
-### 声明式采集器指标
+修改配置后，通过 `/reload` 重载。导出器先检查新配置，再替换当前配置，无需重新编译或重启程序。
 
-其余指标都来自 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml)。该文件由 [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config) 下 58 个有序定义文件生成，默认覆盖复制、WAL、检查点、活动、锁、事务、数据库/对象统计、进度视图、PgBouncer 与部分扩展。
+[采集器配置](/zh/config/)介绍了 YAML 字段及用法示例。
 
-完整清单参见[内置采集器](/zh/collectors/)，配置模型参见[采集器配置](/zh/config/)。
+## 检查采集结果
 
-## 失败语义
+通过 `/explain` 查看主数据库选中的采集器，通过 `/stat` 查看查询次数、报错次数与耗时。[HTTP API](/zh/api/)还提供健康检查和主备角色端点。
 
-失败行为同时受采集器级与进程级策略控制：
+遇到连接错误、指标缺失或查询缓慢时，按[故障排查](/zh/troubleshooting/)定位问题。
 
-- `fatal: true` 的采集器失败可以使整次抓取失败，并将目标的 `*_up` 指标重置为 0。
-- 非致命采集器失败只增加错误统计，其他采集器继续执行。
-- 未配置时查询超时默认为 100 ms；显式配置为负值可以关闭查询超时。
-- 默认采用非阻塞启动：即使数据库暂时不可达，HTTP 端点仍会启动；`--fail-fast` 会改为启动立即失败。
-- 合法热重载会原子替换活动查询集；被拒绝的重载不会破坏当前运行配置。
+## 版本与下一步
 
-`/explain` 回答“这个采集器为什么被选择或跳过”，`/stat` 回答“已选择的采集器表现如何”。遇到指标缺失、缓慢或报错时，应优先查看这两个端点。
+本文档对应 **v{{< param version >}}**。默认配置包含 PostgreSQL 10–19 和 PgBouncer 1.8–1.25 的采集分支，独立 legacy 配置覆盖 PostgreSQL 9.1–9.6。详情见[兼容性](/zh/compatibility/)。
 
-## pg_exporter 不是什么
+[设计归档](/zh/design/)介绍了组合数据源、pgBackRest 指标和 PostgreSQL 日志指标等开发功能。这些功能尚未包含在 v{{< param version >}} 中。
 
-- 它不是 PostgreSQL 代理，不承载应用流量。
-- 它不保存时序数据；存储由 Prometheus、VictoriaMetrics 或其他兼容系统完成。
-- 它不会安装可选采集器所需的扩展。
-- SQL 写进 YAML 并不会自动变得安全；查询审查、权限、TTL、超时与基数仍由运维人员负责。
-- 角色端点报告观测到的 PostgreSQL 状态，而不是分布式共识结论。它们可作为路由输入，但 HA 策略仍属于 Patroni、负载均衡器与运维人员。
-
-## 项目状态
-
-最新稳定版本为 **v{{< param version >}}**。默认采集器包覆盖 PostgreSQL 10 至 PostgreSQL 19 分支，独立 legacy 配置包覆盖 PostgreSQL 9.1-9.6；PgBouncer 采集器覆盖支持 `SHOW` 命令的 1.8+ 至当前 1.25+ Schema。
-
-接下来可以通过[快速上手](/zh/start/)完成最小部署，或直接阅读[生产部署](/zh/deploy/)了解完整运维面。
+首次使用请按[快速上手](/zh/start/)采集指标，部署长期运行的服务请看[生产部署](/zh/deploy/)。

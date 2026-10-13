@@ -7,23 +7,23 @@ icon: fa-solid fa-shield-halved
 categories: [指南]
 ---
 
-`pg_exporter` 位于两个信任域之间：它先向 PostgreSQL 或 PgBouncer 认证，再通过 HTTP 暴露指标与管理端点。两侧必须独立加固；数据库 TLS 不会保护 HTTP 监听端口，HTTP Basic Auth 也不会降低数据库权限。
+分别配置数据库访问与 HTTP 访问：用专用监控角色执行 SQL，保护连接凭据，并将 HTTP 端口限制在监控客户端可访问的范围。
 
-## 威胁面
+## 需要保护的访问
 
-| 表面 | 敏感能力 | 主要控制 |
+| 访问入口 | 能力或可见信息 | 控制方式 |
 |:---|:---|:---|
 | PostgreSQL 连接 | 读取监控视图并执行采集器 SQL | 专用登录角色、`pg_monitor`、`pg_hba.conf`、TLS |
 | 目标 URL | 包含主机、用户，通常还包含密码 | `.pgpass`、密钥文件、文件权限、密钥管理系统 |
 | `/metrics` | 暴露拓扑、对象名、负载与容量 | 私网、防火墙、TLS/认证 |
-| `/explain` 与 `/stat` | 暴露采集器定义、准入、耗时与错误 | 限制或认证 HTTP 访问 |
-| `/reload` | 触发配置解析与查询计划原子替换 | 限制或认证 HTTP 访问 |
+| `/explain` 与 `/stat` | 暴露采集器定义、所选分支、耗时与错误 | 限制或认证 HTTP 访问 |
+| `/reload` | 重载采集器配置 | 限制或认证 HTTP 访问 |
 | 采集器 SQL | 消耗数据库资源，并可能通过 Label 暴露信息 | 查询审查、最小权限、超时、TTL、基数审查 |
 {.full-width}
 
 ## 使用专用数据库角色
 
-PostgreSQL 10+ 内置的 `pg_monitor` 角色覆盖默认采集器所需的只读权限：
+PostgreSQL 10+ 可先创建登录角色，再授予内置的 `pg_monitor` 角色：
 
 ```sql
 CREATE ROLE monitor
@@ -34,34 +34,33 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
-不要为了省去权限审查而让 exporter 使用超级用户。可选自定义采集器可能需要访问自己的视图、函数或 Schema，请按对象单独授权。
+如果集群撤销了 `PUBLIC` 的数据库连接权限，为监控角色授予各目标库的 `CONNECT`。可选视图、函数与 Schema 按需授权；exporter 无需超级用户权限。
 
-监控 PgBouncer 时，需要使用本地策略允许的 `stats_users` 或 `admin_users` 账户连接管理数据库。此模式下 exporter 使用管理端 `SHOW` 接口，而不是 PostgreSQL 系统目录。
+按监控库数量设置连接上限。主目标连接池最多三个连接，每个额外发现的数据库最多一个。示例中的五个连接适合小规模目标；监控更多数据库或多个 exporter 共用角色时，相应提高上限。
+
+监控 PgBouncer 时，将监控账号加入 `stats_users`，并连接 `pgbouncer` 管理数据库。内置采集器使用 `SHOW` 命令，无需 `admin_users` 权限。
 
 ## 不要把密码放进进程参数
-
-目标 URL 的取值优先级如下：
-
-1. `--url` / `-u`
-2. `PG_EXPORTER_URL`
-3. `PGURL`
-4. `PG_EXPORTER_URL_FILE` 指向的文件
-5. `postgresql:///?sslmode=disable`
 
 命令参数可能出现在进程列表中，建议使用以下方式之一。
 
 ### `.pgpass`
 
-```text
-db.example.com:5432:*:monitor:replace-this-secret
-```
+先将密码保存到 `./pgpass`：
 
 ```bash
-chmod 600 ~/.pgpass
+umask 077
+printf '%s\n' 'db.example.com:5432:*:monitor:replace-this-secret' > ./pgpass
+```
+
+前台运行时，将文件安装到当前用户的主目录：
+
+```bash
+install -m 0600 ./pgpass ~/.pgpass
 export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full'
 ```
 
-RPM/DEB 服务以 `prometheus` 用户运行。自 v1.4.0 起该用户 HOME 为 `/var/lib/prometheus`，但软件包不会创建目录：
+RPM/DEB 服务以 `prometheus` 用户运行。软件包为新建账号设置 HOME `/var/lib/prometheus`，已有账号保持原样，目录也不会自动创建。先用 `getent passwd prometheus` 检查主目录，再安装密码文件。使用软件包默认主目录时：
 
 ```bash
 sudo install -d -o prometheus -g prometheus -m 0750 /var/lib/prometheus
@@ -73,21 +72,24 @@ sudo install -o prometheus -g prometheus -m 0600 ./pgpass /var/lib/prometheus/.p
 `PG_EXPORTER_URL_FILE` 适合 systemd credential、Docker/Kubernetes Secret 挂载以及其他文件型密钥交付：
 
 ```bash
+unset PG_EXPORTER_URL PGURL
 export PG_EXPORTER_URL_FILE=/run/secrets/pg_exporter_url
 pg_exporter --config=/etc/pg_exporter.yml
 ```
 
-文件应包含一个 URL，可以带首尾空白。显式配置的文件不存在或不可读时，进程会致命退出。日志会遮盖 URL 用户信息与 `password=` 查询参数中的密码，但日志脱敏不能替代源密钥保护。
+文件必须包含一个连接 URL，且运行用户可读；首尾空白会被移除。选用此来源后，文件不可读会使启动失败。先清除更高优先级的 URL 设置；软件包服务还需删除 `/etc/default/pg_exporter` 中的 `PG_EXPORTER_URL`。
+
+日志会遮盖 URL 密码与 `password=` 参数。源文件仅允许服务账号及其管理员读取。
 
 ## 保护数据库连接
 
-未提供 `sslmode` 时，pg_exporter 会为常见的同机部署主动添加 `sslmode=disable`。这在不可信网络上并不安全；远程目标应显式选择 libpq TLS 策略：
+URL 未提供 `sslmode` 时，pg_exporter 会添加 `sslmode=disable`。通过网络连接数据库时，明确设置 TLS 模式与 CA 路径：
 
 ```bash
 export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full&sslrootcert=/etc/pg_exporter/ca.crt'
 ```
 
-尽可能使用 `verify-full`，同时验证证书链与主机名。`require` 会加密流量，但不能提供同等的服务器身份保证。
+`verify-full` 同时验证证书链与主机名，URL 中的主机名必须与服务器证书匹配。`require` 加密连接，但不校验主机名。
 
 官方 Docker 镜像基于 `scratch`，没有系统 CA 包。请将所需 CA 文件挂载进容器，并在 `sslrootcert` 中引用精确路径。
 
@@ -99,7 +101,7 @@ export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=
 pg_exporter --web.listen-address=127.0.0.1:9630
 ```
 
-需要远程抓取时，只允许监控网段通过防火墙或服务网格访问。监听端口同时包含管理端点，并不存在独立的管理端口。
+需要远程抓取时，只允许监控网段通过防火墙或服务网格访问。同一监听端口同时提供指标与管理接口。
 
 ### TLS 与 Basic Auth
 
@@ -119,7 +121,7 @@ basic_auth_users:
 pg_exporter --web.config.file=/etc/pg_exporter/web.yml
 ```
 
-请生成 bcrypt 哈希，不要把明文密码写进文件，例如使用 `htpasswd -nBC 10 prometheus`。mTLS、响应头与限流配置以 [exporter-toolkit Web 配置](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md)为准。
+请生成 bcrypt 哈希，不要把明文密码写进文件，例如使用 `htpasswd -nBC 10 prometheus`。mTLS、响应头与限流配置以 [exporter-toolkit Web 配置](https://github.com/prometheus/exporter-toolkit/blob/v0.17.1/docs/web-configuration.md)为准。
 
 启用 Basic Auth 后，Prometheus 抓取任务也要配置认证：
 
@@ -142,16 +144,15 @@ scrape_configs:
 
 部署前还要审查自定义 Label。数据库名、客户标识、租户名与 SQL 指纹都可能成为 Prometheus 标签，并继续流向远端存储、告警与仪表盘。
 
-## 生产检查清单
+## 验证访问
 
-- 使用有小连接上限的专用非超级用户数据库账户
-- 配置明确的 `pg_hba.conf` 规则与网络来源限制
-- 使用 `.pgpass` 或密钥文件，不在命令参数中放密码
-- 远程数据库连接使用 `sslmode=verify-full` 与可信 CA
-- 9630 端口只监听回环/私网，或受防火墙限制
-- HTTP 跨越信任边界时启用 TLS/认证
-- 将管理端点视为敏感接口
-- 审查自定义 SQL 的权限、超时、TTL 与标签基数
-- 验证密钥/证书轮换不会在日志或进程列表泄露值
+启动 exporter 后，从 Prometheus 主机测试认证接口：
 
-服务示例参见[生产部署](/zh/deploy/)，TLS、凭据与端点失败的定位方法参见[故障排查](/zh/troubleshooting/)。
+```bash
+curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
+  --user prometheus https://db.example.com:9630/metrics
+```
+
+`curl` 会提示输入 HTTP 密码。确认服务器证书校验通过、响应中有 `pg_up 1`，并且 Prometheus 目标为 Up。启用 Basic Auth 后，不带凭据的请求应返回 `401`。
+
+服务示例参见[生产部署](/zh/deploy/)，连接与采集器错误的定位方法参见[故障排查](/zh/troubleshooting/)。

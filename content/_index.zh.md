@@ -1,6 +1,6 @@
 ---
 title: "PG Exporter — PostgreSQL / PgBouncer 指标导出器"
-description: "面向 PostgreSQL 与 PgBouncer 的高级监控：600+ 指标、声明式 YAML 采集器、动态规划、健康检查 API 与完整生产部署方案。"
+description: "为 Prometheus 采集 PostgreSQL 与 PgBouncer 指标。用 YAML 定义 SQL 采集器，检查查询统计，通过软件包或容器部署。"
 weight: 1
 type: home
 cascade:

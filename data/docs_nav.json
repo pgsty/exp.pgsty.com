@@ -1,8 +1,8 @@
 {
   "meta": {
     "purpose": "OINK navigation for root-level PG Exporter manuals",
-    "page_count": 14,
-    "sidebar_entry_count": 13
+    "page_count": 15,
+    "sidebar_entry_count": 14
   },
   "page_by_url": {
     "/docs/": "docs",
@@ -16,6 +16,7 @@
     "/troubleshooting/": "troubleshooting",
     "/config/": "config",
     "/collectors/": "collectors",
+    "/cmd/": "cmd",
     "/api/": "api",
     "/development/": "development",
     "/release/": "_link_release"
@@ -32,6 +33,7 @@
     "/troubleshooting/": ["/deploy/", "/troubleshooting/"],
     "/config/": ["/config/"],
     "/collectors/": ["/config/", "/collectors/"],
+    "/cmd/": ["/config/", "/cmd/"],
     "/api/": ["/config/", "/api/"],
     "/development/": ["/development/"],
     "/release/": ["/release/"]
@@ -86,6 +88,11 @@
         {
           "page": "collectors",
           "url": "/collectors/",
+          "children": []
+        },
+        {
+          "page": "cmd",
+          "url": "/cmd/",
           "children": []
         },
         {

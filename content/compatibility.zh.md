@@ -7,22 +7,22 @@ icon: fa-solid fa-layer-group
 categories: [参考]
 ---
 
-兼容性分为三个独立层面：exporter 二进制必须能在宿主机运行，动态规划必须能为目标服务器选出匹配的采集器分支，可选 SQL 对象或扩展还必须真实存在。因此，“进程能够启动”不等于所有采集器都满足准入条件。
+按运行主机选择安装包，按数据库版本选择采集配置，再安装所需的视图或扩展。本页说明 v{{< param version >}} 随附配置的兼容范围。
 
 ## 数据库目标
 
 | 目标 | 状态 | 配置 |
 |:---|:---|:---|
 | PostgreSQL 10-18 | 默认支持 | `pg_exporter.yml` / `config/` |
-| PostgreSQL 19 | 已包含采集器分支 | 默认配置；需要针对当前预发布/正式服务器构建进行验证 |
+| PostgreSQL 19 | 已包含版本专用分支 | 默认配置；在实际服务器构建上检查查询结果 |
 | PostgreSQL 9.1-9.6 | Legacy 支持 | `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 及更早版本 | 不支持 | — |
-| PgBouncer 1.8-1.25+ | 支持 | `0910`-`0940` 采集器文件；连接管理数据库 |
+| PgBouncer 1.8+ | 按版本选择采集器 | `0910`-`0940` 采集器文件；连接管理数据库 |
 {.full-width}
 
-PostgreSQL 19 专用分支覆盖新的恢复、锁、自动清理评分、WAL、订阅、接收器与复制槽字段。截至 2026 年 8 月，PostgreSQL 19 仍处于 Beta；PostgreSQL 官方明确说明 Beta 构建用于测试而非生产。部署 PG19 目标前请检查[当前 PostgreSQL Beta 状态](https://www.postgresql.org/developer/beta/)。
+PostgreSQL 19 分支覆盖恢复、锁、自动清理评分、WAL、订阅、接收器与复制槽。采集器按服务器版本号选择分支；首次抓取后，检查 `/stat`，确认查询与实际服务器构建匹配。
 
-PgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管理端 `SHOW` 接口。版本分支目前覆盖到 1.25 系列；上游版本状态以 [PgBouncer Changelog](https://www.pgbouncer.org/changelog.html) 为准。
+内置 PgBouncer 采集器要求 1.8 或更高版本。1.8 调整了查询所用的 `SHOW STATS` 字段。最新配置分支未设版本上限；升级 PgBouncer 后，结合[上游变更日志](https://www.pgbouncer.org/changelog.html)检查采集结果。
 
 ## v{{< param version >}} 发布产物
 
@@ -36,7 +36,7 @@ PgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管�
 | Docker 镜像 | Linux 容器 | amd64、arm64 |
 {.full-width}
 
-发布压缩包包含二进制、合并配置、许可证、默认环境文件与 systemd 单元。macOS 与 Windows 产物适合开发或连接远端目标；软件包提供的服务集成只适用于 Linux。
+发布压缩包包含二进制、合并后的默认配置、许可证、默认环境文件与 systemd 单元。PostgreSQL 9.x 配置需要从对应源码标签获取，不在这些二进制压缩包中。macOS 与 Windows 产物适合开发或连接远端目标；软件包提供的服务集成只适用于 Linux。
 
 > [!NOTE] v1.4.1 起的 RPM 包名
 > 官方 RPM 包名与产物前缀改为 `pg-exporter`。新包为旧的 `pg_exporter` 名称声明了 `Provides` 与 `Obsoletes`，因此可以直接升级。可执行文件与配置名仍为 `pg_exporter` 和 `/etc/pg_exporter.yml`。
@@ -47,7 +47,7 @@ PgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管�
 
 ## 采集器级前置条件
 
-即使服务器版本受支持，部分采集器仍有更窄的准入条件：
+采集器还会按目标数据库的实际条件选择：
 
 - `primary` / `replica` 标签按恢复角色限制执行。
 - `dbname:`、`extension:`、`schema:` 与 `username:` 标签要求对应事实匹配。
@@ -55,4 +55,4 @@ PgBouncer 支持从 1.8 开始，因为该版本线具备采集器依赖的管�
 - 默认关闭的采集器（`skip: true`）必须显式启用。
 - 表/索引膨胀等辅助视图采集器需要相应视图与权限。
 
-请在真实目标上通过 [`/explain`](/zh/api/#get-explain) 查看精确规划结果；每个文件的前置条件参见[内置采集器](/zh/collectors/)。
+先抓取一次 `/metrics`，再通过 [`/explain`](/zh/api/#get-explain) 查看当前采集计划，通过 `/stat` 检查查询结果。每个文件的前置条件参见[内置采集器](/zh/collectors/)。

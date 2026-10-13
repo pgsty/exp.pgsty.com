@@ -7,24 +7,24 @@ icon: fa-solid fa-stethoscope
 categories: [Guide]
 ---
 
-Start by separating four layers: process, HTTP, database connectivity, and individual collectors. A running systemd unit only proves the process layer; `pg_up 1` proves the current target connection and fatal collector path; a successful Prometheus scrape proves the end-to-end HTTP path.
+Check the process, HTTP access, database connection, then the failing collector. `pg_up 1` means the last scrape reached the main target and completed its fatal collectors. Other collectors or discovered databases can still have errors.
 
-## Five-Minute Triage
+## Initial Checks
 
 ```bash
 # Process and logs
 systemctl status pg_exporter --no-pager
 journalctl -u pg_exporter -n 100 --no-pager
 
-# HTTP and build identity
+# HTTP response and version
 curl -fsS http://127.0.0.1:9630/version
 curl -i http://127.0.0.1:9630/up
 
 # Core metrics
 curl -fsS http://127.0.0.1:9630/metrics \
-  | grep -E '^(pg|pgbouncer)_(up|version|in_recovery) '
+  | grep -E '^(pg|pgbouncer)_(up|version|in_recovery)(\{| )'
 
-# Planning and runtime evidence
+# Collection plan and runtime statistics
 curl -fsS http://127.0.0.1:9630/explain
 curl -fsS http://127.0.0.1:9630/stat
 ```
@@ -34,7 +34,7 @@ curl -fsS http://127.0.0.1:9630/stat
 | Unit exits immediately | Arguments, config path, telemetry path, listen address, file permissions |
 | Port answers but `/up` is 503 | Target URL, network, authentication, `pg_hba.conf`, TLS, startup probe state |
 | `/up` is 200 but a metric family is absent | Dynamic plan, version/role/tags/predicates, auto-discovery, disabled collector |
-| `/metrics` returns an error or Prometheus times out | Fatal collector, slow query, scrape timeout, label/schema mismatch |
+| `/metrics` returns an error or Prometheus times out | Slow query, scrape timeout, duplicate or invalid metric samples |
 | Exporter is healthy but Prometheus target is down | Prometheus address, scheme, auth, TLS, firewall, telemetry path |
 {.full-width}
 
@@ -65,11 +65,18 @@ Use `/metrics` unless there is a concrete need to change it, and update the Prom
 lsof -nP -iTCP:9630 -sTCP:LISTEN
 ```
 
-Stop the conflicting service or choose another `--web.listen-address`. Do not run two exporters on one address and assume one of them will win.
+Stop the conflicting service or choose another `--web.listen-address`.
 
 ## `pg_up` Is 0 or `/up` Returns 503
 
-Restart temporarily with debug logging and a redacted, explicit URL:
+For the packaged service, add `--log.level=debug` to `PG_EXPORTER_OPTS` in `/etc/default/pg_exporter`, then restart the service. This preserves its user and connection settings:
+
+```bash
+sudo systemctl restart pg_exporter
+sudo journalctl -u pg_exporter -f
+```
+
+For a foreground process, use the real target URL and supply the password through `.pgpass` or a secret file:
 
 ```bash
 PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full&sslrootcert=/etc/pg_exporter/ca.crt' \
@@ -85,6 +92,9 @@ Check, in order:
 5. `.pgpass` mode `0600`, hostname match, and the actual runtime user's HOME.
 6. TLS CA path, hostname, and `sslmode`.
 7. Connection limit on the monitoring role and server-wide connection exhaustion.
+8. `--connect-timeout`: the default is 100 ms for connection and metadata probes. Increase it if normal network latency exceeds this budget.
+
+After diagnosis, restore `--log.level=info` and restart the service.
 
 The packaged service runs as `prometheus`; testing as your shell user can therefore succeed while the service fails.
 
@@ -92,7 +102,7 @@ Non-blocking startup is normal: while the target is unavailable, the HTTP server
 
 ## Metrics Are Missing
 
-Missing metrics are usually a planning decision, not a scrape bug. Inspect `/explain` and look for:
+Scrape `/metrics` once to build the plan. `/explain` shows collectors selected for the main target. For a missing collector, compare its YAML with the target version, role, and tags; debug logs report why a branch was rejected. Check for:
 
 - server version outside `[min_version, max_version)`;
 - primary/replica role mismatch;
@@ -102,22 +112,24 @@ Missing metrics are usually a planning decision, not a scrape bug. Inspect `/exp
 - `skip: true`;
 - database excluded from auto-discovery.
 
-With auto-discovery enabled, the default exclusion is `template0,template1,postgres`. If metrics expected from `postgres` are absent, change `PG_EXPORTER_EXCLUDE_DATABASE` intentionally rather than assuming all databases are scraped.
+The include/exclude lists apply to additional discovered databases. The database in the connection URL is always monitored, even if its name appears in the default exclusion `template0,template1,postgres`. Predicates can skip a selected collector, and a successful query can return no rows; check `/stat` and the SQL result as well.
 
 ## One Collector Fails
 
-Use `/stat` and exporter self-metrics to identify the exact collector and database:
+Use `/stat` for the main target. Use exporter self-metrics, labeled by `datname` and `query`, for all monitored databases:
 
 ```promql
 pg_exporter_query_scrape_error_count > 0
 ```
+
+This value counts errors since the last plan was built; a nonzero value can describe an earlier failure. Scrape again and check whether it increases. Read the log for the error text.
 
 Common causes include:
 
 - monitoring role lacks access to an optional view or function;
 - extension/schema exists in a different database;
 - custom SQL result columns do not match the YAML `metrics` list;
-- a configured `LABEL` column is absent (v1.4.1 rejects the whole collector result atomically);
+- a configured `LABEL` column is absent (v1.4.1 emits no metrics from that collector for this call);
 - the query exceeds its timeout;
 - an extension or pre-release PostgreSQL view changed shape.
 
@@ -125,7 +137,7 @@ Run the collector SQL manually as the monitoring user in the same database. Pres
 
 ## Scrapes Are Slow or Time Out
 
-`/stat` reports last durations and errors per collector. Prometheus self-metrics provide the same evidence by `datname` and query name.
+`/stat` reports query durations in milliseconds for the main target. `pg_exporter_query_scrape_duration` reports seconds for each `datname` and `query`. Error counts are available in both; error text is in the logs.
 
 Typical remedies:
 
@@ -136,7 +148,7 @@ Typical remedies:
 5. Reduce database auto-discovery scope with `include-database` / `exclude-database`.
 6. Control per-object metric cardinality on databases with thousands of tables or indexes.
 
-Do not merely raise Prometheus `scrape_timeout` until it hides an unbounded query. A full scrape must fit comfortably inside both the timeout and scrape interval.
+Queries and discovered databases are scraped sequentially, so budget for their combined duration. Keep the full scrape below Prometheus `scrape_timeout` and `scrape_interval`. The v1.4.1 HTTP server also has a 30-second write timeout.
 
 ## Reload Fails
 
@@ -144,18 +156,20 @@ Do not merely raise Prometheus `scrape_timeout` until it hides an unbounded quer
 curl -i -X POST http://127.0.0.1:9630/reload
 ```
 
-- `200`: the new query set was parsed, validated, installed, and existing plans were invalidated.
+- `200`: the new configuration passed validation and was loaded; the next scrape will rebuild the collection plans.
 - `500`: the response contains the parse, schema, label-conflict, or config-path error. The old active query set remains in place.
 - `405`: use GET or POST; POST is recommended.
 
-Process-level options are not reloadable. Changes to listen addresses, target URL, logging, HTTP TLS/auth, namespace, or discovery flags require a service restart. Collector YAML can also be reloaded with `SIGHUP`; Unix builds additionally accept `SIGUSR1`.
+Restart the service after changing the target URL, listen address, logging, namespace, discovery flags, or the path passed to `--web.config.file`. Exporter-toolkit reads the contents of that web configuration file dynamically; certificate or Basic Auth changes at the same path do not use `/reload`.
+
+Collector YAML can also be reloaded with `SIGHUP`; Unix builds additionally accept `SIGUSR1`. A reload rebuilds plans on the next scrape and resets per-query statistics.
 
 ## Docker and Package Pitfalls
 
 | Symptom | Likely cause and fix |
 |:---|:---|
 | TLS verification fails in Docker | `scratch` image has no CA bundle; mount the CA and set `sslrootcert` |
-| `.pgpass` is ignored in packaged service | Create `/var/lib/prometheus`, own it by `prometheus`, and use mode `0600` on `.pgpass` |
+| `.pgpass` is ignored in packaged service | Check the `prometheus` account home or `PGPASSFILE`; give the service user ownership and use mode `0600` |
 | RPM automation cannot find v1.4.1 artifact | Artifact prefix changed from `pg_exporter` to `pg-exporter` |
 | Config edits disappear after container replacement | Mount `/etc/pg_exporter.yml` from durable configuration |
 | Container cannot reach host PostgreSQL | `localhost` means the container; use the database service DNS name or an explicit host route |
@@ -163,7 +177,7 @@ Process-level options are not reloadable. Changes to listen addresses, target UR
 
 ## Evidence to Include in a Bug Report
 
-- `pg_exporter /version` output and installation method
+- `pg_exporter --version` or `curl http://127.0.0.1:9630/version` output, and installation method
 - Operating system and architecture
 - PostgreSQL or PgBouncer exact version
 - Redacted target URL (retain scheme, host class, port, database, and `sslmode`)
@@ -172,4 +186,4 @@ Process-level options are not reloadable. Changes to listen addresses, target UR
 - `/explain` and `/stat` entries for the collector
 - Whether the problem reproduces with the bundled v{{< param version >}} config
 
-Open an issue at [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter/issues) only after removing passwords, certificates, customer identifiers, and sensitive SQL text.
+Remove passwords, private keys, customer identifiers, and sensitive SQL text, then submit the evidence to [pgsty/pg_exporter Issues](https://github.com/pgsty/pg_exporter/issues).

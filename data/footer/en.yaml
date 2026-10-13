@@ -13,11 +13,19 @@ columns:
     links:
       - { label: Configuration, url: config/ }
       - { label: Bundled collectors, url: collectors/ }
+      - { label: Command reference, url: cmd/ }
       - { label: HTTP API, url: api/ }
       - { label: Compatibility, url: compatibility/ }
   - title: Project
     links:
+      - { label: Design records, url: design/ }
       - { label: Release archive, url: release/ }
       - { label: GitHub source, url: 'https://github.com/pgsty/pg_exporter', external: true }
       - { label: Issues, url: 'https://github.com/pgsty/pg_exporter/issues', external: true }
       - { label: Discussions, url: 'https://github.com/pgsty/pg_exporter/discussions', external: true }
+  - title: "PG resources"
+    links:
+      - { label: "PG Center", url: "https://pg.center/docs/reference/", external: true }
+      - { label: "PGSQL.CC", url: "https://pgsql.cc/docs/", external: true }
+      - { label: "Pigsty", url: "https://pigsty.io/", external: true }
+      - { label: "PIG CLI", url: "https://pig.pgsty.com/", external: true }

@@ -7,14 +7,16 @@ icon: fa-solid fa-code-branch
 categories: [指南]
 ---
 
-项目刻意把大部分监控逻辑放在 YAML 中，只用较小的 Go 引擎负责执行。因此改动分为两条路径：采集器改动与 exporter 运行时改动。无论哪一类，都要让合并配置、测试、文档与发布元数据保持一致。
+PG Exporter 将 SQL 和指标定义放在 YAML 中，由 Go 运行时加载定义、采集结果并提供 HTTP 服务。修改功能时，先确定行为由哪一层负责。
+
+用户手册以稳定版 **v{{< param version >}}** 为准。开发提交 `c0ba58a` 还包含尚未发布的 Composite、Patroni、pgBackRest 和 PostgreSQL 日志功能，其约定与状态见[设计归档](/zh/design/)。
 
 ## 仓库结构
 
 | 路径 | 用途 |
 |:---|:---|
 | `exporter/` | CLI 解析、URL/配置加载、规划、执行、指标、健康状态、HTTP Handler 与测试 |
-| `config/` | 面向 PostgreSQL 10-19+ 与 PgBouncer 的 58 个有序采集器定义文件 |
+| `config/` | 面向 PostgreSQL 10–19 与 PgBouncer 的 57 个采集器文件和 1 个配置参考文件 |
 | `pg_exporter.yml` | 生成的默认单体配置（`make conf`） |
 | `legacy/config/` | PostgreSQL 9.1-9.6 采集器定义 |
 | `legacy/pg_exporter.yml` | 生成的 Legacy 单体配置（`make conf9`） |
@@ -26,36 +28,38 @@ categories: [指南]
 
 ## 工具链
 
-当前 `go.mod` 声明 Go **1.27.0**。常规开发构建：
+v1.4.1 标签声明 Go **1.26.5**，开发提交 `c0ba58a` 声明 **1.27.0**。按所构建版本的要求选择工具链。构建稳定标签：
 
 ```bash
-git clone https://github.com/pgsty/pg_exporter.git
+git clone --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git
 cd pg_exporter
 go mod download
 make build
 ./pg_exporter --version
 ```
 
-正式产物关闭 CGO。`make build` 适合本地开发；官方产物由 GoReleaser 注入版本、分支、提交与构建日期元数据。
+`make build` 和 GoReleaser 都会注入版本、分支、提交和构建日期。发布产物关闭 CGO。分支构建可能保留默认发布版本号，因此识别二进制时需要同时检查提交号。
+
+修改代码时，从选定的源版本建立工作分支。编辑前阅读 `AGENTS.md`，并检查 `git status --short --branch`。
 
 ## 改动前后运行测试
 
 ```bash
-go test ./...
-go test -race ./...
-
-# 确认 PostgreSQL / PgBouncer 各版本分支仍有覆盖，
-# 并验证配置结构、指标名、Label 与直方图。
-go test ./exporter/...
+go mod tidy -diff
+go test -race -count=1 ./...
+GODEBUG=httpmuxgo121=1 go test -count=1 ./...
+go vet ./...
 ```
 
-测试套件覆盖 PostgreSQL 19 配置、PostgreSQL 9 Legacy 配置、并发/重载、HTTP 路由校验、Label/指标名、谓词缓存与快照直方图验收。
+配置测试覆盖 PostgreSQL 与 PgBouncer 分支选择、旧版采集器、生成文件一致性、指标名、标签、谓词和快照直方图。运行时测试覆盖并发抓取、重载和 HTTP 处理器。SQL 兼容性还需要在每个受影响数据库版本上，以监控角色执行查询来验证。
 
-修改运行时时，还应交叉构建支持的发布目标，或运行：
+修改运行时时，还应交叉构建六个发布目标：Linux amd64/arm64/ppc64le、Darwin amd64/arm64、Windows amd64。已有辅助命令：
 
 ```bash
 make goreleaser-build
 ```
+
+此命令会在需要时安装 GoReleaser，并重建 `dist/` 中的快照产物。二进制、软件包和发布压缩包不应加入 Git。
 
 ## 修改或新增采集器
 
@@ -67,11 +71,11 @@ make goreleaser-build
 6. 根据运维开销与失败影响选择 `ttl`、`timeout`、`fatal`、`skip`。
 7. 运行配置测试，重建合并文件并检查 Diff。
 8. 以监控角色在每个相关服务器版本与角色上测试查询。
-9. 公共指标面变化时更新[内置采集器](/zh/collectors/)与发布注记。
+9. 公共指标变化时更新[内置采集器](/zh/collectors/)和相关手册，版本发布时再补充发布说明。
 
-可执行 Schema 参考为 [`config/0000-doc.yml`](https://github.com/pgsty/pg_exporter/blob/main/config/0000-doc.yml)。
+请阅读本次修改所基于版本中的 `config/0000-doc.yml`。当前[配置手册](/zh/config/)解释稳定版格式。
 
-架构理由应直接写入双语[设计归档](/zh/design/)，不得在源码仓重新建立 `docs/design/`。设计文章解释“为什么”并记录自身状态；当前行为仍以源码、使用手册与稳定版产物为准。
+公共接口或架构决策写入伴生仓库的双语[设计归档](/zh/design/)，说明源代码版本、决策、备选方案和交付状态。标签和产物发布前，将新行为标为未发布。小型代码修复补充测试和相关手册即可，无需新建设计文章。
 
 ### 列规则
 
@@ -79,7 +83,7 @@ make goreleaser-build
 - `GAUGE` 用于可双向变化的值。
 - `COUNTER` 用于源端单调递增值（服务器重启/统计重置仍会归零）。
 - `HISTOGRAM` 从 SQL 行构建快照分布；其 `_bucket`、`_count`、`_sum` 序列是可下降的 Gauge，不能应用 `rate()` 或 `increase()`。
-- `DISCARD` 校验并忽略结果列，不对外导出。
+- `DISCARD` 忽略结果列，不对外导出。
 - `rename`、`default`、`scale` 会改变输出名称/值语义，需要兼容性审查。
 
 采集器包含直方图时，`le` 是保留标签。指标名与标签名在加载配置时完成校验，非法名称会在抓取前失败。
@@ -93,7 +97,7 @@ make conf9    # legacy/config/*.yml -> legacy/pg_exporter.yml
 git diff -- pg_exporter.yml legacy/pg_exporter.yml
 ```
 
-生成文件是需要提交的产物。CI 会检查它们与有序源文件完全一致；不要只修改单体输出。
+这两个生成的 YAML 文件已由 Git 跟踪。CI 会检查它们与有序源文件是否一致。修改配置片段后重新生成 YAML，并将两者一起纳入改动。
 
 ## 本地验证采集器
 
@@ -103,16 +107,20 @@ git diff -- pg_exporter.yml legacy/pg_exporter.yml
 
 # 生成目标特定计划并退出
 PG_EXPORTER_URL='postgres://monitor@localhost/postgres' \
-  ./pg_exporter --config=./config --explain
+  ./pg_exporter --config=./config --explain --fail-fast
 
 # 运行并查看规划、耗时与错误
 PG_EXPORTER_URL='postgres://monitor@localhost/postgres' \
   ./pg_exporter --config=./config --log.level=debug
-curl localhost:9630/explain
-curl localhost:9630/stat
+# 在另一个终端中执行
+curl -fsS localhost:9630/metrics >/dev/null
+curl -fsS localhost:9630/explain
+curl -fsS localhost:9630/stat
 ```
 
-既要测试有数据结果，也要测试零行结果。自 v1.4.1 起，缺失配置声明的 `LABEL` 列会原子拒绝整个采集器结果，即使查询恰好返回零行也一样。
+`--explain` 只选择采集器，不执行 SQL。通过指标端点测试结果和权限，既测试有数据结果，也测试零行结果。v1.4.1 缺少配置声明的 `LABEL` 或 `HISTOGRAM` 列时，无论是否有结果行，都会拒绝整个采集器结果。
+
+缓存或可选组件还应测试禁用路径、故障隔离、重载和关闭。日志持久化状态还需覆盖重启、轮转、截断、半条记录和状态文件权限。
 
 ## 发布流水线
 
@@ -124,19 +132,30 @@ GoReleaser 会生成：
 - amd64/arm64 Docker 镜像与多架构 Manifest；
 - 对应标签的 GitHub Release。
 
-发布版本注入 `exporter.Version`。打标签前要同步 fallback 版本、Makefile 版本、README 徽标、软件包元数据与文档参数。标签、Release 对象、校验和、软件包内容、容器 Manifest 与实际安装行为是不同验证层，必须分别核验。
+打标签前，对齐 `exporter.Version`、Makefile 版本、软件包元数据和发布文档。发布工作流完成后，核验压缩包和软件包校验和、容器清单、二进制构建提交。随后更新本站 `params.version`、下载校验和、落地页版本数据、手册及相关设计记录。
+
+本地快照构建用于检查打包，不会发布版本。带标签产物通过发布工作流交付；部署后另行验证实际安装的版本。
 
 ## 文档工作流
 
-独立文档仓库可以导入 Pigsty 权威模块页面，并拆分汇总发布历史：
+在伴生仓库 `exp.pgsty.com` 中编辑本站文档。同步修改中英文页面后运行：
 
 ```bash
-python3 bin/sync_pg_exporter_content.py \
-  --pigsty-io /path/to/pigsty.io \
-  --pigsty-cc /path/to/pigsty.cc \
-  --output ./content
+make check
 ```
 
-生成的核心页面再由独立站专有的兼容性、安全、采集器、排障与本文等指南补充。发布前运行严格告警构建与链接检查。
+该命令执行严格告警构建，并检查 Markdown 和内部链接。还应查看两种语言的渲染结果，重点检查命令、表格和窄屏溢出。
 
-贡献使用 [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/main/LICENSE) 许可证。改动与 Issue 请提交到 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)。
+导入脚本可从 Pigsty 手册更新 `install`、`deploy`、`config`、`api` 和发布历史。先生成到临时目录，避免覆盖本站已有编辑：
+
+```bash
+preview_dir=$(mktemp -d)
+python3 bin/sync_pg_exporter_content.py \
+  --pigsty-io ../pigsty.io \
+  --pigsty-cc ../pigsty.cc \
+  --output "$preview_dir"
+```
+
+对照 `content/` 检查导入结果，只应用相关变更。本站扩展指南和设计归档在本仓库直接维护。
+
+PG Exporter 源码贡献使用 [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.4.1/LICENSE)，本站原创文档使用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。软件改动提交到 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)，文档改动提交到 [pgsty/exp.pgsty.com](https://github.com/pgsty/exp.pgsty.com)。

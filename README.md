@@ -22,7 +22,7 @@ content/
   docs/_index.md              # documentation overview
   intro.md                    # architecture and execution model
   start.md                    # landing page: first working scrape
-  download.md                 # landing page: choose, install, enable, verify
+  download.md                 # landing page: choose an installation method
   install.md                  # packages, archives, containers, source
   compatibility.md            # target and artifact matrix
   deploy.md                   # production deployment
@@ -31,6 +31,7 @@ content/
   config.md                   # complete collector schema
   collectors.md               # all 58 bundled definition files
   api.md                      # HTTP API
+  cmd.md                      # stable command-line and environment reference
   development.md              # build, test, collector, release workflow
   authors/vonng/_index.md     # author taxonomy profile, with its portrait
   blog/article/<slug>/        # original-language articles plus bundled media
@@ -49,6 +50,21 @@ Every English `.md` page has a `.zh.md` peer. Blog content stays under
 `content/blog/release/v1.4.1.md` publishes at `/release/v1.4.1/`, while
 `content/blog/design/snapshot-histograms.md` publishes at
 `/design/snapshot-histograms/`.
+
+## Editorial style
+
+Follow [ASD-STE100 Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
+writing rules for the manuals:
+
+- Give information in the order readers need it. Explain a concept before its exceptions.
+- Use active voice and one instruction per sentence. State a required condition before the action.
+- Keep English instructions within 20 words and descriptions within 25 words per sentence.
+- Use one term for one concept. Preserve exact flags, metric names, paths, and SQL.
+- Keep each paragraph on one topic. Use complete sentences rather than compressed lists of nouns.
+- Put prerequisites and expected results beside the relevant step. Explain each limitation where it affects a decision.
+- Keep Chinese and English equivalent. Use natural Chinese sentence structure.
+- Preserve necessary explanations, examples, and the author's voice in historical articles.
+- Keep review reports out of published prose. Record version status once; link to detail instead of repeating it.
 
 ## Theme boundary
 
@@ -84,7 +100,7 @@ section reading `data/download/pg-exporter.yaml`, which is also where the
 release assets table and its SHA-256 digests come from. `/start/` is the longer
 one: an overview `steps` row, four `markdown` procedure sections carrying the
 fragment ids other pages link to, a `code-plate` showing a healthy first scrape,
-and a `faq` for the four common failures.
+and a `faq` for connection errors and missing metrics.
 
 Page comments come from GitHub Discussions on this repository through giscus,
 in the Announcements category, with one thread per page path so an English page
@@ -96,8 +112,8 @@ reaches the end of it.
 
 The blog declares the `authors` taxonomy, a page-end share bar, and reading
 time. The Article archive republishes the original long-form PostgreSQL monitoring
-and operations articles with their publication dates, complete text, authorship,
-featured images, and inline media intact. The Design archive keeps dated rationale, rejected alternatives,
+and operations articles with their original publication dates, authorship,
+featured images, and inline media. The Design archive keeps dated rationale, rejected alternatives,
 invariants, and explicit implementation/release boundaries; it is the canonical
 replacement for source-repository `docs/design/` files. The release archive
 publishes the compact `blog_index: table` form with
@@ -159,7 +175,7 @@ overriding current manuals and release artifacts. New design guidance is
 written here in bilingual form; the source repository keeps only short links
 to the canonical article.
 
-Use `bin/sync_pg_exporter_content.py` to import the five upstream manual pages,
+Use `bin/sync_pg_exporter_content.py` to import the four upstream manual pages,
 rewrite their links for this standalone site, and split the combined release
 history into one bilingual article per Git tag:
 
@@ -181,14 +197,12 @@ corrections. Do not overwrite them with old content from the former demo site.
 python3 bin/build_architecture_diagram.py
 ```
 
-This writes the four homepage hero diagrams — English and Chinese, light and
-dark — to `static/img/architecture*.svg`. The OINK hero paints its media as two
-CSS background images, one per colour scheme, so a bilingual site needs four
-files; the geometry, the palettes, and both languages' copy live in the script
-so they cannot drift. Its facts come from the `pg_exporter` source tree
-(`exporter/arg.go`, `patroni.go`, `pgbackrest.go`): PostgreSQL over libpq,
-PgBouncer through its admin console, Patroni through its own Prometheus
-endpoint, pgBackRest by running the local CLI, all merged on `:9630/metrics`.
+This writes four homepage diagrams to `static/img/architecture*.svg`: English
+and Chinese, each with light and dark variants. Edit the generator rather than
+the SVGs. The diagram describes stable v1.4.1: one process targets a PostgreSQL
+instance or PgBouncer and serves `/metrics`. Unreleased components belong in
+the Design archive. Product counts and their source boundary are recorded in
+`data/home/metrics.yaml`.
 
 The three site-owned Blog fallback images are checked-in WebP assets under
 `static/img/`: `pg_exporter.webp`, `pg_exporter-design.webp`, and

@@ -7,23 +7,23 @@ icon: fa-solid fa-shield-halved
 categories: [Guide]
 ---
 
-`pg_exporter` sits between two trust domains: it authenticates to PostgreSQL or PgBouncer, then exposes metrics and management endpoints over HTTP. Secure both sides independently. Database TLS does not protect the HTTP listener, and HTTP Basic Auth does not reduce database privileges.
+Configure database access and HTTP access separately. Use a dedicated monitoring role for SQL, protect its credentials, and restrict the HTTP listener to monitoring clients.
 
-## Threat Surface
+## Access to Protect
 
-| Surface | Sensitive capability | Primary control |
+| Access | What it permits or reveals | Control |
 |:---|:---|:---|
 | PostgreSQL connection | Read monitoring views and execute collector SQL | Dedicated login, `pg_monitor`, `pg_hba.conf`, TLS |
 | Target URL | Contains host, user, and often a password | `.pgpass`, secret file, file permissions, secret manager |
 | `/metrics` | Reveals topology, object names, workload, and capacity | Private network, firewall, TLS/auth |
-| `/explain` and `/stat` | Reveal collector definitions, eligibility, timing, and errors | Restrict or authenticate HTTP access |
-| `/reload` | Triggers config parsing and an atomic query-plan replacement | Restrict or authenticate HTTP access |
+| `/explain` and `/stat` | Reveal collector definitions, selected branches, timing, and errors | Restrict or authenticate HTTP access |
+| `/reload` | Reloads collector configuration | Restrict or authenticate HTTP access |
 | Collector SQL | Consumes database resources and may expose labels | Query review, least privilege, timeout, TTL, cardinality review |
 {.full-width}
 
 ## Use a Dedicated Database Role
 
-For PostgreSQL 10+, the built-in `pg_monitor` role covers the read permissions needed by the default collectors:
+For PostgreSQL 10+, start with a login that inherits the built-in `pg_monitor` role:
 
 ```sql
 CREATE ROLE monitor
@@ -34,34 +34,33 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
-Do not run the exporter as a superuser merely to avoid reviewing permissions. Optional custom collectors may need explicit grants on their own views, functions, or schemas; grant those objects individually.
+Grant `CONNECT` on each monitored database if your cluster has revoked it from `PUBLIC`. Grant access to optional views, functions, and schemas as needed; the exporter does not require a superuser.
 
-For PgBouncer, connect to the admin database with an account permitted by `stats_users` or `admin_users`, depending on local policy. The exporter uses the admin `SHOW` interface rather than PostgreSQL catalog queries in that mode.
+Size the connection limit for the selected databases. The main target pool allows up to three connections, and each additional discovered database allows one. A limit of five suits a small target; increase it when monitoring more databases or sharing the role between exporters.
+
+For PgBouncer, add the monitoring account to `stats_users` and connect to the `pgbouncer` admin database. The bundled collectors use `SHOW` commands and do not need `admin_users` privileges.
 
 ## Keep Passwords Out of Process Arguments
-
-The target URL is resolved in this order:
-
-1. `--url` / `-u`
-2. `PG_EXPORTER_URL`
-3. `PGURL`
-4. the file named by `PG_EXPORTER_URL_FILE`
-5. `postgresql:///?sslmode=disable`
 
 Command arguments may be visible in process listings. Prefer one of these patterns:
 
 ### `.pgpass`
 
-```text
-db.example.com:5432:*:monitor:replace-this-secret
-```
+First save the password in `./pgpass`:
 
 ```bash
-chmod 600 ~/.pgpass
+umask 077
+printf '%s\n' 'db.example.com:5432:*:monitor:replace-this-secret' > ./pgpass
+```
+
+For a foreground process, install the file in your home directory:
+
+```bash
+install -m 0600 ./pgpass ~/.pgpass
 export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full'
 ```
 
-RPM/DEB services run as `prometheus`. Since v1.4.0 that account's HOME is `/var/lib/prometheus`, but the package does not create the directory:
+RPM/DEB services run as `prometheus`. The package creates new accounts with HOME `/var/lib/prometheus`; it leaves existing accounts unchanged and does not create the home directory. Check `getent passwd prometheus`, then install the password file in that account's home. For the package default:
 
 ```bash
 sudo install -d -o prometheus -g prometheus -m 0750 /var/lib/prometheus
@@ -73,21 +72,24 @@ sudo install -o prometheus -g prometheus -m 0600 ./pgpass /var/lib/prometheus/.p
 `PG_EXPORTER_URL_FILE` is convenient for systemd credentials, Docker/Kubernetes Secret mounts, and other file-based secret delivery:
 
 ```bash
+unset PG_EXPORTER_URL PGURL
 export PG_EXPORTER_URL_FILE=/run/secrets/pg_exporter_url
 pg_exporter --config=/etc/pg_exporter.yml
 ```
 
-The file should contain one URL plus optional surrounding whitespace. A missing or unreadable explicitly configured file is fatal. Logs redact passwords found in URL user-info and `password=` query parameters, but log redaction is not a substitute for protecting the source secret.
+The file must contain one connection URL and be readable by the runtime user. Surrounding whitespace is removed. When this source is selected, an unreadable file stops startup. Clear higher-priority URL settings first; for the packaged service, remove `PG_EXPORTER_URL` from `/etc/default/pg_exporter`.
+
+Logs mask URL passwords and `password=` parameters. Keep the source file restricted to the service account and its administrator.
 
 ## Secure the Database Connection
 
-When `sslmode` is omitted, pg_exporter intentionally adds `sslmode=disable` for common same-host deployments. That default is unsafe for an untrusted network. Remote targets should select an explicit libpq TLS policy:
+If the URL omits `sslmode`, pg_exporter adds `sslmode=disable`. For a database connection across a network, set the TLS mode and CA path explicitly:
 
 ```bash
 export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full&sslrootcert=/etc/pg_exporter/ca.crt'
 ```
 
-Use `verify-full` when possible so the certificate chain and hostname are both verified. `require` encrypts traffic but does not provide the same server-identity assurance.
+`verify-full` checks both the certificate chain and the hostname. Use a hostname listed in the server certificate. `require` encrypts the connection but does not check the hostname.
 
 The official Docker image is based on `scratch` and has no system CA bundle. Mount the required CA file into the container and reference that exact path in `sslrootcert`.
 
@@ -99,7 +101,7 @@ If Prometheus runs on the same host, bind only to loopback:
 pg_exporter --web.listen-address=127.0.0.1:9630
 ```
 
-For remote scraping, allow only monitoring networks at the firewall or service-mesh layer. Remember that the listener includes management endpoints; there is no separate management port.
+For remote scraping, allow only monitoring networks at the firewall or service-mesh layer. The same listener serves metrics and management endpoints.
 
 ### TLS and Basic Auth
 
@@ -119,7 +121,7 @@ basic_auth_users:
 pg_exporter --web.config.file=/etc/pg_exporter/web.yml
 ```
 
-Generate a bcrypt hash without placing the cleartext password in the file, for example with `htpasswd -nBC 10 prometheus`. See the authoritative [exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md) for mTLS, headers, and rate limiting.
+Generate a bcrypt hash without placing the cleartext password in the file, for example with `htpasswd -nBC 10 prometheus`. See the authoritative [exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/v0.17.1/docs/web-configuration.md) for mTLS, headers, and rate limiting.
 
 With Basic Auth enabled, configure the Prometheus scrape job accordingly:
 
@@ -142,16 +144,15 @@ The release packages install `/etc/pg_exporter.yml` and `/etc/default/pg_exporte
 
 Review custom labels before deployment. Database names, customer identifiers, tenant names, and SQL fingerprints can become Prometheus labels and spread to remote storage, alerts, and dashboards.
 
-## Production Checklist
+## Verify Access
 
-- Dedicated non-superuser database account with a small connection limit
-- Explicit `pg_hba.conf` rule and network source restriction
-- `.pgpass` or secret-file delivery instead of a password in command arguments
-- `sslmode=verify-full` plus a trusted CA for remote database connections
-- Loopback/private binding or firewall restrictions for port 9630
-- HTTP TLS/auth when the port crosses a trust boundary
-- Management endpoints treated as sensitive
-- Custom SQL reviewed for privileges, timeout, TTL, and label cardinality
-- Secret and certificate rotation tested without exposing values in logs or process listings
+After starting the exporter, test the authenticated endpoint from the Prometheus host:
 
-See [Production Deployment](/deploy/) for service examples and [Troubleshooting](/troubleshooting/) for TLS, credential, and endpoint failure modes.
+```bash
+curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
+  --user prometheus https://db.example.com:9630/metrics
+```
+
+`curl` prompts for the HTTP password. Confirm that the certificate is accepted, the response contains `pg_up 1`, and the Prometheus target is up. A request without credentials should return `401` when Basic Auth is enabled.
+
+See [Production Deployment](/deploy/) for service examples and [Troubleshooting](/troubleshooting/) for connection and collector errors.

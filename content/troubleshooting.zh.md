@@ -7,24 +7,24 @@ icon: fa-solid fa-stethoscope
 categories: [指南]
 ---
 
-首先把问题拆成四层：进程、HTTP、数据库连接、单个采集器。systemd 单元运行只证明进程层；`pg_up 1` 证明当前目标连接与致命采集器路径；Prometheus 成功抓取才证明端到端 HTTP 路径。
+按进程、HTTP 访问、数据库连接、单个采集器的顺序检查。`pg_up 1` 表示上次抓取成功连接主目标，并完成了标记为 `fatal` 的采集器；其他采集器或自动发现库仍可能出错。
 
-## 五分钟分诊
+## 初步检查
 
 ```bash
 # 进程与日志
 systemctl status pg_exporter --no-pager
 journalctl -u pg_exporter -n 100 --no-pager
 
-# HTTP 与构建身份
+# HTTP 响应与版本
 curl -fsS http://127.0.0.1:9630/version
 curl -i http://127.0.0.1:9630/up
 
 # 核心指标
 curl -fsS http://127.0.0.1:9630/metrics \
-  | grep -E '^(pg|pgbouncer)_(up|version|in_recovery) '
+  | grep -E '^(pg|pgbouncer)_(up|version|in_recovery)(\{| )'
 
-# 规划与运行证据
+# 采集计划与运行统计
 curl -fsS http://127.0.0.1:9630/explain
 curl -fsS http://127.0.0.1:9630/stat
 ```
@@ -34,7 +34,7 @@ curl -fsS http://127.0.0.1:9630/stat
 | 单元立即退出 | 参数、配置路径、指标路径、监听地址、文件权限 |
 | 端口可访问但 `/up` 为 503 | 目标 URL、网络、认证、`pg_hba.conf`、TLS、启动探测状态 |
 | `/up` 为 200，但某指标族缺失 | 动态规划、版本/角色/标签/谓词、自动发现、关闭的采集器 |
-| `/metrics` 报错或 Prometheus 超时 | 致命采集器、慢查询、抓取超时、Label/Schema 不匹配 |
+| `/metrics` 报错或 Prometheus 超时 | 慢查询、抓取超时、重复或无效的指标样本 |
 | exporter 健康但 Prometheus Target Down | Prometheus 地址、协议、认证、TLS、防火墙、指标路径 |
 {.full-width}
 
@@ -65,11 +65,18 @@ sudo -u prometheus /usr/bin/pg_exporter \
 lsof -nP -iTCP:9630 -sTCP:LISTEN
 ```
 
-停止冲突服务或更换 `--web.listen-address`。不要让两个 exporter 竞争同一地址并假设其中一个会正常工作。
+停止冲突服务或更换 `--web.listen-address`。
 
 ## `pg_up` 为 0 或 `/up` 返回 503
 
-临时使用调试日志与脱敏后的显式 URL 启动：
+软件包服务可在 `/etc/default/pg_exporter` 的 `PG_EXPORTER_OPTS` 中设置 `--log.level=debug`，再重启服务。这样会保留原来的运行用户与连接设置：
+
+```bash
+sudo systemctl restart pg_exporter
+sudo journalctl -u pg_exporter -f
+```
+
+前台运行时，使用实际目标 URL，通过 `.pgpass` 或密钥文件提供密码：
 
 ```bash
 PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full&sslrootcert=/etc/pg_exporter/ca.crt' \
@@ -85,6 +92,9 @@ pg_exporter --config=/etc/pg_exporter.yml --log.level=debug
 5. `.pgpass` 是否为 `0600`、主机名是否匹配、运行用户 HOME 是否正确。
 6. TLS CA 路径、主机名与 `sslmode`。
 7. 监控角色连接上限与服务器总连接耗尽。
+8. `--connect-timeout`：连接与元数据探测默认超时为 100 毫秒；正常网络延迟超过此预算时，应提高该值。
+
+排查后恢复 `--log.level=info` 并重启服务。
 
 软件包服务以 `prometheus` 用户运行；用当前 Shell 用户测试成功，并不能证明服务用户也能成功。
 
@@ -92,7 +102,7 @@ pg_exporter --config=/etc/pg_exporter.yml --log.level=debug
 
 ## 指标缺失
 
-缺失通常来自规划决策，而不是抓取 Bug。查看 `/explain`，重点寻找：
+先抓取一次 `/metrics` 以生成计划。`/explain` 只显示主目标上选中的采集器。采集器缺失时，对照 YAML 检查服务器版本、角色与标签；调试日志会记录分支未被选中的原因。重点检查：
 
 - 服务器版本不在 `[min_version, max_version)`；
 - 主库/从库角色不匹配；
@@ -102,22 +112,24 @@ pg_exporter --config=/etc/pg_exporter.yml --log.level=debug
 - `skip: true`；
 - 数据库被自动发现排除。
 
-启用自动发现时，默认排除 `template0,template1,postgres`。如果预期来自 `postgres` 的指标缺失，应有意识地调整 `PG_EXPORTER_EXCLUDE_DATABASE`，不要假设所有数据库都会抓取。
+包含/排除名单只影响额外发现的数据库。连接 URL 指定的数据库始终会被监控，即使它在默认排除名单 `template0,template1,postgres` 中。选中的采集器也可能被谓词跳过，或者查询成功但返回零行；结合 `/stat` 与 SQL 结果检查。
 
 ## 单个采集器失败
 
-通过 `/stat` 与 exporter 自监控指标定位精确的采集器和数据库：
+通过 `/stat` 检查主目标。全部监控库的采集器状态由带 `datname`、`query` 标签的自监控指标提供：
 
 ```promql
 pg_exporter_query_scrape_error_count > 0
 ```
+
+该值统计自上次生成计划以来的错误，非零值可能来自历史故障。再次抓取，检查数值是否增长，并从日志读取错误内容。
 
 常见原因：
 
 - 监控角色无权访问可选视图或函数；
 - 扩展/Schema 安装在另一个数据库；
 - 自定义 SQL 结果列与 YAML `metrics` 清单不一致；
-- 配置声明的 `LABEL` 列没有返回（v1.4.1 会原子拒绝整个采集器结果）；
+- 配置声明的 `LABEL` 列没有返回（v1.4.1 不输出该采集器本次的任何指标）；
 - 查询超过超时；
 - 扩展或预发布 PostgreSQL 视图结构变化。
 
@@ -125,7 +137,7 @@ pg_exporter_query_scrape_error_count > 0
 
 ## 抓取缓慢或超时
 
-`/stat` 会报告逐采集器最后耗时与错误；Prometheus 自监控指标按 `datname` 与查询名提供相同证据。
+`/stat` 以毫秒显示主目标各查询的耗时；`pg_exporter_query_scrape_duration` 按 `datname`、`query` 标签以秒报告耗时。两者都提供错误次数，具体错误内容在日志中。
 
 常见处理顺序：
 
@@ -136,7 +148,7 @@ pg_exporter_query_scrape_error_count > 0
 5. 通过 `include-database` / `exclude-database` 缩小自动发现范围。
 6. 控制拥有数千张表/索引数据库上的逐对象指标基数。
 
-不要只把 Prometheus `scrape_timeout` 调大到足以掩盖无边界查询。完整抓取应明显短于超时与抓取间隔。
+查询与自动发现库按顺序抓取，需要为总耗时留出预算。完整抓取应短于 Prometheus 的 `scrape_timeout` 与 `scrape_interval`；v1.4.1 HTTP 服务另有 30 秒写超时。
 
 ## 重载失败
 
@@ -144,18 +156,20 @@ pg_exporter_query_scrape_error_count > 0
 curl -i -X POST http://127.0.0.1:9630/reload
 ```
 
-- `200`：新查询集已完成解析、校验、安装，现有计划已失效并将在下次抓取重建。
+- `200`：新配置已加载并通过校验，下次抓取将重新生成采集计划。
 - `500`：响应包含解析、Schema、Label 冲突或配置路径错误；旧活动查询集仍然保留。
 - `405`：只能使用 GET 或 POST，推荐 POST。
 
-进程级选项不能热重载。监听地址、目标 URL、日志、HTTP TLS/认证、命名空间或发现参数变化需要重启服务。采集器 YAML 也可以通过 `SIGHUP` 重载；Unix 构建还支持 `SIGUSR1`。
+目标 URL、监听地址、日志、命名空间、发现参数或 `--web.config.file` 路径改变后，需要重启服务。exporter-toolkit 会动态读取 Web 配置文件内容；同一路径下更新证书或 Basic Auth 设置不使用 `/reload`。
+
+采集器 YAML 也可以通过 `SIGHUP` 重载；Unix 构建还支持 `SIGUSR1`。重载后，下次抓取重建计划，逐查询统计随之清零。
 
 ## Docker 与软件包常见坑
 
 | 现象 | 可能原因与修复 |
 |:---|:---|
 | Docker 中 TLS 校验失败 | `scratch` 镜像没有 CA 包；挂载 CA 并设置 `sslrootcert` |
-| 软件包服务忽略 `.pgpass` | 创建 `/var/lib/prometheus`，归属 `prometheus`，`.pgpass` 使用 `0600` |
+| 软件包服务忽略 `.pgpass` | 检查 `prometheus` 的主目录或 `PGPASSFILE`，将文件归属服务用户并设为 `0600` |
 | RPM 自动化找不到 v1.4.1 产物 | 产物前缀从 `pg_exporter` 改为 `pg-exporter` |
 | 容器替换后配置修改消失 | 将 `/etc/pg_exporter.yml` 从持久配置挂载 |
 | 容器无法访问宿主机 PostgreSQL | `localhost` 指容器自身；使用数据库服务 DNS 或明确的宿主机路由 |
@@ -163,7 +177,7 @@ curl -i -X POST http://127.0.0.1:9630/reload
 
 ## Bug 报告应包含的证据
 
-- `pg_exporter /version` 输出与安装方式
+- `pg_exporter --version` 或 `curl http://127.0.0.1:9630/version` 输出，以及安装方式
 - 操作系统与体系结构
 - PostgreSQL 或 PgBouncer 精确版本
 - 脱敏目标 URL（保留协议、主机类别、端口、数据库与 `sslmode`）
@@ -172,4 +186,4 @@ curl -i -X POST http://127.0.0.1:9630/reload
 - 该采集器对应的 `/explain` 与 `/stat` 内容
 - 使用 v{{< param version >}} 内置配置是否可以复现
 
-移除密码、证书、客户标识与敏感 SQL 后，再到 [pgsty/pg_exporter Issues](https://github.com/pgsty/pg_exporter/issues) 提交问题。
+移除密码、私钥、客户标识与敏感 SQL 后，将上述信息提交到 [pgsty/pg_exporter Issues](https://github.com/pgsty/pg_exporter/issues)。

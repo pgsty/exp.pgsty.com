@@ -9,10 +9,10 @@ geometry and the copy live here and the files are generated:
     static/img/architecture-{light,dark}.svg
     static/img/architecture-zh-{light,dark}.svg
 
-Facts drawn from the pg_exporter source tree (exporter/arg.go, main.go,
-composite.go, patroni.go, pgbackrest.go): PostgreSQL over libpq, PgBouncer
-through its admin console, Patroni through its own Prometheus endpoint,
-pgBackRest by executing the local CLI, all merged and served on :9630/metrics.
+Facts checked against pg_exporter v1.4.1: one process targets either a
+PostgreSQL instance or PgBouncer. PostgreSQL uses lib/pq; PgBouncer uses its
+administration console. The process serves metrics on :9630/metrics.
+Development-only components are described in the Design archive.
 
 Run from the site root:
 
@@ -36,7 +36,7 @@ HEIGHT = 480
 VIEW_X, VIEW_Y, VIEW_W, VIEW_H = -12, -10, 664, 486
 
 SRC_X, SRC_W, SRC_H = 0, 150, 76
-SRC_YS = (36, 132, 228, 324)
+SRC_YS = (132, 228)
 
 CORE_X, CORE_W, CORE_Y, CORE_H = 232, 176, 92, 252
 CORE_CX = CORE_X + CORE_W / 2          # 320
@@ -48,7 +48,7 @@ SINK_YS = (108, 236)
 CONF_X, CONF_W, CONF_Y, CONF_H = 232, 176, 398, 54
 
 # Where each source connector lands on the core's left edge.
-CORE_ENTRY_YS = (140, 195, 250, 300)
+CORE_ENTRY_YS = (180, 270)
 
 FONT_SANS = (
     "-apple-system,BlinkMacSystemFont,&#39;Segoe UI&#39;,Roboto,"
@@ -128,18 +128,16 @@ DARK = {
 
 EN = {
     "alt": (
-        "PG Exporter architecture: PostgreSQL, PgBouncer, Patroni, and "
-        "pgBackRest are collected by one PG Exporter process, which serves "
-        "merged metrics on :9630/metrics for Prometheus and VictoriaMetrics."
+        "PG Exporter v1.4.1: each process collects one PostgreSQL instance or "
+        "PgBouncer target and serves metrics on :9630/metrics for "
+        "Prometheus or VictoriaMetrics."
     ),
-    "cap_left": "TARGETS",
+    "cap_left": "ONE TARGET PER PROCESS",
     "cap_core": "EXPORTER",
     "cap_right": "SCRAPED BY",
     "sources": (
-        ("PostgreSQL", "SQL · libpq"),
+        ("PostgreSQL", "SQL · lib/pq"),
         ("PgBouncer", "SHOW · admin"),
-        ("Patroni", "HTTP · REST"),
-        ("pgBackRest", "CLI · JSON"),
     ),
     "core_title": "PG Exporter",
     "core_chips": (
@@ -155,24 +153,21 @@ EN = {
     ),
     "scrape": "scrape",
     "config_title": "pg_exporter.yml",
-    "config_sub": "58 files · 600+ metrics",
+    "config_sub": "58 files · 460 definitions",
     "config_note": "declarative",
 }
 
 ZH = {
     "alt": (
-        "PG Exporter 架构图：PostgreSQL、PgBouncer、Patroni 与 pgBackRest 由同一个 "
-        "PG Exporter 进程采集，合并后通过 :9630/metrics 供 Prometheus 与 "
-        "VictoriaMetrics 抓取。"
+        "PG Exporter v1.4.1：每个进程采集一个 PostgreSQL 实例或 PgBouncer 目标，"
+        "通过 :9630/metrics 供 Prometheus 或 VictoriaMetrics 抓取。"
     ),
-    "cap_left": "监控对象",
+    "cap_left": "每个进程连接一个目标",
     "cap_core": "导出器",
     "cap_right": "抓取方",
     "sources": (
-        ("PostgreSQL", "SQL · libpq"),
+        ("PostgreSQL", "SQL · lib/pq"),
         ("PgBouncer", "SHOW · 管理台"),
-        ("Patroni", "HTTP · REST"),
-        ("pgBackRest", "CLI · JSON"),
     ),
     "core_title": "PG Exporter",
     "core_chips": (
@@ -188,7 +183,7 @@ ZH = {
     ),
     "scrape": "抓取",
     "config_title": "pg_exporter.yml",
-    "config_sub": "58 个文件 · 600+ 指标",
+    "config_sub": "58 个文件 · 460 个指标定义",
     "config_note": "声明式",
 }
 
@@ -410,7 +405,7 @@ def build(copy: dict, palette: dict, theme: str) -> str:
              weight=600, anchor="end", spacing=1.3))
 
     # ---- connectors: sources into the core --------------------------------
-    source_kinds = ("postgres", "bouncer", "patroni", "backrest")
+    source_kinds = ("postgres", "bouncer")
     for index, (top, entry) in enumerate(zip(SRC_YS, CORE_ENTRY_YS)):
         cy = top + SRC_H / 2
         d = (

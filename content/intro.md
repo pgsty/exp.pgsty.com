@@ -1,72 +1,50 @@
 ---
 title: "Introduction"
 linkTitle: "Introduction"
-description: "What pg_exporter does, how a scrape is planned, and where its operational boundaries lie"
+description: "How PG Exporter collects metrics and fits into a monitoring system"
 weight: 10
 icon: fa-solid fa-lightbulb
 categories: [Concept]
 ---
 
-`pg_exporter` turns PostgreSQL and PgBouncer runtime state into Prometheus metrics. Unlike an exporter with a fixed list of hard-coded queries, most of its metric surface is declared in YAML: a collector defines SQL, result columns, labels, metric types, eligibility rules, timeouts, and caching policy.
+PG Exporter reads PostgreSQL or PgBouncer statistics and exposes them as Prometheus metrics. Prometheus collects these metrics through HTTP and stores them for queries, dashboards, and alerts.
 
-That design gives operators two useful properties at once:
+Each exporter process monitors one PostgreSQL instance or one PgBouncer instance. To monitor both, run two processes.
 
-- a release ships with a broad, tested default metric set;
-- local teams can add, remove, or specialize metrics without rebuilding the binary.
+## How collection works
 
-## The Data Path
+A collector is a SQL query with a YAML definition. The definition tells the exporter how to convert result columns into metrics and labels.
 
-A normal scrape passes through six stages:
+On the first scrape, the exporter selects collectors for the target's version, role, and installed extensions. PostgreSQL database discovery can add connections to other databases in the same instance.
 
-1. **Target selection** — the PostgreSQL URL comes from `--url`, environment, a secret file, or the local-first default.
-2. **Fact discovery** — the exporter learns server version, recovery role, database inventory, extensions, schemas, and operator-supplied tags.
-3. **Dynamic planning** — for each metric namespace, it selects the collector branch whose version range, role tags, custom tags, and predicates match the target.
-4. **Query execution** — selected SQL runs with per-collector timeout and optional result caching.
-5. **Metric conversion** — result columns become labels, gauges, counters, or snapshot histogram families.
-6. **Exposition** — built-in and query-driven metrics are returned through the configurable Prometheus endpoint, normally `/metrics`.
+When Prometheus requests `/metrics`, the exporter runs the selected queries and returns their metrics. A collector can cache its results for a configured time, called its TTL. Until that time expires, scrapes reuse the cached results.
 
-Health and role-routing endpoints use a cached background-probe state rather than opening a new database query for every HTTP request. A health-check storm therefore does not become a database connection storm.
+The exporter provides the HTTP endpoint. Prometheus stores the history; Grafana or another dashboard tool displays it.
 
-## Two Metric Layers
+## What you can monitor
 
-### Built-in exporter metrics
+The bundled collectors cover activity, replication, WAL, locks, transactions, database objects, and selected extensions. They use PostgreSQL monitoring views and PgBouncer administration commands. [Bundled collectors](/collectors/) lists their metrics and required permissions.
 
-The Go binary always knows how to expose core availability and self-observation metrics such as:
+The exporter also reports its own state. For example, `pg_up` reports whether the main database scrape completed without a fatal error. `pg_version` identifies the database version, and `pg_in_recovery` identifies its role.
 
-- `pg_up`, `pg_version`, and `pg_in_recovery`;
-- `pg_exporter_build_info` and exporter uptime;
-- scrape counts, failures, durations, cache TTLs, and per-query statistics.
+## Customize collection
 
-Use `--disable-intro` only when you intentionally want to hide exporter self-metrics. It does not remove YAML-defined business metrics.
+Start with the bundled configuration, [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.4.1/pg_exporter.yml). Add queries when you need more metrics. Each collector can have its own selection conditions, timeout, and cache TTL.
 
-### Declarative collector metrics
+After you change the configuration, reload it through `/reload`. The exporter checks the new configuration before it replaces the current configuration. You do not need to compile or restart the program.
 
-Everything else comes from [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/main/pg_exporter.yml), which is generated from 58 ordered files under [`config/`](https://github.com/pgsty/pg_exporter/tree/main/config). The default bundle covers replication, WAL, checkpoints, activity, locks, transactions, database/object statistics, progress views, PgBouncer, and selected extensions.
+[Collector configuration](/config/) explains the YAML fields and gives examples.
 
-See [Bundled Collectors](/collectors/) for the inventory and [Collector Configuration](/config/) for the schema.
+## Check collection
 
-## Failure Semantics
+Use `/explain` to see the selected collectors for the main database. Use `/stat` to see their query counts, error counts, and durations. The [HTTP API](/api/) also provides health checks and primary/replica endpoints.
 
-Failure is controlled at collector and process level:
+For connection errors, missing metrics, or slow queries, follow [troubleshooting](/troubleshooting/).
 
-- A collector with `fatal: true` can fail the scrape and reset the target's `*_up` metric.
-- A non-fatal collector failure increments error statistics while other collectors continue.
-- A query timeout defaults to 100 ms when omitted; a negative configured timeout disables the query deadline.
-- Startup is non-blocking by default: HTTP starts even when the database is temporarily unavailable. `--fail-fast` changes this to an immediate startup failure.
-- A valid hot reload replaces the active query set atomically; a rejected reload leaves the previous configuration running.
+## Versions and next steps
 
-The `/explain` endpoint answers “why was this collector selected or skipped?”, while `/stat` answers “how did selected collectors perform?”. Together they are the first tools to use for missing, slow, or failing metrics.
+These manuals describe **v{{< param version >}}**. The default configuration contains PostgreSQL 10–19 and PgBouncer 1.8–1.25 branches. A separate legacy configuration covers PostgreSQL 9.1–9.6. See [compatibility](/compatibility/) for details.
 
-## What pg_exporter Is Not
+The [Design archive](/design/) describes development features, including combined sources, pgBackRest metrics, and PostgreSQL log metrics. These features are not included in v{{< param version >}}.
 
-- It is not a PostgreSQL proxy and does not carry application traffic.
-- It does not store time series; Prometheus, VictoriaMetrics, or another compatible system does that.
-- It does not install extensions needed by optional collectors.
-- It does not make an expensive SQL query safe merely because it is in YAML; operators still own query review, privileges, TTL, timeout, and cardinality.
-- Its role endpoints report observed PostgreSQL state, not a distributed-consensus decision. They are useful inputs to routing, but HA policy remains with Patroni, the load balancer, and the operator.
-
-## Project Status
-
-The latest stable release is **v{{< param version >}}**. The default collector bundle covers PostgreSQL 10 through PostgreSQL 19 branches, while a separate legacy bundle covers PostgreSQL 9.1-9.6. PgBouncer collectors cover the `SHOW`-capable 1.8+ line through current 1.25+ schemas.
-
-Continue with [Getting Started](/start/) for a minimal working deployment or [Production Deployment](/deploy/) for the full operational surface.
+Follow the [quick start](/start/) to collect your first metrics. For an existing service, use [production deployment](/deploy/).
