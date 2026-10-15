@@ -13,7 +13,7 @@ d: debug
 s: serve
 
 dev:
-	@HUGO_MODULE_REPLACEMENTS='github.com/pgsty/oink -> $(abspath $(THEME_DIR))' $(HUGO) server \
+	@GOWORK=off HUGO_MODULE_WORKSPACE=off HUGO_MODULE_REPLACEMENTS='github.com/pgsty/oink -> $(abspath $(THEME_DIR))' $(HUGO) server \
 		--renderToMemory \
 		--bind "$(BIND)" $(if $(strip $(PORT)),--port "$(PORT)")
 
@@ -41,7 +41,7 @@ check:
 	python3 bin/check_internal_links.py public
 
 check-local:
-	@HUGO_MODULE_REPLACEMENTS='github.com/pgsty/oink -> $(abspath $(THEME_DIR))' $(HUGO) build \
+	@GOWORK=off HUGO_MODULE_WORKSPACE=off HUGO_MODULE_REPLACEMENTS='github.com/pgsty/oink -> $(abspath $(THEME_DIR))' $(HUGO) build \
 		--minify \
 		--cleanDestinationDir \
 		--printPathWarnings \
