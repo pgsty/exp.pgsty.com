@@ -6,6 +6,13 @@
 `CLAUDE.md` is a compatibility symlink to this file. Edit `AGENTS.md`; never
 replace the symlink with a copied, divergent instruction file.
 
+## OINK build baseline
+
+As of 2026-10-18, this site uses OINK v1.3.2 and Hugo Extended 0.168.0.
+Keep CI and local builds on this baseline. Do not enable `--panicOnWarning`
+or `HUGO_PANICONWARNING`; keep warnings visible and review them. The upstream
+LibSass deprecation warning is accepted. No external Sass compiler is required.
+
 ## Start with the real repository state
 
 - Run `git status --short --branch`, inspect `git branch -vv`, and identify the
@@ -256,7 +263,7 @@ touches `params.version`, that ledger, and the checksums in
 ## Verification and publishing
 
 - Run `make check` after content, template, CSS, JavaScript, or config changes.
-  It performs a warning-strict Hugo build plus Markdown and internal-link checks.
+  It performs a production Hugo build plus Markdown and internal-link checks.
 - For design changes, also inspect the English and Chinese Blog/Design indexes,
   every changed article at desktop and narrow mobile widths, language switching,
   TOC, tables, code overflow, search, and the generated Markdown/LLMS outputs.

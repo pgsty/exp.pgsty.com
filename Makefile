@@ -35,8 +35,7 @@ check:
 		--minify \
 		--cleanDestinationDir \
 		--printPathWarnings \
-		--printI18nWarnings \
-		--panicOnWarning
+		--printI18nWarnings
 	python3 bin/check_markdown.py content public
 	python3 bin/check_internal_links.py public
 
@@ -45,7 +44,6 @@ check-local:
 		--minify \
 		--cleanDestinationDir \
 		--printPathWarnings \
-		--printI18nWarnings \
-		--panicOnWarning
+		--printI18nWarnings
 	python3 bin/check_markdown.py content public
 	python3 bin/check_internal_links.py public

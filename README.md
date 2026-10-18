@@ -235,7 +235,7 @@ make c
 ```
 
 The gate disables workspace replacement, verifies `go.sum`, treats all Hugo path
-and translation warnings as fatal, checks Markdown source/render hygiene, and
+and translation diagnostics for review, checks Markdown source/render hygiene, and
 validates rendered internal links. Use `make check-local` to run the same site
 checks against an in-progress sibling OINK checkout. `make s` is the short form
 of the pinned production-environment preview; the long targets remain available.
