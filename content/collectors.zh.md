@@ -107,6 +107,42 @@ curl -fsS http://127.0.0.1:9630/explain
 
 `pg_origin`、`pg_shmem`、两个膨胀采集器、TimescaleDB 采集器和 `pg_heartbeat` 均设置了 `skip: true`。准备好所需权限和对象后，再改为 `skip: false`。心跳采集器只负责读取，心跳表由独立任务维护。
 
+### 复制源权限
+
+`pg_origin` 保持默认关闭。在采用标准目录 ACL 的 PostgreSQL 14+ 上，由管理员在 Exporter 的 **主连接数据库** 中执行以下授权，将 `monitor` 替换为实际监控角色：
+
+```sql
+GRANT SELECT ON pg_catalog.pg_replication_origin_status TO monitor;
+GRANT EXECUTE ON FUNCTION
+  pg_catalog.pg_show_replication_origin_status() TO monitor;
+```
+
+之后在实际加载的配置中显式将此采集器设为 `skip: false`，重载或重启 Exporter，并核对查询错误和预期的 origin 指标。只有 `pg_monitor` 成员身份并不足够。PostgreSQL 13 及更早版本还会在函数内部检查超级用户身份，上述授权无法让普通监控角色直接调用，应保持此可选采集器关闭。Exporter 不会自动授予权限。
+
+### 发布与订阅计数
+
+`pg_pubrel_count` 统计 `pg_get_publication_tables()` 返回的表条目，即使在 PG19 上也不包含序列。空发布和仅包含序列的发布 **不会产生时序**，而不是显式输出零。
+
+`pg_subrel_count` 按订阅和同步状态汇总 `pg_subscription_rel` 中的条目。PG19 上包含表和序列。表状态为 `i`（初始化）、`d`（复制数据）、`f`（表数据复制完成）、`s`（已同步）和 `r`（就绪）；PG19 序列使用 `i` 或 `r`。
+
+不能用发布端与订阅端数量相等来判断复制健康：两者统计的集合不同，发布重叠、分区处理、刷新与同步进度也会影响数量。
+
+### 尚未发布的订阅与接收器修正
+
+以下配置变更已通过人工审查并提交至本地开发 `main` 分支；**v1.4.1 尚不包含这些变更**：
+
+- 全部 `pg_sub_*` 样本增加表示订阅归属数据库的 `datname` 标签，与 `subname` 一起区分跨库同名订阅。保留原有 `pg_sub_id` gauge。新增标签会产生新时序，部署前应检查依赖标签匹配的 PromQL 连接与聚合。
+- PG10–13 部署新配置前，管理员须在每个用作 Exporter **主连接数据库** 的库内执行 `GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;`。仅在订阅所在数据库授权并不足够。该授权不会开放 `subconninfo`。PG14+ 在标准目录 ACL 下不需要额外授权。缺少此前提时，订阅查询会失败且指标缺失；HTTP 200 不能单独证明抓取成功。
+- 当前与 legacy 配置的 `pg_recv_state` 均使用下表。编码 1–3 保留；PG9.6–18 不存在 `connecting` 状态。没有 receiver 行时仍不输出样本，不填零，也不伪造 stopped 状态。
+- Legacy receiver 查询使用 PG9.6 兼容的标量 `substring()` 提取 host 和 port。PG9.6 仍会对非超级用户隐藏 receiver 详情：只有 PID 可见，采集器输出状态 -1。这项 SQL 修正不改变数据库权限。
+
+| 状态 | 编码 | 状态 | 编码 |
+|:---|---:|:---|---:|
+| streaming | 0 | starting | 6 |
+| stopping | 4 | waiting | 7 |
+| connecting（PG19+） | 5 | restarting | 8 |
+| 未知 / NULL | -1 | stopped | 9 |
+
 ## 基数与开销
 
 每对象和每查询采集器是主要的基数来源。在大规模环境中启用前重点检查：

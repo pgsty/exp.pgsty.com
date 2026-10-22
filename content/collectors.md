@@ -107,6 +107,42 @@ curl -fsS http://127.0.0.1:9630/explain
 
 `pg_origin`, `pg_shmem`, both bloat collectors, the TimescaleDB collector, and `pg_heartbeat` use `skip: true`. Prepare their required permissions and objects before setting `skip: false`. The heartbeat collector reads a table maintained by a separate heartbeat writer.
 
+### Replication origin permissions
+
+`pg_origin` remains disabled by default. On PostgreSQL 14+ with standard catalog ACLs, an administrator must grant access in the exporter's **main connection database**, substituting the actual monitoring role for `monitor`:
+
+```sql
+GRANT SELECT ON pg_catalog.pg_replication_origin_status TO monitor;
+GRANT EXECUTE ON FUNCTION
+  pg_catalog.pg_show_replication_origin_status() TO monitor;
+```
+
+Then explicitly set `skip: false` for this collector in the configuration you load, reload or restart the exporter, and check its query errors and expected origin samples. `pg_monitor` membership alone is insufficient. PostgreSQL 13 and older also check for superuser inside the function, so these grants alone cannot enable direct access for an ordinary monitoring role; keep this optional collector disabled there. The exporter does not grant privileges automatically.
+
+### Publication and subscription counts
+
+`pg_pubrel_count` counts table entries returned by `pg_get_publication_tables()`. It excludes sequences, including on PG19. Empty and sequence-only publications produce **no series**, rather than an explicit zero.
+
+`pg_subrel_count` counts `pg_subscription_rel` entries grouped by subscription and synchronization state. On PG19 this includes both tables and sequences. Table states are `i` (initialize), `d` (data copy), `f` (finished table copy), `s` (synchronized), and `r` (ready); PG19 sequences use `i` or `r`.
+
+Do not treat equal publication/subscription counts as a replication-health test: the two collectors count different sets. Publication overlap, partition handling, refresh, and synchronization progress also affect the counts.
+
+### Unreleased subscription and receiver corrections
+
+The following configuration changes have passed human review and are committed to the local development `main` branch; they are **not included in v1.4.1**:
+
+- Every `pg_sub_*` sample gains a `datname` label for the database owning the subscription. Together with `subname`, this distinguishes equal names in different databases. The existing `pg_sub_id` gauge is retained. The label change creates new time series; check label-sensitive PromQL joins and aggregations before rollout.
+- On PG10–13, before deploying the new configuration, an administrator must run `GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;` in each database used as the exporter's **main connection database**. Granting it only in a subscription's database is insufficient. This does not grant access to `subconninfo`. PG14+ needs no extra grant under the standard catalog ACLs. Without this prerequisite, subscription queries fail and their metrics are absent; HTTP 200 alone does not prove a successful scrape.
+- `pg_recv_state` uses the dictionary below in both current and legacy configurations. Codes 1–3 are reserved. PG9.6–18 has no `connecting` state. A missing receiver row remains absent; it is not filled with zero or a synthetic stopped sample.
+- The legacy receiver query uses PG9.6-compatible scalar `substring()` to extract the host and port. On PG9.6, PostgreSQL still hides receiver details from non-superusers: only the PID is visible and the collector reports state -1. This SQL correction does not change database privileges.
+
+| State | Code | State | Code |
+|:---|---:|:---|---:|
+| streaming | 0 | starting | 6 |
+| stopping | 4 | waiting | 7 |
+| connecting (PG19+) | 5 | restarting | 8 |
+| unknown / NULL | -1 | stopped | 9 |
+
 ## Cardinality and Cost
 
 Per-relation and per-query collectors are the main cardinality drivers. Review these before enabling them on a large estate:
