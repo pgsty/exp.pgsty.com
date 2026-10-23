@@ -129,7 +129,7 @@ Common causes include:
 - monitoring role lacks access to an optional view or function;
 - extension/schema exists in a different database;
 - custom SQL result columns do not match the YAML `metrics` list;
-- a configured `LABEL` column is absent (v1.4.1 emits no metrics from that collector for this call);
+- a configured `LABEL` column is absent (the exporter emits no metrics from that collector for this call);
 - the query exceeds its timeout;
 - an extension or pre-release PostgreSQL view changed shape.
 
@@ -148,7 +148,7 @@ Typical remedies:
 5. Reduce database auto-discovery scope with `include-database` / `exclude-database`.
 6. Control per-object metric cardinality on databases with thousands of tables or indexes.
 
-Queries and discovered databases are scraped sequentially, so budget for their combined duration. Keep the full scrape below Prometheus `scrape_timeout` and `scrape_interval`. The v1.4.1 HTTP server also has a 30-second write timeout.
+Queries and discovered databases are scraped sequentially, so budget for their combined duration. Keep the full scrape below Prometheus `scrape_timeout` and `scrape_interval`. The HTTP server also has a 30-second write timeout.
 
 ## Reload Fails
 

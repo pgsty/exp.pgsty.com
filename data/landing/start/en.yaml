@@ -44,7 +44,7 @@ install:
   desc: Download and install the binary and its collector configuration.
   body: |
     ```bash {copy="all"}
-    VERSION=1.4.1
+    VERSION=1.5.0
     ARCHIVE="pg_exporter-${VERSION}.linux-amd64.tar.gz"
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/$ARCHIVE" &&
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/checksums.txt" &&
@@ -56,7 +56,7 @@ install:
     pg_exporter --version
     ```
 
-    The checksum result is `OK`. The installed version is `v1.4.1`.
+    The checksum result is `OK`. The installed version is `v1.5.0`.
 
     Other platforms and package installation commands are on the [download page](/download/).
 monitoring-user:
@@ -74,6 +74,14 @@ monitoring-user:
     CREATE USER monitor WITH PASSWORD 'change-me';
     GRANT pg_monitor TO monitor;
     ```
+
+    On PostgreSQL 10–13, also run this in the main connection database (`postgres` in this guide):
+
+    ```sql
+    GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
+    ```
+
+    PostgreSQL 14+ needs no extra grant under the standard catalog ACLs. This grant does not expose subscription passwords.
 
     Type `\q` to return to the shell. Use the same password in the connection URL below.
 run:

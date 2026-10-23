@@ -106,7 +106,7 @@ docker run --rm pgsty/pg_exporter:{{< param version >}} --version
 
 ## 从源码构建
 
-检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.4.1 要求 Go 1.26.5 或更高版本）：
+检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.5.0 要求 Go 1.27.3 或更高版本）：
 
 ```bash
 git clone --depth 1 --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git pg_exporter-src

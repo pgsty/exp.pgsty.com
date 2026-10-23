@@ -66,7 +66,7 @@ export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=
 
 ### HTTP 端口侧的保护
 
-`/metrics` 之外，`/reload`、`/explain`、`/stat` 属于管理端点：能访问该端口的任何人都可以读取配置与运行态信息、触发重载。如果 exporter 暴露在共享网络中，请通过 `--web.config.file`（[exporter-toolkit web 配置](https://github.com/prometheus/exporter-toolkit/blob/v0.17.1/docs/web-configuration.md)）启用 TLS/Basic Auth，或在防火墙/反向代理层限制来源。
+`/metrics` 之外，`/reload`、`/explain`、`/stat` 属于管理端点：能访问该端口的任何人都可以读取配置与运行态信息、触发重载。如果 exporter 暴露在共享网络中，请通过 `--web.config.file`（[exporter-toolkit web 配置](https://github.com/prometheus/exporter-toolkit/blob/v0.20.0/docs/web-configuration.md)）启用 TLS/Basic Auth，或在防火墙/反向代理层限制来源。
 
 ## Systemd 部署（RPM/DEB 包）
 

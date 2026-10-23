@@ -106,7 +106,7 @@ Use the [Docker deployment example](/deploy/#docker-deployment) to mount the con
 
 ## Build from Source
 
-Check out the release tag and use the Go version declared by its `go.mod` (Go 1.26.5 or later for v1.4.1):
+Check out the release tag and use the Go version declared by its `go.mod` (Go 1.27.3 or later for v1.5.0):
 
 ```bash
 git clone --depth 1 --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git pg_exporter-src

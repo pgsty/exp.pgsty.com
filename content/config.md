@@ -9,7 +9,7 @@ categories: [Reference]
 
 A YAML **collector** defines a SQL query, its metrics, and when to run it. This page describes the configuration used by stable **v{{< param version >}}**. For process flags and environment variables, see [Command Reference](/cmd/).
 
-Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config).
+Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config).
 
 ## Configuration Loading
 
@@ -206,7 +206,7 @@ Usage notes:
   reject the collector result
 - `scale` is applied to the observation before bucket assignment; as with scalar
   columns, timestamp and boolean values are exempt from `scale`
-- The [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.4.1/config/0450-pg_xact_age.yml)
+- The [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0450-pg_xact_age.yml)
   collector in the default bundle serves as the reference implementation
 
 For the example above, the 95th percentile is:
@@ -250,6 +250,8 @@ The deadline covers predicate queries and the main query together. Set it above
 normal execution time and below the scrape time budget. Connection prechecks use
 the separate `--connect-timeout` flag, measured in milliseconds.
 
+Cache TTLs and timeouts reject NaN, infinity, and positive values that overflow Go's `time.Duration`. Cache TTLs remain nonnegative; finite negative timeouts still disable the deadline.
+
 ### Version Compatibility
 
 Control which PostgreSQL versions can run this collector:
@@ -274,9 +276,11 @@ Version numbers follow PostgreSQL `server_version_num` rules:
 
 A collector passes through three steps:
 
-1. **Plan:** on the first scrape or after plan invalidation, check target type, version, tags, and `skip`. Select every eligible branch. `/explain` shows selected collectors on the main target; debug logs show rejection reasons. Reload or restart after adding an extension or schema that affects eligibility.
+1. **Plan:** on the first scrape or after plan invalidation, check target type, version, tags, and `skip`. Select every eligible branch. `/explain` shows selected collectors on the main target; debug logs show rejection reasons.
 2. **Collect:** return a cached result while its TTL is valid. Otherwise, evaluate predicates and run the main SQL within the shared timeout. Convert the complete result to metrics before publishing it.
 3. **Handle failure:** a normal collector error omits its result and increments its query error count. A fatal collector error stops further collection on that database and marks that database scrape as failed. A failure on the main target also sets `pg_up` to 0. Other discovered databases can still be collected.
+
+Successful metadata prechecks also replan when the connected username, schema set, or extension set changes. New eligible collectors appear on the next scrape; removed dependencies stop selecting their collectors. Unchanged sets retain the plan and caches. Replanning resets query statistics and caches, as a reload does.
 
 ## Tag System
 

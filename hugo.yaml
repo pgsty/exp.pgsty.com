@@ -288,10 +288,10 @@ params:
   images:
     - img/pg-exporter-social-card.png
   logo: img/pg-exporter.png
-  version: 1.4.1
+  version: 1.5.0
   metric_definitions: 460
   collector_files: 58
-  tagged_versions: 35
+  tagged_versions: 36
   copyright:
     authors: '[PG Exporter Contributors](https://github.com/pgsty/pg_exporter) · Documentation licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)'
     from_year: 2018

@@ -28,8 +28,7 @@ Stable **v{{< param version >}}** is the reference for the user manuals. Develop
 
 ## Toolchain
 
-The v1.4.1 tag declares Go **1.26.5**; development commit `c0ba58a` declares
-**1.27.0**. Use the toolchain required by the revision you build. To build the stable tag:
+The v1.5.0 tag declares Go **1.27.3**. Use the toolchain required by the revision you build. To build the stable tag:
 
 ```bash
 git clone --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git
@@ -137,7 +136,7 @@ curl -fsS localhost:9630/stat
 
 `--explain` selects collectors but does not execute their SQL. Exercise the
 metrics endpoint to test results and permissions. Test populated and zero-row
-results. In v1.4.1, a missing configured `LABEL` or `HISTOGRAM` column rejects the
+results. A missing configured `LABEL` or `HISTOGRAM` column rejects the
 whole collector result in either case.
 
 For cached or optional components, also test the disabled path, failure isolation,
@@ -191,7 +190,7 @@ python3 bin/sync_pg_exporter_content.py \
 Compare the generated files with `content/` and apply the relevant changes. Keep
 the standalone guides and Design archive authored here.
 
-PG Exporter source contributions use [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.4.1/LICENSE).
+PG Exporter source contributions use [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.5.0/LICENSE).
 This site’s original documentation uses [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 Submit software changes to [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)
 and documentation changes to [pgsty/exp.pgsty.com](https://github.com/pgsty/exp.pgsty.com).

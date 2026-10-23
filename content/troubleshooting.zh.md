@@ -129,7 +129,7 @@ pg_exporter_query_scrape_error_count > 0
 - 监控角色无权访问可选视图或函数；
 - 扩展/Schema 安装在另一个数据库；
 - 自定义 SQL 结果列与 YAML `metrics` 清单不一致；
-- 配置声明的 `LABEL` 列没有返回（v1.4.1 不输出该采集器本次的任何指标）；
+- 配置声明的 `LABEL` 列没有返回（本次不会输出该采集器的任何指标）；
 - 查询超过超时；
 - 扩展或预发布 PostgreSQL 视图结构变化。
 
@@ -148,7 +148,7 @@ pg_exporter_query_scrape_error_count > 0
 5. 通过 `include-database` / `exclude-database` 缩小自动发现范围。
 6. 控制拥有数千张表/索引数据库上的逐对象指标基数。
 
-查询与自动发现库按顺序抓取，需要为总耗时留出预算。完整抓取应短于 Prometheus 的 `scrape_timeout` 与 `scrape_interval`；v1.4.1 HTTP 服务另有 30 秒写超时。
+查询与自动发现库按顺序抓取，需要为总耗时留出预算。完整抓取应短于 Prometheus 的 `scrape_timeout` 与 `scrape_interval`；HTTP 服务另有 30 秒写超时。
 
 ## 重载失败
 

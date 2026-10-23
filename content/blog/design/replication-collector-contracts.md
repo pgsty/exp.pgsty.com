@@ -2,19 +2,18 @@
 title: "Correcting Replication Collector Identity and Semantics"
 linkTitle: "Replication Collector Corrections"
 date: "2026-10-22T00:00:00+08:00"
-lastmod: "2026-10-22T00:00:00+08:00"
-draft: true
+lastmod: "2026-10-23T00:00:00+08:00"
 authors: [Vonng]
 description: "Minimal corrections to subscription identity, receiver states, origin permissions, and relation counts"
-summary: "Implemented but unreleased. Add database identity to subscriptions, correct receiver mappings, and clarify optional permissions and table/sequence counts."
+summary: "Shipped in v1.5.0. Add database identity to subscriptions, correct receiver mappings, and clarify optional permissions and table/sequence counts."
 categories: [design]
 tags: [Design, PostgreSQL, Compatibility, Prometheus]
 ---
 
-> **Status:** Implemented but unreleased; source changes have passed human review and are committed to local `main`.<br>
-> **Decision date / last verified:** 2026-10-22.<br>
-> **Scope:** Collector corrections in pg_exporter `main` commit `d97ba38fc8390984df994b2f9ea58b43ecfc8b89`, based on `72f00a4fa4e6eb7524174f2122b3fe1e1d608db4`; PostgreSQL `REL_19_RC1` at `0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89`, with focused PostgreSQL 9.6–18 checks. These corrections are not part of v1.4.1.<br>
-> **Delivery:** Source changes, regenerated configuration bundles, local source/runtime validation, human approval, and the source commit on local `main` are complete. Push, release tag, package publication, deployment, and production verification remain pending.
+> **Status:** Shipped in v1.5.0.<br>
+> **Decision date / last verified:** 2026-10-22 / 2026-10-23.<br>
+> **Scope:** Collector corrections in pg_exporter `main` commit `d97ba38fc8390984df994b2f9ea58b43ecfc8b89`, based on `72f00a4fa4e6eb7524174f2122b3fe1e1d608db4`; PostgreSQL `REL_19_RC1` at `0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89`, with focused PostgreSQL 9.6–18 checks. These corrections ship in v1.5.0 and are absent from v1.4.1.<br>
+> **Delivery:** Source committed and pushed; tag v1.5.0 points to `18912540fe5edce0ed0ee81fac0d989738ecaa87`. CI and the release workflow passed; the GitHub Release, RPM/DEB packages, archives, and Docker images are published. This does not establish production deployment or production-load acceptance.
 
 ## Decisions
 
@@ -120,7 +119,7 @@ Local Go tests with the race detector, the compatibility HTTP-mux mode, `go vet`
 
 ## Implementation boundaries
 
-The source change is limited to seven split collector files and their two generated bundles. The companion changes are the paired collector manuals and this paired Design record. The manuals distinguish existing permission/count semantics from the unreleased identity, dictionary, and PG9.6 SQL corrections. All unrelated working-tree changes are preserved. Human review and the source commit on local `main` are complete; push, release, and production rollout remain separate actions.
+The source change is limited to seven split collector files and their two generated bundles. The companion changes are the paired collector manuals and this paired Design record. The manuals distinguish existing permission/count semantics from the identity, dictionary, and PG9.6 SQL corrections in v1.5.0. Source review, commit, push, tagging, and formal artifacts are complete; production rollout remains a separate action.
 
 Non-goals include a driver migration, Gatherer redesign, runtime privilege management, new collector branches, new metric families, changes to subscription relation aggregation, or unrelated legacy SQL repair.
 

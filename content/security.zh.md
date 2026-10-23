@@ -34,6 +34,14 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
+PostgreSQL 10–13 的 v1.5.0 默认订阅采集器还需要在 Exporter 的 **主连接数据库** 中执行以下列级授权，不能只在订阅所属数据库授权：
+
+```sql
+GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
+```
+
+该授权不开放 `subconninfo`。PG14+ 在标准目录 ACL 下无需额外授权，升级约定见[订阅身份与接收器状态](/zh/collectors/#订阅身份与接收器状态)。
+
 如果集群撤销了 `PUBLIC` 的数据库连接权限，为监控角色授予各目标库的 `CONNECT`。可选视图、函数与 Schema 按需授权；exporter 无需超级用户权限。
 
 按监控库数量设置连接上限。主目标连接池最多三个连接，每个额外发现的数据库最多一个。示例中的五个连接适合小规模目标；监控更多数据库或多个 exporter 共用角色时，相应提高上限。
@@ -79,7 +87,9 @@ pg_exporter --config=/etc/pg_exporter.yml
 
 文件必须包含一个连接 URL，且运行用户可读；首尾空白会被移除。选用此来源后，文件不可读会使启动失败。先清除更高优先级的 URL 设置；软件包服务还需删除 `/etc/default/pg_exporter` 中的 `PG_EXPORTER_URL`。
 
-日志会遮盖 URL 密码与 `password=` 参数。源文件仅允许服务账号及其管理员读取。
+日志会遮盖有效 URL 中的密码与 `password=` 参数，错误 URL 的诊断也不包含原始连接串。源文件仅允许服务账号及其管理员读取。
+
+URL 格式或查询参数转义错误会阻止启动。解码后的查询参数名不能为空，也不能包含 Unicode 空白或 `=`。诊断使用固定文本，不包含连接串或错误参数名。拒绝这些输入可避免显式 TLS 设置在规范化时被静默丢弃。选用 `PG_EXPORTER_URL_FILE` 时，空内容或仅含空白的内容也会被拒绝；这里检查的是连接 URL 文件，不是 TLS 私钥文件。
 
 ## 保护数据库连接
 
@@ -121,7 +131,7 @@ basic_auth_users:
 pg_exporter --web.config.file=/etc/pg_exporter/web.yml
 ```
 
-请生成 bcrypt 哈希，不要把明文密码写进文件，例如使用 `htpasswd -nBC 10 prometheus`。mTLS、响应头与限流配置以 [exporter-toolkit Web 配置](https://github.com/prometheus/exporter-toolkit/blob/v0.17.1/docs/web-configuration.md)为准。
+请生成 bcrypt 哈希，不要把明文密码写进文件，例如使用 `htpasswd -nBC 10 prometheus`。mTLS、响应头与限流配置以 [exporter-toolkit Web 配置](https://github.com/prometheus/exporter-toolkit/blob/v0.20.0/docs/web-configuration.md)为准。
 
 启用 Basic Auth 后，Prometheus 抓取任务也要配置认证：
 
@@ -156,3 +166,7 @@ curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
 `curl` 会提示输入 HTTP 密码。确认服务器证书校验通过、响应中有 `pg_up 1`，并且 Prometheus 目标为 Up。启用 Basic Auth 后，不带凭据的请求应返回 `401`。
 
 服务示例参见[生产部署](/zh/deploy/)，连接与采集器错误的定位方法参见[故障排查](/zh/troubleshooting/)。
+
+## 工具链安全更新
+
+v1.5.0 使用 Go 1.27.3 与更新后的依赖，包括 `x/net` 0.61.0。[发布安全说明](/zh/release/v1.5.0/#安全更新)列出了纳入的 CVE 修复，并区分静态符号／包匹配与未导入模块的公告。升级时替换重新构建的二进制及配套采集器配置；仅更新主机编译器不会修复已有二进制。

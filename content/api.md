@@ -22,7 +22,7 @@ categories: [Reference]
 | `/` | GET | HTML page with a link to metrics |
 {.full-width}
 
-The table lists the intended methods. Only `/reload` explicitly rejects other methods. In v1.4.1, unmatched paths reach the root page, so use the documented paths for probes.
+The table lists the intended methods. Only `/reload` explicitly rejects other methods. Unmatched paths reach the root page, so use the documented paths for probes.
 
 ## Metrics Endpoint
 
@@ -79,7 +79,7 @@ The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer
 | `pg_exporter_query_cache_ttl` | Gauge | datname, query | Remaining result-cache lifetime, in seconds |
 {.full-width}
 
-Configured constant labels are added to these series. Cumulative per-database and per-query counts are exposed as Gauges in v1.4.1. Query statistics reset when the server is replanned, including after a reload. Database statistics reset when its connection object is recreated.
+Configured constant labels are added to these series. Cumulative per-database and per-query counts are exposed as Gauges. Query statistics reset when the server is replanned, including after a reload. Database statistics reset when its connection object is recreated.
 
 `--disable-intro` hides all built-in metrics in this table, including `pg_up`. YAML metrics, Go/process metrics, and HTTP health checks remain available.
 
@@ -125,6 +125,8 @@ Role checks use `pg_is_in_recovery()` from the main PostgreSQL target. They repo
 | `down`, `starting`, `unknown` | 503 | 503 | 503 |
 
 The response body contains the state name. In PgBouncer mode, a successful `SHOW VERSION` probe maps to `primary`; it does not identify the role of PostgreSQL servers behind the pooler. Use exporters connected directly to PostgreSQL for role routing.
+
+Each health response derives its HTTP code and body from one atomic status snapshot. This fixes contradictory responses during concurrent state changes; the state is still cached. Telemetry-path validation also verifies that requests reach the metrics handler under the active HTTP mux. Prefer an unescaped path such as `/metrics` for compatibility with the older mux.
 
 ### GET /primary
 
@@ -177,9 +179,9 @@ curl -fsS -X POST http://127.0.0.1:9630/reload
 | 500 | `fail to reload: ...` | Reload rejected; previous definitions remain active |
 | 405 | `method not allowed` | Use GET or POST; response includes `Allow: GET, POST` |
 
-Reload replaces collector definitions, clears their caches and query statistics, and invalidates plans. It does not execute the new SQL. Scrape `/metrics` after reloading and check collector errors. A configuration directory can skip invalid files while loading valid ones; inspect the log for `skip config` warnings.
+Reload replaces collector definitions, clears their caches and query statistics, and invalidates plans. It does not execute the new SQL. An empty YAML file is valid and replaces the plan with zero configured collectors; built-in metrics remain. A rejected single-file reload preserves the previous definitions. Scrape `/metrics` after reloading and check collector errors. A configuration directory can skip invalid files while loading valid ones; inspect the log for `skip config` warnings.
 
-On Unix, `SIGHUP` and `SIGUSR1` also reload configuration. Restart the process to change the connection URL, labels, tags, or listen address. Restrict management access with a firewall, reverse proxy, or `--web.config.file`; see [Security](/security/).
+On Unix, `SIGHUP` and `SIGUSR1` also reload configuration. `SIGTERM` terminates the process without waiting for active HTTP requests to finish. Restart the process to change the connection URL, labels, tags, or listen address. Restrict management access with a firewall, reverse proxy, or `--web.config.file`; see [Security](/security/).
 
 ### GET /explain
 

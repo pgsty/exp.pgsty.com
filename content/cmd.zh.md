@@ -30,7 +30,9 @@ PG Exporter 按以下顺序选择连接 URL：
 4. `PG_EXPORTER_URL_FILE` 指向文件中去除首尾空白后的内容
 5. `postgresql:///?sslmode=disable`
 
-高优先级 URL 会覆盖 URL 文件。选择 URL 文件时，该文件必须可读并包含有效 URL。
+高优先级 URL 会覆盖 URL 文件。选择 URL 文件时，该文件必须可读并包含非空的有效 URL。URL 语法、转义或查询参数名错误会阻止启动，诊断不会输出连接串。
+
+显式数据库身份按 `lib/pq` 解析，包括 `dbname` 与 `database` 查询参数别名。自动发现会替换路径并清除这两个别名，再连接各发现数据库，同时保留凭据、TLS 选项与库名中的特殊字符。
 
 URL 未指定 `sslmode` 时，PG Exporter 会补上 `sslmode=disable`。采集器配置独立解析：
 先取 `--config`，再取 `PG_EXPORTER_CONFIG`，最后依次查找
@@ -78,7 +80,7 @@ Go/进程指标与健康端点仍然可用。`--disable-cache` 绕过主查询�
 | `-P`, `--web.telemetry-path=PATH` | `PG_EXPORTER_TELEMETRY_PATH` | `/metrics` | Prometheus 指标暴露路径 |
 
 指标路径必须以 `/` 开头，不能包含查询参数、片段、通配符、重复斜线或 `..` 路径段，且不能与 `/up`、`/primary`、`/replica`、`/reload`、
-`/explain`、`/stat`、`/version` 等内置路由冲突。各端点的方法与响应语义参见
+`/explain`、`/stat`、`/version` 等内置路由冲突。启动还会验证该路径实际进入指标处理器，而非重定向或其他处理器。转义路径必须兼容当前 HTTP mux；优先使用 `/metrics` 这样的普通路径。各端点的方法与响应语义参见
 [HTTP API](/zh/api/)。
 
 ## 动作与日志

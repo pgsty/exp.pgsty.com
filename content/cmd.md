@@ -31,7 +31,9 @@ PG Exporter selects the connection URL in this order:
 4. the trimmed contents of the file named by `PG_EXPORTER_URL_FILE`
 5. `postgresql:///?sslmode=disable`
 
-A higher-priority URL takes precedence over the URL file. If the file is selected, it must be readable and contain a valid URL.
+A higher-priority URL takes precedence over the URL file. If the file is selected, it must be readable and contain a nonempty valid URL. Malformed URL syntax, escaping, or query parameter names stop startup without logging the connection string.
+
+Explicit database identity follows `lib/pq`, including `dbname` and `database` query aliases. Auto-discovery replaces the path and removes both aliases before connecting to each discovered database, preserving credentials, TLS options, and special characters in the database name.
 
 If the URL does not specify `sslmode`, PG Exporter adds `sslmode=disable`. The
 collector configuration is resolved independently: `--config`, then
@@ -86,7 +88,7 @@ Constant labels appear on exported series. Tags select eligible collectors.
 The telemetry path must start with `/`. It cannot contain a query, fragment,
 wildcard, repeated slash, or `..` path segment. It must not collide with built-in routes
 such as `/up`, `/primary`, `/replica`, `/reload`, `/explain`, `/stat`, or
-`/version`. See the [HTTP API](/api/) for methods and response semantics.
+`/version`. Startup also verifies that a request for this path actually reaches the metrics handler, rather than a redirect or another handler. Escaped paths must be valid for the active HTTP mux; prefer a plain path such as `/metrics` for compatibility. See the [HTTP API](/api/) for methods and response semantics.
 
 ## Actions and Logging
 

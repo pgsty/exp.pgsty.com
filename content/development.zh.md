@@ -28,7 +28,7 @@ PG Exporter 将 SQL 和指标定义放在 YAML 中，由 Go 运行时加载定�
 
 ## 工具链
 
-v1.4.1 标签声明 Go **1.26.5**，开发提交 `c0ba58a` 声明 **1.27.0**。按所构建版本的要求选择工具链。构建稳定标签：
+v1.5.0 标签声明 Go **1.27.3**。按所构建版本的要求选择工具链。构建稳定标签：
 
 ```bash
 git clone --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git
@@ -118,7 +118,7 @@ curl -fsS localhost:9630/explain
 curl -fsS localhost:9630/stat
 ```
 
-`--explain` 只选择采集器，不执行 SQL。通过指标端点测试结果和权限，既测试有数据结果，也测试零行结果。v1.4.1 缺少配置声明的 `LABEL` 或 `HISTOGRAM` 列时，无论是否有结果行，都会拒绝整个采集器结果。
+`--explain` 只选择采集器，不执行 SQL。通过指标端点测试结果和权限，既测试有数据结果，也测试零行结果。缺少配置声明的 `LABEL` 或 `HISTOGRAM` 列时，无论是否有结果行，都会拒绝整个采集器结果。
 
 缓存或可选组件还应测试禁用路径、故障隔离、重载和关闭。日志持久化状态还需覆盖重启、轮转、截断、半条记录和状态文件权限。
 
@@ -158,4 +158,4 @@ python3 bin/sync_pg_exporter_content.py \
 
 对照 `content/` 检查导入结果，只应用相关变更。本站扩展指南和设计归档在本仓库直接维护。
 
-PG Exporter 源码贡献使用 [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.4.1/LICENSE)，本站原创文档使用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。软件改动提交到 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)，文档改动提交到 [pgsty/exp.pgsty.com](https://github.com/pgsty/exp.pgsty.com)。
+PG Exporter 源码贡献使用 [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.5.0/LICENSE)，本站原创文档使用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。软件改动提交到 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)，文档改动提交到 [pgsty/exp.pgsty.com](https://github.com/pgsty/exp.pgsty.com)。

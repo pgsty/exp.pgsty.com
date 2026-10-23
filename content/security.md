@@ -34,6 +34,14 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
+On PostgreSQL 10–13, the default v1.5.0 subscription collector also needs this column grant in the exporter’s **main connection database**, not merely in the databases owning subscriptions:
+
+```sql
+GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
+```
+
+It does not expose `subconninfo`. PostgreSQL 14+ needs no extra grant under the standard catalog ACLs. See [subscription identity and receiver states](/collectors/#subscription-identity-and-receiver-states) for the upgrade contract.
+
 Grant `CONNECT` on each monitored database if your cluster has revoked it from `PUBLIC`. Grant access to optional views, functions, and schemas as needed; the exporter does not require a superuser.
 
 Size the connection limit for the selected databases. The main target pool allows up to three connections, and each additional discovered database allows one. A limit of five suits a small target; increase it when monitoring more databases or sharing the role between exporters.
@@ -79,7 +87,9 @@ pg_exporter --config=/etc/pg_exporter.yml
 
 The file must contain one connection URL and be readable by the runtime user. Surrounding whitespace is removed. When this source is selected, an unreadable file stops startup. Clear higher-priority URL settings first; for the packaged service, remove `PG_EXPORTER_URL` from `/etc/default/pg_exporter`.
 
-Logs mask URL passwords and `password=` parameters. Keep the source file restricted to the service account and its administrator.
+Logs mask passwords in valid URLs and `password=` parameters. Malformed-URL diagnostics omit the original connection string. Keep the source file restricted to the service account and its administrator.
+
+Malformed URLs and invalid query escaping stop startup. Decoded query parameter names must be nonempty and contain neither Unicode whitespace nor `=`. Diagnostics use fixed text without the connection string or offending name. Rejecting these inputs prevents explicit TLS settings from being silently dropped during URL normalization. When `PG_EXPORTER_URL_FILE` is selected, empty or whitespace-only contents are also rejected; this check concerns the connection URL file, not TLS private-key files.
 
 ## Secure the Database Connection
 
@@ -121,7 +131,7 @@ basic_auth_users:
 pg_exporter --web.config.file=/etc/pg_exporter/web.yml
 ```
 
-Generate a bcrypt hash without placing the cleartext password in the file, for example with `htpasswd -nBC 10 prometheus`. See the authoritative [exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/v0.17.1/docs/web-configuration.md) for mTLS, headers, and rate limiting.
+Generate a bcrypt hash without placing the cleartext password in the file, for example with `htpasswd -nBC 10 prometheus`. See the authoritative [exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/v0.20.0/docs/web-configuration.md) for mTLS, headers, and rate limiting.
 
 With Basic Auth enabled, configure the Prometheus scrape job accordingly:
 
@@ -156,3 +166,7 @@ curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
 `curl` prompts for the HTTP password. Confirm that the certificate is accepted, the response contains `pg_up 1`, and the Prometheus target is up. A request without credentials should return `401` when Basic Auth is enabled.
 
 See [Production Deployment](/deploy/) for service examples and [Troubleshooting](/troubleshooting/) for connection and collector errors.
+
+## Toolchain security updates
+
+v1.5.0 uses Go 1.27.3 and refreshed modules, including `x/net` 0.61.0. The [release security notes](/release/v1.5.0/#security-updates) list the fixed CVEs and distinguish static symbol/package matches from unimported module advisories. Upgrade the rebuilt binary as well as its collector configuration; updating the host compiler alone does not repair an existing binary.

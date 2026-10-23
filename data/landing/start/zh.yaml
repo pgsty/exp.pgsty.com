@@ -43,7 +43,7 @@ install:
   desc: 下载并安装程序与采集器配置。
   body: |
     ```bash {copy="all"}
-    VERSION=1.4.1
+    VERSION=1.5.0
     ARCHIVE="pg_exporter-${VERSION}.linux-amd64.tar.gz"
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/$ARCHIVE" &&
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/checksums.txt" &&
@@ -55,7 +55,7 @@ install:
     pg_exporter --version
     ```
 
-    校验结果应为 `OK`，安装后的版本应为 `v1.4.1`。
+    校验结果应为 `OK`，安装后的版本应为 `v1.5.0`。
 
     其他平台与软件包安装方式见[下载页](/zh/download/)。
 monitoring-user:
@@ -73,6 +73,14 @@ monitoring-user:
     CREATE USER monitor WITH PASSWORD 'change-me';
     GRANT pg_monitor TO monitor;
     ```
+
+    PostgreSQL 10–13 还须在主连接数据库（本例为 `postgres`）执行：
+
+    ```sql
+    GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
+    ```
+
+    PG14+ 在标准目录 ACL 下不需要这项额外授权；该授权不会开放订阅密码。
 
     输入 `\q` 返回 Shell。下一步连接 URL 使用相同的密码。
 run:

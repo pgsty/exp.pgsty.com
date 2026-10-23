@@ -66,7 +66,7 @@ export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=
 
 ### Protecting the HTTP Port
 
-Beyond `/metrics`, the `/reload`, `/explain`, and `/stat` management endpoints let anyone with port access read configuration and runtime state, or trigger reloads. If the exporter is reachable from a shared network, enable TLS / Basic Auth via `--web.config.file` ([exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/v0.17.1/docs/web-configuration.md)), or restrict access at the firewall / reverse-proxy layer.
+Beyond `/metrics`, the `/reload`, `/explain`, and `/stat` management endpoints let anyone with port access read configuration and runtime state, or trigger reloads. If the exporter is reachable from a shared network, enable TLS / Basic Auth via `--web.config.file` ([exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/v0.20.0/docs/web-configuration.md)), or restrict access at the firewall / reverse-proxy layer.
 
 ## Systemd Deployment (RPM/DEB packages)
 

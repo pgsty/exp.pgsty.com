@@ -15,6 +15,6 @@ cascade:
 
 Design records explain PG Exporter’s architecture, alternatives, and tradeoffs. Each record states its status, source boundary, and last verification date.
 
-Snapshot Histograms shipped in v1.4.0. Composite mode, cached pgBackRest metrics, and PostgreSQL log metrics are implemented in the development branch and are not in stable v{{< param version >}}. The separate observability-product proposal was superseded.
+Snapshot Histograms shipped in v1.4.0. [Replication collector corrections](/design/replication-collector-contracts/) and [target state contracts](/design/target-state-contracts/) shipped in v1.5.0. Composite mode, cached pgBackRest metrics, and PostgreSQL log metrics are implemented in the development branch and are not in stable v{{< param version >}}. The separate observability-product proposal was superseded.
 
 Use the [manuals](/docs/) for stable-release procedures and the [release archive](/release/) for shipped changes.

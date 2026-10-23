@@ -2,19 +2,18 @@
 title: "复制采集器的身份、状态与权限修正"
 linkTitle: "复制采集器修正"
 date: "2026-10-22T00:00:00+08:00"
-lastmod: "2026-10-22T00:00:00+08:00"
-draft: true
+lastmod: "2026-10-23T00:00:00+08:00"
 authors: [Vonng]
 description: "订阅身份、接收器状态、复制源权限和关系计数的最小修正"
-summary: "已实现、未发布。给订阅增加数据库身份，修正接收器映射，明确可选权限与表、序列的计数口径。"
+summary: "已随 v1.5.0 发布。给订阅增加数据库身份，修正接收器映射，明确可选权限与表、序列的计数口径。"
 categories: [design]
 tags: [Design, PostgreSQL, Compatibility, Prometheus]
 ---
 
-> **状态：** Implemented but unreleased；源码修改已通过人工审查并提交至本地 `main`。<br>
-> **决策日期 / 最近核验：** 2026-10-22。<br>
-> **范围：** pg_exporter `main` 提交 `d97ba38fc8390984df994b2f9ea58b43ecfc8b89` 中的 Collector 修正，基于 `72f00a4fa4e6eb7524174f2122b3fe1e1d608db4`；PostgreSQL `REL_19_RC1` 对应 `0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89`，另作 PG9.6–18 的针对性检查。v1.4.1 尚不包含这些修正。<br>
-> **交付：** 源配置修改、配置包重新生成、本地源码与运行验证、人工确认及本地 `main` 源码提交均已完成；push、tag、软件包发布、部署与生产验收仍待完成。
+> **状态：** 已随 v1.5.0 发布。<br>
+> **决策日期 / 最近核验：** 2026-10-22 / 2026-10-23。<br>
+> **范围：** pg_exporter `main` 提交 `d97ba38fc8390984df994b2f9ea58b43ecfc8b89` 中的 Collector 修正，基于 `72f00a4fa4e6eb7524174f2122b3fe1e1d608db4`；PostgreSQL `REL_19_RC1` 对应 `0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89`，另作 PG9.6–18 的针对性检查。这些修正从 v1.5.0 开始发布，v1.4.1 不包含。<br>
+> **交付：** 源码已提交并推送，v1.5.0 标签指向 `18912540fe5edce0ed0ee81fac0d989738ecaa87`；CI 与正式发布工作流通过，GitHub Release、RPM／DEB／压缩包和 Docker 镜像已发布。未据此声称生产部署或生产负载验收完成。
 
 ## 已选定的修正
 
@@ -120,7 +119,7 @@ RC1 完整配置验证覆盖 disabled、active、自动发现开关及物理备�
 
 ## 实施边界
 
-源码范围限于七个拆分 Collector 文件及两个生成配置包；companion 范围为成对的 Collector 手册和本 Design 记录。手册区分已有权限 / 计数语义与尚未发布的身份、状态字典、PG9.6 SQL 修正。所有无关工作树改动保持原样。人工审查与本地 `main` 源码提交已完成；push、发布和生产部署仍是独立动作。
+源码范围限于七个拆分 Collector 文件及两个生成配置包；companion 范围为成对的 Collector 手册和本 Design 记录。手册区分已有权限 / 计数语义与 v1.5.0 的身份、状态字典、PG9.6 SQL 修正。源码审阅、提交、推送、标签与正式制品发布均已完成；生产部署仍是独立动作。
 
 不包含驱动迁移、Gatherer 重构、运行时权限管理、新 Collector 分支、新指标族、订阅关系聚合改写或无关 legacy SQL 修复。
 

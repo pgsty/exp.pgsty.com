@@ -22,7 +22,7 @@ categories: [参考]
 | `/` | GET | 含指标链接的 HTML 页面 |
 {.full-width}
 
-表中列出各端点的常用方法，只有 `/reload` 会明确拒绝其他方法。v1.4.1 会将未匹配路径交给根页面处理，配置探针时请使用表中的路径。
+表中列出各端点的常用方法，只有 `/reload` 会明确拒绝其他方法。未匹配路径会交给根页面处理，配置探针时请使用表中的路径。
 
 ## 指标端点
 
@@ -79,7 +79,7 @@ PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`
 | `pg_exporter_query_cache_ttl` | Gauge | datname、query | 结果缓存剩余有效期，单位秒 |
 {.full-width}
 
-这些序列也会附加配置的固定标签。v1.4.1 将数据库和采集器级别的累计计数暴露为 Gauge。服务器重新规划时会重置采集器统计，配置重载也会触发这一过程。数据库连接对象重建时会重置该数据库的统计。
+这些序列也会附加配置的固定标签。数据库和采集器级别的累计计数以 Gauge 暴露。服务器重新规划时会重置采集器统计，配置重载也会触发这一过程。数据库连接对象重建时会重置该数据库的统计。
 
 `--disable-intro` 会隐藏表中所有内置指标，包括 `pg_up`。YAML 指标、Go/进程指标和 HTTP 健康检查仍然可用。
 
@@ -125,6 +125,8 @@ readinessProbe:
 | `down`、`starting`、`unknown` | 503 | 503 | 503 |
 
 响应正文为状态名称。在 PgBouncer 模式下，`SHOW VERSION` 探测成功会被映射为 `primary`，并不代表连接池后端 PostgreSQL 的角色。按角色路由时，应使用直接连接 PostgreSQL 的 exporter。
+
+每个健康响应从同一个原子状态快照生成 HTTP 状态码与正文，修复并发状态变化时可能出现的矛盾响应；状态仍然来自缓存。指标路径校验还会确认请求在当前 HTTP mux 下确实进入指标处理器。为兼容旧版 mux，优先使用 `/metrics` 这样的未转义路径。
 
 ### GET /primary
 
@@ -177,9 +179,9 @@ curl -fsS -X POST http://127.0.0.1:9630/reload
 | 500 | `fail to reload: ...` | 重载被拒绝，继续使用之前的定义 |
 | 405 | `method not allowed` | 请用 GET 或 POST；响应头包含 `Allow: GET, POST` |
 
-重载会替换采集器定义，清除其缓存和查询统计，使旧计划失效。重载不会执行新 SQL。完成后抓取 `/metrics`，检查采集器错误。目录加载可以跳过无效文件并加载其他有效文件，应检查日志中的 `skip config` 警告。
+重载会替换采集器定义，清除其缓存和查询统计，使旧计划失效。重载不会执行新 SQL。空 YAML 文件属于有效配置，会将计划替换为零个配置采集器，内置指标仍保留；单文件重载被拒绝时保留旧定义。完成后抓取 `/metrics`，检查采集器错误。目录加载可以跳过无效文件并加载其他有效文件，应检查日志中的 `skip config` 警告。
 
-Unix 上还可以发送 `SIGHUP` 或 `SIGUSR1` 重载。修改连接 URL、固定标签、Tag 或监听地址需要重启进程。通过防火墙、反向代理或 `--web.config.file` 限制管理访问，详见[安全指南](/zh/security/)。
+Unix 上还可以发送 `SIGHUP` 或 `SIGUSR1` 重载。`SIGTERM` 会结束进程，不等待活跃 HTTP 请求完成。修改连接 URL、固定标签、Tag 或监听地址需要重启进程。通过防火墙、反向代理或 `--web.config.file` 限制管理访问，详见[安全指南](/zh/security/)。
 
 ### GET /explain
 

@@ -24,6 +24,10 @@ PostgreSQL 19 branches cover recovery, locks, autovacuum scores, WAL, subscripti
 
 The bundled PgBouncer collectors require 1.8 or later. That version changed the `SHOW STATS` fields used by these queries. The latest configured branches have no upper version bound. When you upgrade PgBouncer, check collector results against the [upstream changelog](https://www.pgbouncer.org/changelog.html).
 
+## Release Validation
+
+The v1.5.0 candidate passed default primary collection as a non-superuser on PostgreSQL 9.1–9.6, 10–18, and 19 RC1, plus PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, and concurrent scrape/health/reload requests were also tested. PostgreSQL 19 evidence refers to RC1, not an exhaustive check of every final-release build, extension, or production workload.
+
 ## v{{< param version >}} Release Artifacts
 
 | Artifact | Operating system | Architectures |
