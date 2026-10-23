@@ -13,6 +13,8 @@ PG Exporter v{{< param version >}} 在 [`config/`](https://github.com/pgsty/pg_e
 
 按指标名称跨版本分支去重，v1.5.0 定义了 **59 个采集器命名空间、460 个指标名**，其中包含默认禁用的采集器和 2 个 `HISTOGRAM` 定义，尚未展开直方图。一次抓取的实际序列数取决于选中的分支、结果行、标签和桶数。
 
+升级 PostgreSQL 或替换采集器配置前，请核对[指标兼容性与迁移对照表](/zh/compatibility/#metric-compatibility)。其中区分 v1.5.0 的标签／状态修正、PG19 的新增指标与语义变化、较早 PostgreSQL 版本已移除的指标，并提供避免告警因时序缺失而静默的检查方法。
+
 ## 编号分区
 
 | 范围 | 领域 | 典型范围 |

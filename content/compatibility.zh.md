@@ -28,6 +28,103 @@ PostgreSQL 19 分支覆盖恢复、锁、自动清理评分、WAL、订阅、接
 
 v1.5.0 候选已以非超级用户通过 PostgreSQL 9.1–9.6、10–18、19 RC1 的默认主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复及并发采集／健康检查／重载。PG19 证据对应 RC1，不等于覆盖所有正式版构建、扩展与生产负载。
 
+## 指标、仪表盘与告警兼容性 {#metric-compatibility}
+
+升级 Exporter 和升级 PostgreSQL 大版本，可能改变指标契约的不同部分。以下对照以 [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config) 与 [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config) 标签中的内置 SQL 采集器为准，包含各列的 `rename` 映射；列出的是实际导出的指标名，不只是 PostgreSQL 视图列名或 YAML 文件名。自定义采集器与业务告警规则仍需单独检查。
+
+### Exporter v1.4.1 → v1.5.0 {#exporter-150-metrics}
+
+保持 PostgreSQL 版本不变时，**内置 SQL 指标没有新增、删除或改名**，指标类型和单位也不变。不过，以下变化仍需检查仪表盘与告警：
+
+| 指标 | v1.5.0 配置的变化 | 迁移操作 |
+|:---|:---|:---|
+| `pg_sub_*` | 每条样本增加订阅归属数据库的 `datname` 标签；`pg_sub_id` 仍为 Gauge。 | 连接与按订阅聚合时，保留 `datname`、`subname` 及目标身份。仅按 `subname` 连接可能因跨库同名订阅产生歧义。新标签集会产生新时序，也可能重置告警的 pending 计时。 |
+| `pg_recv_state` | 保留 `streaming=0`、`stopping=4`、`connecting=5`（PG19+）及未知／NULL `=-1`；新增 `starting=6`、`waiting=7`、`restarting=8`、`stopped=9`。这四种状态此前落入 `-1`。 | 更新 Grafana 值映射，以及只识别 `-1` 或旧 0–5 范围的规则。编码 1–3 保留；旧说明中的 `startup`、`catchup`、`backup` 是误用于接收器的发送端状态。没有接收器行时仍不输出样本。 |
+| `pg_subrel_count`、`pg_pubrel_count` | HELP 文本澄清已有的表／序列统计口径；本版未改变它们的 SQL、标签或数值。 | 不要将两者当作同一对象集合来比较；PG19 的行为见下表。 |
+{.full-width}
+
+这些修正需要同时部署新版 YAML 和二进制。PG10–13 的订阅采集器还需要[订阅 OID 授权](/zh/collectors/#订阅身份与接收器状态)，否则查询失败，指标会缺失。兼容性决策详见[复制采集器设计记录](/zh/design/replication-collector-contracts/)。
+
+### 使用 v1.5.0 配置，PostgreSQL 18 → 19 {#postgresql-19-metrics}
+
+**从 PG18 分支切换到 PG19 分支，不会删除或改名 PG18 分支已有的指标。** PostgreSQL 19 采集器支持最早随 [Exporter v1.3.0](/zh/release/v1.3.0/) 发布，以下行为由 v1.5.0 继承，与上面的标签和接收器修正属于不同变化。PostgreSQL 验收证据对应 19 RC1。
+
+| 指标或指标族 | PG19 行为 | 对仪表盘／告警的影响 |
+|:---|:---|:---|
+| `pg_sub_sync_error_count` | 保留旧名，值为 `sync_table_error_count + sync_seq_error_count`；PG15–18 只统计表的初始同步错误。 | 原有“所有同步错误”告警仍有指标可查，但现在也包含序列同步错误。需要复核阈值：名称未变，统计范围扩大。 |
+| `pg_sub_sync_table_error_count`、`pg_sub_sync_seq_error_count` | 新增两个 Counter，分别统计表和序列同步错误。 | PG19 上只关注表同步错误时，使用表计数器。不要再将这两个指标加到 `pg_sub_sync_error_count` 上，否则重复计数。 |
+| `pg_sub_confl_*`、`pg_sub_reset_time`、`pg_sub_has_worker` | 新增八个冲突 Counter、统计重置时间戳 Gauge 和 apply leader worker 存在标记 Gauge。PG19 查询以订阅统计为起点，即使没有 apply worker 也保留订阅行。 | PG19 上对预期运行的订阅可检查 `pg_sub_has_worker == 0`；仍有 `pg_sub_id` 不代表 worker 正常运行。须排除主动禁用的订阅。 |
+| `pg_subrel_count` | 同时统计表和序列，按 `datname`、`subname`、`state` 分组。序列状态为 `i`／`r`，表状态为 `i`／`d`／`f`／`s`／`r`。 | 原来标作“表数量”的面板可能混入序列，且没有关系类型标签可用于拆分。`pg_pubrel_count` 仍只统计表；空发布或仅含序列的发布没有时序。 |
+| `pg_wal_fpi_bytes` | 新增全页镜像 WAL 字节数 Counter。 | 属于新增指标。`pg_wal_bytes` 和 `pg_wal_fpi` 的名称与含义保持不变，新指标不替代它们。 |
+| `pg_lock_stat_waits`、`pg_lock_stat_wait_time`、`pg_lock_stat_fastpath_exceeded` | 新增按 `locktype` 分组的 Counter；等待时间导出为秒。等待统计只计入超过 `deadlock_timeout` 的等待。 | 补充当前锁分布指标 `pg_lock_count`，不替代它，也不统计所有短暂锁等待。 |
+| `pg_recovery_state_*` | 新增九个恢复状态指标，只在备库选择该采集器。 | 补充原有 `pg_recovery_*`；主库没有这些指标属于正常情况。使用 `rate()` 前须确认具体指标类型。 |
+| `pg_vacuum_score_*` | 新增十一个 Gauge，按数据库汇总 autovacuum 评分和候选数量，只在主库选择该采集器。 | 属于新增指标；备库或旧版本缺失属于正常情况。这些是当前评分／数量，不是累计事件 Counter。 |
+{.full-width}
+
+精确定义见发布标签中的[订阅](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0260-pg_sub.yml)、[订阅关系](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0650-pg_subrel.yml)、[WAL](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0400-pg_wal.yml)、[锁](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0470-pg_lock_stat.yml)、[恢复](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0370-pg_recovery_state.yml)与[自动清理](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0660-pg_vacuum_score.yml)采集器。
+
+对于使用 v1.5.0 配置的 PG15–19 混合环境，以下表达式保持 **只统计表同步错误** 的速率口径。PG19 指标存在时优先使用左侧；两侧标签和目标选择条件须一致：
+
+```promql
+rate(pg_sub_sync_table_error_count[5m])
+or
+rate(pg_sub_sync_error_count[5m])
+```
+
+### 从 PG17 或更早版本升级 {#older-postgresql-metrics}
+
+直接升到 PG19 还会跨越较早 PostgreSQL 版本的指标变化。下列旧名在 v1.5.0 配置采集 PG19 时已不存在，但它们的消失 **并非 Exporter v1.5.0 或 PostgreSQL 19 新引入**。
+
+| 旧指标 | 首次不再输出的 PG 版本 | 替代指标或处理方式 |
+|:---|:---|:---|
+| `pg_bgwriter_checkpoints_timed` | PG17 | `pg_checkpointer_timed` |
+| `pg_bgwriter_checkpoints_req` | PG17 | `pg_checkpointer_req` |
+| `pg_bgwriter_checkpoint_write_time` | PG17 | `pg_checkpointer_write_time`（秒） |
+| `pg_bgwriter_checkpoint_sync_time` | PG17 | `pg_checkpointer_sync_time`（秒） |
+| `pg_bgwriter_buffers_checkpoint` | PG17 | `pg_checkpointer_buffers_written` |
+| `pg_bgwriter_buffers_backend`、`pg_bgwriter_buffers_backend_fsync` | PG17 | 按所需后端 `type`、`object`、`context` 检查 `pg_io_writes`／`pg_io_fsyncs`。它们不是直接改名：I/O 操作数与缓冲区数量的范围、单位未必相同。 |
+| `pg_wal_write` | PG18 | `pg_io_writes{object="wal"}` |
+| `pg_wal_sync` | PG18 | `pg_io_fsyncs{object="wal"}` |
+| `pg_wal_write_time` | PG18 | `pg_io_write_time{object="wal"}`（秒） |
+| `pg_wal_sync_time` | PG18 | `pg_io_fsync_time{object="wal"}`（秒） |
+{.full-width}
+
+v1.5.0 配置在 PG10–16 上也通过旧 SQL 列的别名提供上述 `pg_checkpointer_*` 指标，混合版本仪表盘可优先使用这些名称。PG18+ 还提供表示已完成检查点的 `pg_checkpointer_done`；`timed`、`req` 统计计划／请求量，不应当作已完成总量。PG17+ 的检查点统计按各指标定义包含 restartpoint 活动。
+
+WAL I/O 转到带有 `type`、`object`、`context` 维度的视图，不能只替换名字。例如，PG18+ 按目标汇总的 WAL 写操作速率为：
+
+```promql
+sum by (job, instance) (rate(pg_io_writes{object="wal"}[5m]))
+```
+
+按实际环境保留额外的集群／目标标签，核对后端范围与计时开关后再比较历史值。PG18+ 还新增 `pg_io_read_bytes`、`pg_io_write_bytes`、`pg_io_extend_bytes`；计算字节吞吐量时应使用这些指标，不再假定每次操作对应固定字节数。参见发布标签中的 [I/O](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0300-pg_io.yml)、[后台写进程](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0330-pg_bgwriter.yml)、[检查点进程](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0331-pg_checkpointer.yml)定义与 [PostgreSQL 18 迁移说明](https://www.postgresql.org/docs/18/release-18.html)。
+
+### 避免指标缺失让告警静默 {#missing-metric-alerts}
+
+Prometheus 告警表达式返回空向量时，不会产生告警实例。HTTP 200、Prometheus `up == 1` 或 `pg_up == 1`，都不能证明每个采集器和告警表达式仍然正常。参见 [Prometheus 告警求值规则](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/)。
+
+1. 合并并部署配套 YAML，保留本地定制。对每种版本与角色选择代表性目标，抓取 `/metrics`，检查 `/explain`、`/stat`、`pg_exporter_query_scrape_error_count` 和日志中的查询错误。
+2. 执行实际仪表盘、记录规则和告警表达式，检查名称、标签连接、单位、状态映射与返回时序，并等待 `rate()` 窗口积累足够样本。空结果不等于健康的零值。
+3. 分别用正常数据和缺失时序测试告警规则（`promtool check rules` 检查语法，`promtool test rules` 可检查行为）。Exporter 测试通过不等于下游仪表盘已经验证。
+4. 按目标检查预期存在的关键指标，同时限定服务器版本、角色与已配置对象。不要用无条件 `or vector(0)` 掩盖输入缺失。
+
+例如，假设 `job="pg19"` 只包含预期启用内置 WAL 采集器的 PG19 目标，以下规则可逐个发现数据库健康但缺少 `pg_wal_bytes` 的目标：
+
+```yaml
+groups:
+  - name: pg-exporter-compatibility
+    rules:
+      - alert: PgWalMetricMissing
+        expr: (pg_up{job="pg19"} == 1) unless on (job, instance) pg_wal_bytes{job="pg19"}
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Expected WAL metric is missing from a healthy PostgreSQL target"
+```
+
+按实际目标身份调整选择器与匹配标签，并分别监控 `up` 和 `pg_up` 故障。已知的单个目标也可使用 [`absent_over_time()`](https://prometheus.io/docs/prometheus/latest/querying/functions/#absent_over_time)。仅对整个集群执行 `absent(metric)`，无法发现其他目标仍有数据时的单目标缺失。同理，`pg_recv_state != 0` 无法发现已经消失的接收器行；预期持续流复制的备库还需要单独检查接收器是否存在。
+
 ## v{{< param version >}} 发布产物
 
 | 产物 | 操作系统 | 体系结构 |

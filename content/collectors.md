@@ -13,6 +13,8 @@ The filename prefix is an ordering convention, not a metric name. A file can def
 
 Across version branches, v1.5.0 defines **59 collector namespaces and 460 distinct metric names** before histogram expansion. This count includes disabled collectors and two `HISTOGRAM` definitions. The number of series in a scrape depends on the selected branches, rows, labels, and histogram buckets.
 
+Before upgrading PostgreSQL or replacing the collector configuration, review the [metric compatibility and migration tables](/compatibility/#metric-compatibility). They distinguish v1.5.0 label/state corrections, PG19 additions and semantic changes, and metrics removed at earlier PostgreSQL version boundaries, with checks for missing-series alerts.
+
 ## Numbering Map
 
 | Range | Area | Typical scope |
