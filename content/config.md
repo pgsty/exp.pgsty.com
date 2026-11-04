@@ -390,7 +390,7 @@ PG Exporter ships with pre-organized collectors:
 | 0800   | Optional      | Expensive/optional metrics      |
 | 0900   | PgBouncer     | Connection pooler metrics       |
 | 1000+ | Extensions    | Extension-specific metrics      |
-{.full-width}
+{.full-width .wide .expand}
 
 ## Real-World Examples
 

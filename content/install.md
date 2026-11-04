@@ -38,6 +38,7 @@ Download RPM, DEB, or tarball files from the [latest GitHub release](https://git
 | Tarball (macOS amd64)   | [pg_exporter-{{< param version >}}.darwin-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-amd64.tar.gz)   |
 | Tarball (macOS arm64)   | [pg_exporter-{{< param version >}}.darwin-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-arm64.tar.gz)   |
 | Tarball (Windows amd64) | [pg_exporter-{{< param version >}}.windows-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.windows-amd64.tar.gz) |
+{.wide .expand}
 
 Install a downloaded RPM with `sudo dnf install ./<package>.rpm`, or a DEB with `sudo apt install ./<package>.deb`. For an archive, extract it and install the binary in your `$PATH`. Archives also include `pg_exporter.yml`, `package/pg_exporter.default`, `package/pg_exporter.service`, and `LICENSE`.
 

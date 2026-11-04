@@ -173,6 +173,66 @@ def yaml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+
+# These short reference tables have wide, visible cells in the reviewed release.
+# Row/column thresholds below cover long inventories without counting link URLs.
+WIDE_REFERENCE_HEADERS = {
+    ("Scope", "Metrics", "Compatibility action"),
+    ("变化来源", "指标", "兼容性处理"),
+    ("Upgrade", "Fixes included", "Relevance to PG Exporter"),
+    ("依赖升级", "纳入的修复", "与 PG Exporter 的关系"),
+}
+
+
+def mark_reference_tables(text: str) -> str:
+    """Keep large imported tables readable without changing fenced examples."""
+
+    lines = text.splitlines(keepends=True)
+    fence = ""
+    index = 0
+    while index < len(lines) - 1:
+        line = lines[index]
+        opening = re.match(r"^ {0,3}(\x60{3,}|~{3,})", line)
+        if opening:
+            marker = opening.group(1)
+            if not fence:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence) and not line[opening.end():].strip():
+                fence = ""
+            index += 1
+            continue
+        if fence or line.startswith(("    ", "\t")) or line.lstrip().startswith(">"):
+            index += 1
+            continue
+        header = tuple(part.strip() for part in re.split(r"(?<!\\)\|", line.strip().strip("|")))
+        separator = lines[index + 1].strip().strip("|").split("|")
+        if len(header) < 2 or len(header) != len(separator) or not all(
+            re.fullmatch(r"\s*:?-+:?\s*", part) for part in separator
+        ):
+            index += 1
+            continue
+        end = index + 2
+        while end < len(lines) and lines[end].lstrip().startswith("|"):
+            end += 1
+        attr_index = end
+        while attr_index < len(lines) and not lines[attr_index].strip():
+            attr_index += 1
+        attribute = lines[attr_index] if attr_index < len(lines) and re.fullmatch(
+            r"\s*\{[^{}\n]*\}\s*", lines[attr_index]
+        ) else ""
+        classes = set(re.findall(r"(?:^|[\s{])\.([\w-]+)", attribute))
+        large = len(header) >= 5 or end - index - 2 >= 10 or "wide" in classes or header in WIDE_REFERENCE_HEADERS
+        if large and "fields" not in classes:
+            missing = [name for name in ("wide", "expand") if name not in classes]
+            if missing and attribute:
+                close = lines[attr_index].rfind("}")
+                lines[attr_index] = lines[attr_index][:close].rstrip() + " " + " ".join("." + name for name in missing) + lines[attr_index][close:]
+            elif missing:
+                lines.insert(end, "{.wide .expand}\n")
+        index = end + 1
+    return "".join(lines)
+
+
 def normalize_markdown(text: str) -> str:
     """Remove source-site whitespace noise without changing fenced examples."""
 
@@ -195,7 +255,7 @@ def normalize_markdown(text: str) -> str:
         else:
             output.append(line)
             previous_blank = False
-    return "\n".join(output).rstrip() + "\n"
+    return mark_reference_tables("\n".join(output).rstrip() + "\n")
 
 
 def rewrite_links(text: str, language: str) -> str:

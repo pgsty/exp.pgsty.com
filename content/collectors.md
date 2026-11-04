@@ -30,7 +30,7 @@ Before upgrading PostgreSQL or replacing the collector configuration, review the
 | `0800` | Expensive relation analysis | size and bloat collectors |
 | `0900` | PgBouncer | lists, databases, statistics, pools |
 | `1000+` | Optional integrations | wait sampling, TimescaleDB, Citus, heartbeat |
-{.full-width}
+{.full-width .wide .expand}
 
 ## Complete Inventory
 
@@ -94,7 +94,7 @@ Before upgrading PostgreSQL or replacing the collector configuration, review the
 | [`1800-pg_tsdb_hypertable.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/1800-pg_tsdb_hypertable.yml) | `pg_tsdb_hypertable` | Disabled by default; requires TimescaleDB and its information schema |
 | [`1900-pg_citus.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/1900-pg_citus.yml) | `pg_citus_node` | Citus worker/coordinator inventory; requires `extension:citus` |
 | [`2000-pg_heartbeat.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/2000-pg_heartbeat.yml) | `pg_heartbeat` | Disabled by default; requires `monitor.heartbeat` in the `postgres` database |
-{.full-width}
+{.full-width .wide .expand}
 
 ## Plan Before Enabling
 

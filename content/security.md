@@ -19,7 +19,7 @@ Configure database access and HTTP access separately. Use a dedicated monitoring
 | `/explain` and `/stat` | Reveal collector definitions, selected branches, timing, and errors | Restrict or authenticate HTTP access |
 | `/reload` | Reloads collector configuration | Restrict or authenticate HTTP access |
 | Collector SQL | Consumes database resources and may expose labels | Query review, least privilege, timeout, TTL, cardinality review |
-{.full-width}
+{.full-width .wide .expand}
 
 ## Use a Dedicated Database Role
 

@@ -391,7 +391,7 @@ PG Exporter 自带预先组织好的采集器：
 | 0800   | 可选        | 昂贵/可选指标       |
 | 0900   | PgBouncer | 连接池指标         |
 | 1000+ | 扩展        | 扩展特定指标        |
-{.full-width}
+{.full-width .wide .expand}
 
 --------
 

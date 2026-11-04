@@ -23,6 +23,7 @@ tags: [Design, PostgreSQL, Compatibility, Prometheus]
 | Receiver CASE 混入 sender 状态名称 | 补足真实 receiver 字典并修正 HELP | 已有效的 0、4、5 编码；未知与 NULL 仍为 -1 |
 | 可选 origin 采集器的权限说明不完整 | 保持 `skip: true`，说明用户自行授权及版本限制 | 原 SQL、指标和默认关闭行为 |
 | 发布与订阅的关系数量统计集合不同 | 校正 HELP 与手册 | SQL、标签、数值和缺失样本行为；不新增序列指标 |
+{.wide .expand}
 
 ## 订阅身份
 

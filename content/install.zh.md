@@ -38,7 +38,7 @@ cd ~/pigsty
 | Tarball (macOS amd64)   | [pg_exporter-{{< param version >}}.darwin-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-amd64.tar.gz)     |
 | Tarball (macOS arm64)   | [pg_exporter-{{< param version >}}.darwin-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-arm64.tar.gz)     |
 | Tarball (Windows amd64) | [pg_exporter-{{< param version >}}.windows-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.windows-amd64.tar.gz)   |
-{.full-width}
+{.full-width .wide .expand}
 
 下载 RPM 后用 `sudo dnf install ./<package>.rpm` 安装，DEB 用 `sudo apt install ./<package>.deb`。压缩包解压后，将二进制安装到 `$PATH` 中。压缩包还包含 `pg_exporter.yml`、`package/pg_exporter.default`、`package/pg_exporter.service` 与 `LICENSE`。
 

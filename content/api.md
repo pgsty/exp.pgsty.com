@@ -77,7 +77,7 @@ The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer
 | `pg_exporter_query_scrape_duration` | Gauge | datname, query | Last actual execution duration, in seconds; retained on cache hits |
 | `pg_exporter_query_scrape_predicate_skip_count` | Gauge | datname, query | Calls skipped by a false, NULL, or empty predicate result |
 | `pg_exporter_query_cache_ttl` | Gauge | datname, query | Remaining result-cache lifetime, in seconds |
-{.full-width}
+{.full-width .wide .expand}
 
 Configured constant labels are added to these series. Cumulative per-database and per-query counts are exposed as Gauges. Query statistics reset when the server is replanned, including after a reload. Database statistics reset when its connection object is recreated.
 

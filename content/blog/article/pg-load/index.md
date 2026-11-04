@@ -66,6 +66,7 @@ Start with a one-second window and normalize by the number of available backends
 | One backend executes queries for 0.6 seconds | `0.6 / 1 / 1` | 60% |
 | Two available backends execute for 0.6 and 0.8 seconds | `(0.6 + 0.8) / 1 / 2` | 70% |
 | One backend executes queries for 0.6 seconds and is idle in a transaction for 0.2 seconds, measured by transaction time | `(0.6 + 0.2) / 1 / 1` | 80% |
+{.wide .expand}
 
 The third example raises a choice: count only query execution, or count the whole transaction, including time between statements. We will use transaction time and explain that choice below. Client time waiting for a backend is separate and is not included.
 

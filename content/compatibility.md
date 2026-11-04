@@ -18,7 +18,7 @@ Choose an artifact for the exporter host and a collector configuration for the d
 | PostgreSQL 9.1-9.6 | Legacy support | `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 and older | Unsupported | — |
 | PgBouncer 1.8+ | Version-specific collectors | `0910`-`0940` collector files; connect to the admin database |
-{.full-width}
+{.full-width .wide .expand}
 
 PostgreSQL 19 branches cover recovery, locks, autovacuum scores, WAL, subscriptions, receivers, and replication slots. Version selection uses the server version number; check `/stat` after the first scrape to find queries that need adjustment for your server build.
 
@@ -41,7 +41,7 @@ With the same PostgreSQL version, **no bundled SQL metric names are added, remov
 | `pg_sub_*` | Every sample adds the owning database's `datname` label; `pg_sub_id` remains a Gauge. | Preserve `datname` and `subname`, plus target identity, in joins and per-subscription aggregations. A join using only `subname` can become ambiguous across databases. New label sets create new series and can restart an alert's pending period. |
 | `pg_recv_state` | Keeps `streaming=0`, `stopping=4`, `connecting=5` (PG19+), and unknown/NULL `=-1`; adds `starting=6`, `waiting=7`, `restarting=8`, `stopped=9`. These four states previously fell through to `-1`. | Update Grafana value mappings and rules that only recognize `-1` or the old 0–5 range. Codes 1–3 are reserved; `startup`, `catchup`, and `backup` were sender states mistakenly listed for this receiver metric. No receiver row still means no sample. |
 | `pg_subrel_count`, `pg_pubrel_count` | HELP text clarifies existing table/sequence counting; this release does not change their SQL, labels, or values. | Do not compare these counts as if they represented the same set of objects. See the PG19 behavior below. |
-{.full-width}
+{.full-width .wide .expand}
 
 These corrections require deploying the updated YAML as well as the binary. On PG10–13, the subscription collector also needs the [subscription OID grant](/collectors/#subscription-identity-and-receiver-states); otherwise its metrics disappear because the query fails. See the [replication design record](/design/replication-collector-contracts/) for the compatibility decisions.
 
@@ -59,7 +59,7 @@ These corrections require deploying the updated YAML as well as the binary. On P
 | `pg_lock_stat_waits`, `pg_lock_stat_wait_time`, `pg_lock_stat_fastpath_exceeded` | New Counters by `locktype`; wait time is exported in seconds. Wait statistics count waits longer than `deadlock_timeout`. | These complement the current lock distribution in `pg_lock_count`; they do not replace it or measure every short lock wait. |
 | `pg_recovery_state_*` | Nine new recovery-state metrics, selected only on replicas. | Additive to `pg_recovery_*`; absence on a primary is expected. Review the metric's type before applying `rate()`. |
 | `pg_vacuum_score_*` | Eleven new Gauges summarizing autovacuum scores and candidate counts per database, selected only on primaries. | Additive; absence on replicas or older servers is expected. These are current scores/counts, not cumulative event Counters. |
-{.full-width}
+{.full-width .wide .expand}
 
 Exact definitions are in the tagged [subscription](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0260-pg_sub.yml), [subscription relation](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0650-pg_subrel.yml), [WAL](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0400-pg_wal.yml), [lock](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0470-pg_lock_stat.yml), [recovery](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0370-pg_recovery_state.yml), and [autovacuum](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0660-pg_vacuum_score.yml) collectors.
 
@@ -87,7 +87,7 @@ An upgrade straight to PG19 also crosses earlier PostgreSQL metric boundaries. T
 | `pg_wal_sync` | PG18 | `pg_io_fsyncs{object="wal"}` |
 | `pg_wal_write_time` | PG18 | `pg_io_write_time{object="wal"}` (seconds) |
 | `pg_wal_sync_time` | PG18 | `pg_io_fsync_time{object="wal"}` (seconds) |
-{.full-width}
+{.full-width .wide .expand}
 
 The `pg_checkpointer_*` names above are already provided by the v1.5.0 configuration on PG10–16, using aliases for the old SQL columns. Prefer those names for a mixed-version dashboard. PG18+ also exposes `pg_checkpointer_done` for completed checkpoints; `timed` and `req` count scheduled/requested checkpoints and should not be treated as a completed-work total. Checkpointer statistics on PG17+ include restartpoint activity where documented.
 
@@ -135,7 +135,7 @@ Adapt the selector and matching labels to your target identity; monitor `up` and
 | RPM | RHEL-compatible Linux | x86_64, aarch64, ppc64le |
 | DEB | Debian/Ubuntu-compatible Linux | amd64, arm64, ppc64le |
 | Docker image | Linux container | amd64, arm64 |
-{.full-width}
+{.full-width .wide .expand}
 
 Release archives include the binary, merged default config, license, default environment file, and systemd unit. Get the PostgreSQL 9.x configuration from the matching source tag; it is not included in these binary archives. macOS and Windows artifacts are useful for development and remote targets; the packaged service integration is Linux-specific.
 

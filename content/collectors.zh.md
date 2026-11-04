@@ -30,7 +30,7 @@ PG Exporter v{{< param version >}} 在 [`config/`](https://github.com/pgsty/pg_e
 | `0800` | 高开销关系分析 | 对象大小与膨胀 |
 | `0900` | PgBouncer | 列表、数据库、统计、连接池 |
 | `1000+` | 可选集成 | 等待采样、TimescaleDB、Citus、心跳 |
-{.full-width}
+{.full-width .wide .expand}
 
 ## 完整清单
 
@@ -94,7 +94,7 @@ PG Exporter v{{< param version >}} 在 [`config/`](https://github.com/pgsty/pg_e
 | [`1800-pg_tsdb_hypertable.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/1800-pg_tsdb_hypertable.yml) | `pg_tsdb_hypertable` | 默认禁用；要求 TimescaleDB 及其信息模式 |
 | [`1900-pg_citus.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/1900-pg_citus.yml) | `pg_citus_node` | Citus 工作节点/协调节点清单；要求 `extension:citus` |
 | [`2000-pg_heartbeat.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/2000-pg_heartbeat.yml) | `pg_heartbeat` | 默认禁用；要求 `postgres` 库中的 `monitor.heartbeat` 表 |
-{.full-width}
+{.full-width .wide .expand}
 
 ## 启用前先看计划
 

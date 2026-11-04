@@ -69,6 +69,7 @@ Based on experience and usage frequency, continuously subtracting, we can filter
 | **Database Age** | Age | DB | Database | Saturation |
 | **Queries Per Second** | QPS | **APP** | Connection-Pool | Traffic |
 | **CPU Usage** | CPU Usage | SYS | Machine Node | Saturation |
+{.wide .expand}
 
 During an incident, I check errors first.
 
@@ -127,3 +128,4 @@ Saturation describes pressure on a limiting resource. Utilization and queue leng
 | Memory Usage | Mem Usage | SYS | Machine Node | Saturation |
 | Network Bandwidth Usage | Net Usage | SYS | Machine Node | Saturation |
 | TCP Errors: Overflow/Retransmission | TCP ERROR | SYS | Machine Node | Error |
+{.wide .expand}

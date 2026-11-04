@@ -23,6 +23,7 @@ tags: [Design, PostgreSQL, Compatibility, Prometheus]
 | Receiver CASE expressions contain sender state names | Map the actual receiver dictionary and correct HELP | Existing valid codes 0, 4, and 5; unknown/NULL remains -1 |
 | The optional origin collector's permission instructions are incomplete | Keep `skip: true`; document explicit user-managed grants and version limits | Original SQL, metrics, and default-off behavior |
 | Publication and subscription relation counts describe different sets | Clarify HELP and manuals | SQL, labels, values, and absent-series behavior; no new sequence metric |
+{.wide .expand}
 
 ## Subscription identity
 

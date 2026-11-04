@@ -77,7 +77,7 @@ PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`
 | `pg_exporter_query_scrape_duration` | Gauge | datname、query | 最近一次实际执行耗时，单位秒；缓存命中时保留原值 |
 | `pg_exporter_query_scrape_predicate_skip_count` | Gauge | datname、query | 谓词返回 false、NULL 或零行而跳过的次数 |
 | `pg_exporter_query_cache_ttl` | Gauge | datname、query | 结果缓存剩余有效期，单位秒 |
-{.full-width}
+{.full-width .wide .expand}
 
 这些序列也会附加配置的固定标签。数据库和采集器级别的累计计数以 Gauge 暴露。服务器重新规划时会重置采集器统计，配置重载也会触发这一过程。数据库连接对象重建时会重置该数据库的统计。
 

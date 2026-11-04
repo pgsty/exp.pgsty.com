@@ -69,6 +69,7 @@ avg(count by (ins) ({__name__=~"node.*"}))
 | **数据库年龄**    | Age           | DB         | 数据库    | 饱和度 |
 | **每秒查询数**    | QPS           | **APP**    | 连接池    | 流量  |
 | **CPU使用率**   | CPU Usage     | SYS        | 机器节点   | 饱和度 |
+{.wide .expand}
 
 事故发生时，我优先看错误指标。
 
@@ -127,3 +128,4 @@ RT（响应时间）衡量服务质量。应按工作负载设置目标，例如
 | 内存使用率       | Mem Usage  | SYS | 机器节点 | 饱和度 |
 | 网卡带宽使用率     | Net Usage  | SYS | 机器节点 | 饱和度 |
 | TCP错误：溢出重传等 | TCP ERROR  | SYS | 机器节点 | 错误  |
+{.wide .expand}

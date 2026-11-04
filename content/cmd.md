@@ -61,6 +61,7 @@ Use [Deployment](/deploy/) for credential-file setup.
 | `-n`, `--namespace=NAME` | `PG_EXPORTER_NAMESPACE` | automatic | Override the built-in `pg` or `pgbouncer` metric prefix |
 | `-f`, `--[no-]fail-fast` | `PG_EXPORTER_FAIL_FAST` | `false` | Exit when the initial target probe fails |
 | `-T`, `--connect-timeout=MS` | `PG_EXPORTER_CONNECT_TIMEOUT` | `100` | Target precheck and health-probe timeout in milliseconds |
+{.wide .expand}
 
 `--include-database` and `--exclude-database` apply only when auto-discovery is
 enabled. They filter additional connections; the database in `--url` is always
@@ -84,6 +85,7 @@ Constant labels appear on exported series. Tags select eligible collectors.
 | `--[no-]web.systemd-socket` | — | `false` | Use systemd socket activation on Linux |
 | `--web.config.file=PATH` | — | empty | exporter-toolkit TLS and authentication configuration |
 | `-P`, `--web.telemetry-path=PATH` | `PG_EXPORTER_TELEMETRY_PATH` | `/metrics` | Prometheus exposition path |
+{.wide .expand}
 
 The telemetry path must start with `/`. It cannot contain a query, fragment,
 wildcard, repeated slash, or `..` path segment. It must not collide with built-in routes

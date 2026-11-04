@@ -58,6 +58,7 @@ URL 中省略的字段可由驱动支持的环境变量补齐，例如 `PGHOST`�
 | `-n`, `--namespace=NAME` | `PG_EXPORTER_NAMESPACE` | 自动 | 覆盖内置 `pg` 或 `pgbouncer` 指标前缀 |
 | `-f`, `--[no-]fail-fast` | `PG_EXPORTER_FAIL_FAST` | `false` | 首次目标探测失败时退出 |
 | `-T`, `--connect-timeout=MS` | `PG_EXPORTER_CONNECT_TIMEOUT` | `100` | 目标预检查与健康探测超时，单位毫秒 |
+{.wide .expand}
 
 `--include-database` 与 `--exclude-database` 只筛选自动发现的额外连接。`--url`
 指定的数据库始终会被抓取。排除列表优先于包含列表。
@@ -78,6 +79,7 @@ Go/进程指标与健康端点仍然可用。`--disable-cache` 绕过主查询�
 | `--[no-]web.systemd-socket` | — | `false` | 在 Linux 上使用 systemd 套接字激活 |
 | `--web.config.file=PATH` | — | 空 | exporter-toolkit TLS 与认证配置 |
 | `-P`, `--web.telemetry-path=PATH` | `PG_EXPORTER_TELEMETRY_PATH` | `/metrics` | Prometheus 指标暴露路径 |
+{.wide .expand}
 
 指标路径必须以 `/` 开头，不能包含查询参数、片段、通配符、重复斜线或 `..` 路径段，且不能与 `/up`、`/primary`、`/replica`、`/reload`、
 `/explain`、`/stat`、`/version` 等内置路由冲突。启动还会验证该路径实际进入指标处理器，而非重定向或其他处理器。转义路径必须兼容当前 HTTP mux；优先使用 `/metrics` 这样的普通路径。各端点的方法与响应语义参见

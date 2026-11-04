@@ -41,7 +41,7 @@ v1.5.0 候选已以非超级用户通过 PostgreSQL 9.1–9.6、10–18、19 RC1
 | `pg_sub_*` | 每条样本增加订阅归属数据库的 `datname` 标签；`pg_sub_id` 仍为 Gauge。 | 连接与按订阅聚合时，保留 `datname`、`subname` 及目标身份。仅按 `subname` 连接可能因跨库同名订阅产生歧义。新标签集会产生新时序，也可能重置告警的 pending 计时。 |
 | `pg_recv_state` | 保留 `streaming=0`、`stopping=4`、`connecting=5`（PG19+）及未知／NULL `=-1`；新增 `starting=6`、`waiting=7`、`restarting=8`、`stopped=9`。这四种状态此前落入 `-1`。 | 更新 Grafana 值映射，以及只识别 `-1` 或旧 0–5 范围的规则。编码 1–3 保留；旧说明中的 `startup`、`catchup`、`backup` 是误用于接收器的发送端状态。没有接收器行时仍不输出样本。 |
 | `pg_subrel_count`、`pg_pubrel_count` | HELP 文本澄清已有的表／序列统计口径；本版未改变它们的 SQL、标签或数值。 | 不要将两者当作同一对象集合来比较；PG19 的行为见下表。 |
-{.full-width}
+{.full-width .wide .expand}
 
 这些修正需要同时部署新版 YAML 和二进制。PG10–13 的订阅采集器还需要[订阅 OID 授权](/zh/collectors/#订阅身份与接收器状态)，否则查询失败，指标会缺失。兼容性决策详见[复制采集器设计记录](/zh/design/replication-collector-contracts/)。
 
@@ -59,7 +59,7 @@ v1.5.0 候选已以非超级用户通过 PostgreSQL 9.1–9.6、10–18、19 RC1
 | `pg_lock_stat_waits`、`pg_lock_stat_wait_time`、`pg_lock_stat_fastpath_exceeded` | 新增按 `locktype` 分组的 Counter；等待时间导出为秒。等待统计只计入超过 `deadlock_timeout` 的等待。 | 补充当前锁分布指标 `pg_lock_count`，不替代它，也不统计所有短暂锁等待。 |
 | `pg_recovery_state_*` | 新增九个恢复状态指标，只在备库选择该采集器。 | 补充原有 `pg_recovery_*`；主库没有这些指标属于正常情况。使用 `rate()` 前须确认具体指标类型。 |
 | `pg_vacuum_score_*` | 新增十一个 Gauge，按数据库汇总 autovacuum 评分和候选数量，只在主库选择该采集器。 | 属于新增指标；备库或旧版本缺失属于正常情况。这些是当前评分／数量，不是累计事件 Counter。 |
-{.full-width}
+{.full-width .wide .expand}
 
 精确定义见发布标签中的[订阅](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0260-pg_sub.yml)、[订阅关系](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0650-pg_subrel.yml)、[WAL](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0400-pg_wal.yml)、[锁](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0470-pg_lock_stat.yml)、[恢复](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0370-pg_recovery_state.yml)与[自动清理](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0660-pg_vacuum_score.yml)采集器。
 
@@ -87,7 +87,7 @@ rate(pg_sub_sync_error_count[5m])
 | `pg_wal_sync` | PG18 | `pg_io_fsyncs{object="wal"}` |
 | `pg_wal_write_time` | PG18 | `pg_io_write_time{object="wal"}`（秒） |
 | `pg_wal_sync_time` | PG18 | `pg_io_fsync_time{object="wal"}`（秒） |
-{.full-width}
+{.full-width .wide .expand}
 
 v1.5.0 配置在 PG10–16 上也通过旧 SQL 列的别名提供上述 `pg_checkpointer_*` 指标，混合版本仪表盘可优先使用这些名称。PG18+ 还提供表示已完成检查点的 `pg_checkpointer_done`；`timed`、`req` 统计计划／请求量，不应当作已完成总量。PG17+ 的检查点统计按各指标定义包含 restartpoint 活动。
 
