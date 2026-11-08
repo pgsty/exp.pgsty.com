@@ -146,6 +146,8 @@ groups:
 
 官方镜像基于 `scratch` 构建，只包含静态 exporter 二进制、`/etc/pg_exporter.yml` 与许可证；镜像内没有 Shell，也没有操作系统 CA 证书包。使用 `sslmode=verify-ca` 或 `verify-full` 时，需要显式挂载 CA 证书。
 
+这里描述的是已发布的 v1.5.0 镜像。[尚未发布的容器修正](/zh/design/container-trust/)为两条构建路径补入公共 CA 根证书，并让普通源码构建也包含许可证。使用私有 CA 的部署仍需显式提供 CA 文件。
+
 ## 采集器级前置条件
 
 采集器还会按目标数据库的实际条件选择：

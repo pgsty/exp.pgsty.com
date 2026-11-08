@@ -146,6 +146,8 @@ Release archives include the binary, merged default config, license, default env
 
 The official image is built from `scratch`. It contains the static exporter binary, `/etc/pg_exporter.yml`, and the license, but no shell and no operating-system CA bundle. Mount required CA certificates explicitly when using `sslmode=verify-ca` or `verify-full`.
 
+This describes the published v1.5.0 image. The [unreleased container correction](/design/container-trust/) adds public CA roots to both build paths and includes the license in ordinary source builds as well. Private CA deployments still need an explicit CA file.
+
 ## Collector-Level Requirements
 
 Collector selection also depends on the target database:
