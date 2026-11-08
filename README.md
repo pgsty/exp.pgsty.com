@@ -211,6 +211,7 @@ The three site-owned Blog fallback images are checked-in WebP assets under
 ## Local development
 
 Install Hugo Extended 0.168.0, Go 1.27.3, and Git. For theme development and migration QA,
+
 keep the OINK checkout beside this directory:
 
 ```text
