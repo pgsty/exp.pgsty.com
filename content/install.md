@@ -11,7 +11,7 @@ Use a Linux package for a managed service, a release archive for a standalone bi
 
 Repository installation follows the repository’s current package, which can lag the GitHub release. Use the versioned release artifacts below when you need exactly v1.6.0.
 
-## Pigsty
+## Pigsty {#pigsty}
 
 [Pigsty](https://pigsty.io) deploys PG Exporter with metrics storage, alert rules, and Grafana dashboards. The command below downloads Pigsty; follow its [installation guide](https://pigsty.io/docs/setup/install/) to configure and deploy the monitoring stack.
 
@@ -20,7 +20,7 @@ curl -fsSL https://repo.pigsty.io/get | bash
 cd ~/pigsty
 ```
 
-## Release
+## Release {#release}
 
 Download RPM, DEB, or tarball files from the [latest GitHub release](https://github.com/pgsty/pg_exporter/releases/latest):
 
@@ -40,7 +40,7 @@ Download RPM, DEB, or tarball files from the [latest GitHub release](https://git
 | Tarball (macOS amd64)   | [pg_exporter-{{< param version >}}.darwin-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-amd64.tar.gz)   |
 | Tarball (macOS arm64)   | [pg_exporter-{{< param version >}}.darwin-arm64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.darwin-arm64.tar.gz)   |
 | Tarball (Windows amd64) | [pg_exporter-{{< param version >}}.windows-amd64.tar.gz](https://github.com/pgsty/pg_exporter/releases/download/v{{< param version >}}/pg_exporter-{{< param version >}}.windows-amd64.tar.gz) |
-{.wide .expand}
+{.full-width .wide .expand}
 
 Install a downloaded RPM with `sudo dnf install ./<package>.rpm`, or a DEB with `sudo apt install ./<package>.deb`. For an archive, extract it and install the binary in your `$PATH`. Archives also include `pg_exporter.yml`, `package/pg_exporter.default`, `package/pg_exporter.service`, and `LICENSE`.
 
@@ -51,12 +51,12 @@ After installation, run `pg_exporter --version`. Package users can [start the sy
 
 Download `checksums.txt` from the same release and verify files before installation. On Linux, run `sha256sum -c checksums.txt --ignore-missing` in the download directory; each downloaded artifact must report `OK`. On macOS, calculate `shasum -a 256 <file>` and compare its digest with the matching line in `checksums.txt`.
 
-## Repository
+## Repository {#repository}
 
 The `pg-exporter` package is also available in the [`pigsty-infra`](https://ext.pgsty.com/repo/infra) repo.
 You can add the repo to your system and install it with your OS package manager:
 
-### YUM
+### YUM {#yum}
 
 For EL distributions such as RHEL, Rocky Linux, CentOS, AlmaLinux, and Oracle Linux:
 
@@ -76,7 +76,7 @@ sudo yum makecache
 sudo yum install -y pg-exporter
 ```
 
-### APT
+### APT {#apt}
 
 For Debian, Ubuntu and compatible Linux Distributions:
 
@@ -94,7 +94,7 @@ sudo apt update
 sudo apt install -y pg-exporter
 ```
 
-## Docker
+## Docker {#docker}
 
 The [official image](https://hub.docker.com/r/pgsty/pg_exporter) supports Linux amd64 and arm64. Pull the version you intend to deploy:
 
@@ -107,7 +107,7 @@ The image includes `/etc/pg_exporter.yml`. Mount a replacement there for custom 
 
 Use the [Docker deployment example](/deploy/#docker-deployment) to mount the connection secret and start the container. The `scratch` image includes the system CA bundle and license, but no shell. Publicly trusted certificates can use the bundled roots; mount your private CA and set `sslrootcert` when using a private PKI with `sslmode=verify-ca` or `verify-full`.
 
-## Build from Source
+## Build from Source {#build-from-source}
 
 Check out the release tag and use the Go version declared by its `go.mod` (Go 1.27.3 or later for v1.6.0):
 
@@ -122,7 +122,7 @@ sudo install -m 0644 pg_exporter.yml /etc/pg_exporter.yml
 
 This installs the binary at `/usr/local/bin/pg_exporter`. Use the [foreground example](/deploy/#process-settings) to run it. For a systemd service, use an RPM/DEB package; it configures the runtime account and a service unit that runs `/usr/bin/pg_exporter`.
 
-## Compatibility
+## Compatibility {#compatibility}
 
 Use the default configuration for PostgreSQL 10 and later; it includes PostgreSQL 19 branches. PostgreSQL 9.1–9.6 uses the [legacy bundle maintained on main](https://github.com/pgsty/pg_exporter/tree/main/legacy), separately from versioned binary archives and RPM/DEB packages. Download that bundle independently of the binary:
 

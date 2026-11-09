@@ -11,7 +11,7 @@ Install the [release package](/install/), create a monitoring role, then choose 
 
 The [Command Reference](/cmd/) lists flags, environment variables, defaults, and precedence. Command-line settings take priority over their environment aliases. Logging, action, and exporter-toolkit web flags use the command line only. Collector SQL and metric definitions belong in [YAML configuration](/config/).
 
-## Process Settings
+## Process Settings {#process-settings}
 
 This foreground example uses `.pgpass` for the database password:
 
@@ -25,15 +25,15 @@ pg_exporter \
 
 Auto-discovery is enabled by default. If the database is unavailable at startup, the exporter starts its HTTP listener and retries in the background. Set `--fail-fast` to exit when the initial database check fails.
 
-### Connection URL Sources
+### Connection URL Sources {#connection-url-sources}
 
 Set the target with `--url` or `PG_EXPORTER_URL`, or read a secret file through `PG_EXPORTER_URL_FILE`. See the command reference for the complete [precedence rules](/cmd/#target-and-configuration-precedence). A URL without `sslmode` uses `disable`; set it explicitly for remote TLS connections.
 
 To use a URL file, clear `PG_EXPORTER_URL` and `PGURL`, and omit `--url`. For a packaged service, also remove the default `PG_EXPORTER_URL` line from `/etc/default/pg_exporter`.
 
-## Monitoring User and Credentials
+## Monitoring User and Credentials {#monitoring-user-and-credentials}
 
-### Create the Monitoring User
+### Create the Monitoring User {#create-the-monitoring-user}
 
 ```sql
 CREATE ROLE monitor WITH LOGIN PASSWORD 'replace-this-secret' CONNECTION LIMIT 5;
@@ -42,7 +42,7 @@ GRANT pg_monitor TO monitor;   -- PostgreSQL 10+
 
 The main target pool allows up to three connections. Each additional discovered database allows one. Size `CONNECTION LIMIT` for that total and for any other exporters sharing the role. Grant `CONNECT` on each target database if it is not already available; optional views and extensions can need further grants. See [Security](/security/).
 
-### Manage Passwords with .pgpass
+### Manage Passwords with .pgpass {#manage-passwords-with-pgpass}
 
 Take the password out of the URL and let libpq's `.pgpass` provide it:
 
@@ -58,17 +58,17 @@ export PG_EXPORTER_URL='postgres://monitor@localhost:5432/postgres'
 
 The package runs the service as `prometheus`. Check its home with `getent passwd prometheus` and install `.pgpass` there. Newly created package accounts use `/var/lib/prometheus`; [Security](/security/#pgpass) gives the directory and file installation commands.
 
-### TLS for the Database Connection
+### TLS for the Database Connection {#tls-for-the-database-connection}
 
 ```bash
 export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full&sslrootcert=/etc/pg_exporter/ca.crt'
 ```
 
-### Protecting the HTTP Port
+### Protecting the HTTP Port {#protecting-the-http-port}
 
 Beyond `/metrics`, the `/reload`, `/explain`, and `/stat` management endpoints let anyone with port access read configuration and runtime state, or trigger reloads. If the exporter is reachable from a shared network, enable TLS / Basic Auth via `--web.config.file` ([exporter-toolkit web configuration](https://github.com/prometheus/exporter-toolkit/blob/v0.20.0/docs/web-configuration.md)), or restrict access at the firewall / reverse-proxy layer.
 
-## Systemd Deployment (RPM/DEB packages)
+## Systemd Deployment (RPM/DEB packages) {#systemd-deployment-rpmdeb-packages}
 
 The packages install the binary at `/usr/bin/pg_exporter`, collectors at `/etc/pg_exporter.yml`, and settings at `/etc/default/pg_exporter`. The unit is `/usr/lib/systemd/system/pg_exporter.service` for RPM and `/lib/systemd/system/pg_exporter.service` for DEB:
 
@@ -126,7 +126,7 @@ After editing `/etc/default/pg_exporter`, run `sudo systemctl restart pg_exporte
 curl -fsS -X POST http://127.0.0.1:9630/reload
 ```
 
-## Docker Deployment
+## Docker Deployment {#docker-deployment}
 
 Create `pg_exporter.url` with your database connection URL. This example expects a TLS certificate for `db.example.com` and a CA file named `ca.crt`:
 
@@ -175,7 +175,7 @@ curl -fsS http://127.0.0.1:9630/metrics
 
 Publish port 9630 on an address reachable by Prometheus and restrict its network access. If Prometheus runs on the Docker host, use `-p 127.0.0.1:9630:9630`.
 
-## Kubernetes Deployment
+## Kubernetes Deployment {#kubernetes-deployment}
 
 Create a Secret from the URL and CA files above, in the namespace where the exporter will run:
 
@@ -250,7 +250,7 @@ kubectl port-forward service/pg-exporter 9630:9630
 
 While port forwarding runs, check `/metrics` from another terminal. Adjust the resource requests and limits after measuring your collector workload. If HTTP authentication is enabled, configure the probes to authenticate as well.
 
-## Auto-Discovery
+## Auto-Discovery {#auto-discovery}
 
 Auto-discovery adds eligible databases from the same PostgreSQL instance. Use an include list to limit it to selected databases:
 
@@ -267,7 +267,7 @@ The URL database is always monitored. Include/exclude lists apply only to additi
 - Each scrape checks for created or dropped databases.
 - `--no-auto-discovery` restricts collection to the URL database.
 
-## Monitoring PgBouncer
+## Monitoring PgBouncer {#monitoring-pgbouncer}
 
 Set the database name in the URL to `pgbouncer` to switch to PgBouncer mode (this is what triggers the detection):
 
@@ -280,9 +280,9 @@ Supply this account through PgBouncer authentication and add it to `stats_users`
 
 The default self-metric namespace is `pgbouncer` when no namespace is set. The package environment file sets `PG_EXPORTER_NAMESPACE=pg`; change it to `pgbouncer` for a packaged PgBouncer service. This setting affects built-in self-metrics, not YAML-defined metric names.
 
-## Prometheus Scraping and Alerting
+## Prometheus Scraping and Alerting {#prometheus-scraping-and-alerting}
 
-### Scrape Configuration
+### Scrape Configuration {#scrape-configuration}
 
 ```yaml
 scrape_configs:
@@ -311,7 +311,7 @@ scrape_configs:
 
 Start with a 15-second interval and a 10-second scrape timeout. A collector result can be reused until its `ttl` expires; many bundled collectors use 10 seconds. Measure total scrape duration before reducing the interval or increasing the number of databases.
 
-### Alert Rules
+### Alert Rules {#alert-rules}
 
 These examples use the default `pg` self-metric namespace:
 
@@ -344,6 +344,6 @@ groups:
           summary: "pg_exporter slow scrape ({{ $labels.instance }})"
 ```
 
-### Role-Based Traffic Routing
+### Role-Based Traffic Routing {#role-based-traffic-routing}
 
 The `/primary`, `/replica`, and `/read` health-check endpoints can serve directly as health probes for HAProxy and similar load balancers, enabling primary/replica read-write splitting. Endpoint semantics and a complete HAProxy example are in the [API Reference](/api/#traffic-routing).

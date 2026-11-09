@@ -11,7 +11,7 @@ PG Exporter keeps SQL and metric definitions in YAML. The Go runtime loads those
 
 Stable **v{{< param version >}}** is the reference for the user manuals. The separate `snort` development branch contains experimental Composite, Patroni, pgBackRest, and PostgreSQL log features; they are absent from `main` and v1.6.0. Their contracts and status are recorded in [Design](/design/).
 
-## Repository Layout
+## Repository Layout {#repository-layout}
 
 | Path | Purpose |
 |:---|:---|
@@ -26,7 +26,7 @@ Stable **v{{< param version >}}** is the reference for the user manuals. The sep
 | `.goreleaser.yml` | Cross-platform archives, RPM/DEB packages, checksums, Docker images, and GitHub Release |
 {.full-width}
 
-## Toolchain
+## Toolchain {#toolchain}
 
 The v1.6.0 tag declares Go **1.27.3**. Use the toolchain required by the revision you build. To build the stable tag:
 
@@ -45,7 +45,7 @@ release version, so check its revision as well as `--version`.
 For a code change, create a working branch from the intended source revision. Read
 `AGENTS.md` and inspect `git status --short --branch` before editing.
 
-## Test Before and After a Change
+## Test Before and After a Change {#test-before-and-after-a-change}
 
 ```bash
 go mod tidy -diff
@@ -70,7 +70,7 @@ make goreleaser-build
 This command installs GoReleaser if needed and rebuilds the snapshot output in
 `dist/`. Keep binaries, packages, and release archives outside Git.
 
-## Change or Add a Collector
+## Change or Add a Collector {#change-or-add-a-collector}
 
 1. Choose the numeric group and a unique top-level branch name.
 2. Set `name` to the stable metric namespace when multiple version/role branches should emit one metric family.
@@ -91,7 +91,7 @@ alternatives, and delivery status. Keep unreleased behavior marked as such until
 tag and artifacts ship. Small code-local fixes need tests and the relevant manual
 update, not a new design article.
 
-### Column rules
+### Column rules {#column-rules}
 
 - `LABEL` becomes a Prometheus label; avoid unbounded or sensitive values.
 - `GAUGE` is for values that can move in either direction.
@@ -102,7 +102,7 @@ update, not a new design article.
 
 `le` is reserved when a collector contains a histogram. Metric and label names are validated while loading the configuration so invalid names fail before scraping.
 
-## Regenerate Configs
+## Regenerate Configs {#regenerate-configs}
 
 ```bash
 make conf     # config/*.yml -> pg_exporter.yml
@@ -115,7 +115,7 @@ These two generated YAML files are tracked in Git. CI checks them against the
 ordered source files. Edit the source fragments, regenerate the YAML, and include
 both in the change.
 
-## Exercise a Collector Locally
+## Exercise a Collector Locally {#exercise-a-collector-locally}
 
 ```bash
 # Syntax/schema only; no target required
@@ -143,7 +143,7 @@ For cached or optional components, also test the disabled path, failure isolatio
 reload, and shutdown. For persistent log state, cover restart, rotation,
 truncation, partial records, and state-file permissions.
 
-## Release Pipeline
+## Release Pipeline {#release-pipeline}
 
 GoReleaser produces:
 
@@ -163,7 +163,7 @@ A local snapshot build checks packaging without publishing a release. Use the
 release workflow for tagged artifacts and verify the installed version separately
 after deployment.
 
-## Documentation Workflow
+## Documentation Workflow {#documentation-workflow}
 
 Work on this site in the companion `exp.pgsty.com` repository. Edit paired English
 and Chinese pages, then run:

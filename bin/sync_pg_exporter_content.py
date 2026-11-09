@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 VERSIONS = [
+    ("v1.6.0", "2026-11-09T10:00:00+08:00"),
     ("v1.5.0", "2026-10-23T09:36:11+08:00"),
     ("v1.4.1", "2026-07-29T21:31:19+08:00"),
     ("v1.4.0", "2026-07-18T10:41:26+08:00"),
@@ -94,17 +95,17 @@ MANUAL_DESCRIPTIONS = {
 
 MANUAL_BODIES = {
     "en": {
-        "v0.6.1": """## Changes
+        "v0.6.1": """## Changes {#changes}
 
 - Update `golang.org/x/net` from `v0.10.0` to `v0.17.0` to pick up security fixes ([#38](https://github.com/pgsty/pg_exporter/pull/38))
 - Fix `connect-timeout` propagation ([#37](https://github.com/pgsty/pg_exporter/pull/37)), contributed by [@mouchar](https://github.com/mouchar)
 - Recognize both `.yaml` and `.yml` files in a configuration directory ([#34](https://github.com/pgsty/pg_exporter/pull/34)), contributed by [@japinli](https://github.com/japinli)
 
-## Checksums
+## Checksums {#checksums}
 
 The original release published MD5 checksums for its archives and packages:
 
-```text
+```checksums
 107a67ca74b1d6e7bbe773694a48f6ab  pg_exporter-v0.6.1.darwin-amd64.tar.gz
 75b57566838c38092a9c45531c031561  pg_exporter-v0.6.1.darwin-arm64.tar.gz
 9e55128671b31dd28d6bca3d0429de8f  pg_exporter-v0.6.1.linux-amd64.tar.gz
@@ -115,7 +116,7 @@ The original release published MD5 checksums for its archives and packages:
 b3c9f2edd28810cae81cd0edad9eae5d  pg_exporter-0.6.1-1.x86_64.rpm
 ```
 """,
-        "v0.0.5": """## Changes
+        "v0.0.5": """## Changes {#changes}
 
 - Add per-collector query timeouts
 - Replace the earlier `skip_error` behavior with the `fatal` collector policy
@@ -127,17 +128,17 @@ This historical version exists as a repository tag but was not published as a se
 """,
     },
     "zh": {
-        "v0.6.1": """## 变更
+        "v0.6.1": """## 变更 {#changes}
 
 - 将 `golang.org/x/net` 从 `v0.10.0` 升级到 `v0.17.0`，纳入安全修复（[#38](https://github.com/pgsty/pg_exporter/pull/38)）
 - 修复 `connect-timeout` 传递问题（[#37](https://github.com/pgsty/pg_exporter/pull/37)），由 [@mouchar](https://github.com/mouchar) 贡献
 - 配置目录同时识别 `.yaml` 与 `.yml` 文件（[#34](https://github.com/pgsty/pg_exporter/pull/34)），由 [@japinli](https://github.com/japinli) 贡献
 
-## 校验和
+## 校验和 {#checksums}
 
 原始 Release 为压缩包与软件包发布了 MD5 校验和：
 
-```text
+```checksums
 107a67ca74b1d6e7bbe773694a48f6ab  pg_exporter-v0.6.1.darwin-amd64.tar.gz
 75b57566838c38092a9c45531c031561  pg_exporter-v0.6.1.darwin-arm64.tar.gz
 9e55128671b31dd28d6bca3d0429de8f  pg_exporter-v0.6.1.linux-amd64.tar.gz
@@ -148,7 +149,7 @@ This historical version exists as a repository tag but was not published as a se
 b3c9f2edd28810cae81cd0edad9eae5d  pg_exporter-0.6.1-1.x86_64.rpm
 ```
 """,
-        "v0.0.5": """## 变更
+        "v0.0.5": """## 变更 {#changes}
 
 - 为每个采集器查询增加超时控制
 - 以 `fatal` 采集器策略替代早期的 `skip_error` 行为
@@ -308,7 +309,11 @@ def adapt_doc_body(text: str, slug: str, language: str) -> str:
             f"**{current} Release Files:**" if language == "en" else f"**{current} 发布文件：**"
         )
         block_start = text.find(release_heading)
-        block_end = text.find("{{% alert", block_start)
+        block_end = -1
+        for marker in ("> [!NOTE]", "{{% alert", "**rpm", "**Install"):
+            pos = text.find(marker, block_start)
+            if pos >= 0 and (block_end < 0 or pos < block_end):
+                block_end = pos
         if block_start < 0 or block_end < 0:
             raise ValueError(f"unexpected {language} install release table")
         release_block = text[block_start:block_end]
@@ -413,9 +418,40 @@ def release_summaries(text: str) -> dict[str, str]:
     return summaries
 
 
+RELEASE_HEADING_IDS = {
+    "Changes": "changes",
+    "变更": "changes",
+    "Checksums": "checksums",
+    "校验和": "checksums",
+    "Highlights": "highlights",
+    "变更摘要": "highlights",
+    "New Features": "new-features",
+    "新功能": "new-features",
+    "Fixes & Improvements": "fixes-and-improvements",
+    "修复与改进": "fixes-and-improvements",
+    "Engineering & Build": "engineering-and-build",
+    "工程与构建": "engineering-and-build",
+    "Upgrade Notes": "upgrade-notes",
+    "升级提示": "upgrade-notes",
+    "Bug Fixes": "bug-fixes",
+    "Bug 修复": "bug-fixes",
+    "Collector Changes": "collector-changes",
+    "Collector changes": "collector-changes",
+    "采集器变更": "collector-changes",
+    "Other Changes": "other-changes",
+    "其他变更": "other-changes",
+    "Default Collectors": "default-collectors",
+    "默认采集器": "default-collectors",
+    "Exporter Codebase": "exporter-codebase",
+    "导出器代码库": "exporter-codebase",
+    "Exporter changes": "exporter-changes",
+    "导出器变更": "exporter-changes",
+}
+
+
 def release_sections(text: str) -> dict[str, str]:
     body = strip_front_matter(text)
-    matches = list(re.finditer(r"^## (v\d+\.\d+\.\d+)\s*$", body, re.M))
+    matches = list(re.finditer(r"^## (v\d+\.\d+\.\d+)(?:[ \t]+\{#[^}]+\})?[ \t]*$", body, re.M))
     sections: dict[str, str] = {}
     for index, match in enumerate(matches):
         start = match.end()
@@ -458,6 +494,8 @@ def normalize_release_body(body: str, version: str, language: str) -> str:
     for line in body.splitlines():
         if line.lstrip().startswith("```"):
             in_fence = not in_fence
+            if in_fence and re.match(r"^```(?:text|checksums(?:\s+\{.*\})?)\s*$", line.strip()):
+                line = "```checksums"
         if not in_fence:
             heading = re.fullmatch(r"\*\*(.+?)(?::|：)?\*\*", line.strip())
             if heading:
@@ -466,8 +504,17 @@ def normalize_release_body(body: str, version: str, language: str) -> str:
         lines.append(line)
     body = "\n".join(lines).strip()
 
-    if not re.search(r"^##\s+", body, re.M):
-        body = ("## 变更" if language == "zh" else "## Changes") + "\n\n" + body
+    if not re.search(r"^##\s+(?!Checksums|校验和)", body, re.M):
+        body = ("## 变更 {#changes}" if language == "zh" else "## Changes {#changes}") + "\n\n" + body
+
+    def add_heading_id(match: re.Match[str]) -> str:
+        title = match.group(1).strip()
+        if "{#" in title:
+            return match.group(0)
+        hid = RELEASE_HEADING_IDS.get(title)
+        return f"## {title} {{#{hid}}}" if hid else match.group(0)
+
+    body = re.sub(r"^##[ \t]+([^\n]+)$", add_heading_id, body, flags=re.M)
 
     if version in TAG_ONLY:
         note = (

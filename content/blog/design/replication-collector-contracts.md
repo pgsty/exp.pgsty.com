@@ -15,7 +15,7 @@ tags: [Design, PostgreSQL, Compatibility, Prometheus]
 > **Scope:** Collector corrections in pg_exporter `main` commit `d97ba38fc8390984df994b2f9ea58b43ecfc8b89`, based on `72f00a4fa4e6eb7524174f2122b3fe1e1d608db4`; PostgreSQL `REL_19_RC1` at `0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89`, with focused PostgreSQL 9.6–18 checks. These corrections ship in v1.5.0 and are absent from v1.4.1.<br>
 > **Delivery:** Source committed and pushed; tag v1.5.0 points to `18912540fe5edce0ed0ee81fac0d989738ecaa87`. CI and the release workflow passed; the GitHub Release, RPM/DEB packages, archives, and Docker images are published. This does not establish production deployment or production-load acceptance.
 
-## Decisions
+## Decisions {#decisions}
 
 | Problem | Selected correction | Preserved behavior |
 |:---|:---|:---|
@@ -25,7 +25,7 @@ tags: [Design, PostgreSQL, Compatibility, Prometheus]
 | Publication and subscription relation counts describe different sets | Clarify HELP and manuals | SQL, labels, values, and absent-series behavior; no new sequence metric |
 {.wide .expand}
 
-## Subscription identity
+## Subscription identity {#subscription-identity}
 
 The pair `(datname, subname)` identifies a subscription within one PostgreSQL cluster. PostgreSQL enforces a unique `(subdbid, subname)` key, while database names are unique within the cluster. The query must resolve the owning database through the subscription OID:
 
@@ -38,7 +38,7 @@ Here `subscription_id` means the existing source alias: `s2.subid` in the PG19 b
 
 The existing query must still produce one row per subscription. Preserve the apply-leader filters and PG19's exclusion of sequence synchronization workers. Database identity distinguishes different subscriptions; worker filtering prevents repeated rows for the same subscription. Both are required.
 
-### PostgreSQL 10–13 permission prerequisite
+### PostgreSQL 10–13 permission prerequisite {#postgresql-10-13-permission-prerequisite}
 
 PostgreSQL 10–13 omitted public SELECT permission on `pg_subscription.oid`. The upstream correction was deliberately made for PostgreSQL 14, without changing older branches. Therefore this database-label design has an explicit upgrade prerequisite for those versions:
 
@@ -51,13 +51,13 @@ Use the actual monitoring role. The grant belongs in each database that may be u
 
 This is a deployment cost, not an automatic permission repair. On PG10–13, apply the grant before deploying the modified collector configuration. Without it, SQL fails and the subscription metrics are absent even if the HTTP response itself remains 200. Acceptance must check expected samples and query errors as well as HTTP status.
 
-### Alternatives and migration
+### Alternatives and migration {#alternatives-and-migration}
 
 An additional `subid` label would avoid both joins and the old-version permission prerequisite. Database identity was selected for readable, database-oriented filtering consistent with other collectors. Given that requirement, two catalog joins and one documented legacy grant are smaller than a new privilege wrapper or runtime fallback. Do not add both labels without a separate need.
 
 Preserve the `id` GAUGE instead of converting it into a label and deleting `pg_sub_id`. Existing sample counts and family names remain unchanged, but the new label creates new time series. Check label-sensitive PromQL joins and aggregation. Database or subscription renames also change identity. Target labels continue to distinguish clusters.
 
-## Receiver state dictionary
+## Receiver state dictionary {#receiver-state-dictionary}
 
 The receiver source was compared at release boundaries from PostgreSQL 9.6 through 19 RC1. PostgreSQL 9.6–18 has six states; PG19 adds `connecting`.
 
@@ -82,7 +82,7 @@ PG9.6 itself reveals only the receiver PID to a non-superuser; the other statist
 
 The final legacy query executed on PG9.6–12. A real PG9.6.24 standby returned streaming state 0 to its administrator, state -1 to the ordinary monitor, and 11 receiver samples with HTTP 200 to that monitor. Host/port fixtures covered missing fields, NULL, Unix paths, IPv6, repeated keys, and quoted input; PG10–12 produced the same results with the old and new extraction expressions. This preserves the existing regular-expression behavior, including its limitations on quoted values containing spaces.
 
-## Optional replication origins
+## Optional replication origins {#optional-replication-origins}
 
 The current and legacy configurations already set `skip: true`. Keep that setting. Explain that users must provision privileges before explicitly enabling the collector.
 
@@ -98,7 +98,7 @@ Run grants in the exporter's main connection database. PostgreSQL 13 and older r
 
 The origin catalog `pg_replication_origin` is already publicly readable under the standard ACLs, so an extra grant on it is redundant. Locally restricted catalog ACLs require the administrator to provision the query's catalog access as well.
 
-## Publication and subscription counts
+## Publication and subscription counts {#publication-and-subscription-counts}
 
 Document the exact existing behavior:
 
@@ -108,7 +108,7 @@ Document the exact existing behavior:
 
 Change descriptions and manuals only. Keep `DISTINCT subid, subname` in the subscription relation query. Do not add `pg_pubseq_count`, a `relkind` label, zero-filling, or a different object-count definition in this patch.
 
-## Validation and remaining gates
+## Validation and remaining gates {#validation-and-remaining-gates}
 
 The final configuration and a binary built from the stated `main` baseline were tested with a non-superuser monitoring role against PostgreSQL 10.21, 11.16, 12.22, 13.23, 14.23, 15.18, 16.14, 17.10, 18.4, and 19 RC1. Two databases with the same subscription name produced distinct labels and zero duplicate sample keys. PG10–13 failed before the column grant, still failed when it was granted only in a subscription database, and passed after the grant in the main connection database; `subconninfo` remained inaccessible. The PG10–14 branches emitted 14 samples, PG15–18 emitted 18, and PG19 emitted 42, reflecting their existing family counts.
 
@@ -118,13 +118,13 @@ Origin tests with real origin entries confirmed that the view grant alone is ins
 
 Local Go tests with the race detector, the compatibility HTTP-mux mode, `go vet`, dependency consistency, schema/version coverage, generated-file parity, and label-conflict checks passed. No Go implementation or dependency changes were needed. Source validation and the paired documentation build are separate from release and production acceptance.
 
-## Implementation boundaries
+## Implementation boundaries {#implementation-boundaries}
 
 The source change is limited to seven split collector files and their two generated bundles. The companion changes are the paired collector manuals and this paired Design record. The manuals distinguish existing permission/count semantics from the identity, dictionary, and PG9.6 SQL corrections in v1.5.0. Source review, commit, push, tagging, and formal artifacts are complete; production rollout remains a separate action.
 
 Non-goals include a driver migration, Gatherer redesign, runtime privilege management, new collector branches, new metric families, changes to subscription relation aggregation, or unrelated legacy SQL repair.
 
-## Primary references
+## Primary references {#primary-references}
 
 - [RC1 subscription identity constraints](https://github.com/postgres/postgres/blob/0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89/src/include/catalog/pg_subscription.h)
 - [PG14 correction to subscription column permissions](https://github.com/postgres/postgres/commit/3590680b85a8e51ef8df550e5a10dedd0d2dfd88)

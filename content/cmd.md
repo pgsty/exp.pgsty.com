@@ -21,7 +21,7 @@ pg_exporter --help-man   # man-page form
 Boolean options use `--flag` to enable and `--no-flag` to disable. The equivalent
 `--flag=true` and `--flag=false` forms are normalized before parsing.
 
-## Target and Configuration Precedence
+## Target and Configuration Precedence {#target-and-configuration-precedence}
 
 PG Exporter selects the connection URL in this order:
 
@@ -45,7 +45,7 @@ The driver accepts connection defaults such as `PGHOST`, `PGPORT`, `PGUSER`,
 `PGSERVICE` and `PGSERVICEFILE`, so service-file settings do not override the target.
 Use [Deployment](/deploy/) for credential-file setup.
 
-## Collection Flags
+## Collection Flags {#collection-flags}
 
 | Flag | Environment | Default | Purpose |
 |:---|:---|:---|:---|
@@ -77,7 +77,7 @@ Set `--connect-timeout` above the target’s normal round-trip time. A value of 
 or less uses 100 ms. Collector SQL uses its separate YAML `timeout`.
 Constant labels appear on exported series. Tags select eligible collectors.
 
-## HTTP Flags
+## HTTP Flags {#http-flags}
 
 | Flag | Environment | Default | Purpose |
 |:---|:---|:---|:---|
@@ -92,7 +92,7 @@ wildcard, repeated slash, or `..` path segment. It must not collide with built-i
 such as `/up`, `/primary`, `/replica`, `/reload`, `/explain`, `/stat`, or
 `/version`. Startup also verifies that a request for this path actually reaches the metrics handler, rather than a redirect or another handler. Escaped paths must be valid for the active HTTP mux; prefer a plain path such as `/metrics` for compatibility. See the [HTTP API](/api/) for methods and response semantics.
 
-## Actions and Logging
+## Actions and Logging {#actions-and-logging}
 
 | Flag | Default | Purpose |
 |:---|:---|:---|
@@ -110,7 +110,7 @@ collector definitions; a running scrape also checks permissions, result columns,
 and output values. Startup and reload also check constant-label conflicts. Logs
 go to standard error.
 
-## Examples
+## Examples {#examples}
 
 ```bash
 # Same-host PostgreSQL using libpq defaults

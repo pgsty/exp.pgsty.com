@@ -24,9 +24,9 @@ categories: [Reference]
 
 The table lists the intended methods. Only `/reload` explicitly rejects other methods. Unmatched paths reach the root page, so use the documented paths for probes.
 
-## Metrics Endpoint
+## Metrics Endpoint {#metrics-endpoint}
 
-### GET /metrics
+### GET /metrics {#get-metrics}
 
 Each request collects metrics from the main target and any discovered databases. Collectors with a valid cache return their cached results.
 
@@ -58,7 +58,7 @@ An interrupted pass does not increment `pg_exporter_scrape_error_count` or `pg_e
 
 Failed refreshes retain the existing failure TTL. In particular, canceling a negative-timeout fatal collector caches a fatal failure: a later live scrape can count that failure and report `pg_up 0` until a successful refresh. Keep a positive timeout on fatal collectors. See [scrape lifetime](/design/scrape-lifetime/) for the rationale.
 
-### Self-Monitoring Metrics
+### Self-Monitoring Metrics {#self-monitoring-metrics}
 
 The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer. `--namespace` changes this prefix. It does not change names defined in YAML.
 
@@ -93,9 +93,9 @@ Configured constant labels are added to these series. Cumulative per-database an
 
 During interruption, `pg_up` preserves the previous main-target availability, or 1 if this pass completed its precheck. If the very first precheck is interrupted before success, it remains 0 until a later successful scrape. Child-database interruptions follow the same per-server rule and do not increment the main-target error counter.
 
-## Health Checks
+## Health Checks {#health-checks}
 
-### GET /up
+### GET /up {#get-up}
 
 After initialization, only the once-per-second background health probe updates the HTTP health snapshot. Slow collection does not hold the probe lock, and completing a scrape cannot overwrite a newer probe result. HTTP health requests read the snapshot without executing SQL. `pg_up` and `pg_in_recovery` remain scrape metrics: a fatal collector can make `pg_up` zero while `/up` still returns 200 for a reachable database. The main PostgreSQL pool allows three connections, PgBouncer two, and each discovered database one.
 
@@ -124,7 +124,7 @@ readinessProbe:
   periodSeconds: 5
 ```
 
-## Traffic Routing
+## Traffic Routing {#traffic-routing}
 
 Role checks use `pg_is_in_recovery()` from the main PostgreSQL target. They report role and reachability; they do not test application permissions or transaction read-only settings.
 
@@ -138,19 +138,19 @@ The response body contains the state name. In PgBouncer mode, a successful `SHOW
 
 Each health response derives its HTTP code and body from one atomic status snapshot. This fixes contradictory responses during concurrent state changes; the state is still cached. Telemetry-path validation also verifies that requests reach the metrics handler under the active HTTP mux. Prefer an unescaped path such as `/metrics` for compatibility with the older mux.
 
-### GET /primary
+### GET /primary {#get-primary}
 
 Aliases: `/leader`, `/master`, `/read-write`, `/rw`.
 
-### GET /replica
+### GET /replica {#get-replica}
 
 Aliases: `/standby`, `/slave`, `/read-only`, `/ro`.
 
-### GET /read
+### GET /read {#get-read}
 
 Alias of `/up`; accepts either PostgreSQL role.
 
-### HAProxy Example
+### HAProxy Example {#haproxy-example}
 
 Run an exporter beside each PostgreSQL instance. Send client traffic to port 5432 and health checks to port 9630:
 
@@ -173,9 +173,9 @@ backend pg_replicas
 
 Use `/read` instead of `/replica` to send read traffic to either role.
 
-## Operational Endpoints
+## Operational Endpoints {#operational-endpoints}
 
-### GET /reload / POST /reload
+### GET /reload / POST /reload {#get-reload--post-reload}
 
 Use POST to reload the selected configuration file or directory:
 
@@ -193,7 +193,7 @@ Reload replaces collector definitions, clears their caches and query statistics,
 
 On Unix, `SIGHUP` and `SIGUSR1` also reload configuration. `SIGTERM` terminates the process without waiting for active HTTP requests to finish. Restart the process to change the connection URL, labels, tags, or listen address. Restrict management access with a firewall, reverse proxy, or `--web.config.file`; see [Security](/security/).
 
-### GET /explain
+### GET /explain {#get-explain}
 
 Returns plain-text definitions of the main target’s selected collectors, including SQL, tags, TTL, timeout, and metric mappings. The output is empty before the first plan and immediately after a reload. Scrape first:
 
@@ -204,7 +204,7 @@ curl -fsS http://127.0.0.1:9630/explain
 
 This endpoint does not run PostgreSQL `EXPLAIN`, evaluate predicates, list rejected branches, or include discovered-database plans. Use debug logs for branch rejection reasons. To inspect a different database’s plan, run `pg_exporter --explain --fail-fast --url=...` against that database.
 
-### GET /stat
+### GET /stat {#get-stat}
 
 Returns a plain-text table for collectors selected for the main target:
 
@@ -220,7 +220,7 @@ pg_db                    12         11         0          0          28         
 
 `total` counts collector calls, `hit` counts cache hits, `error` counts failed calls, and `skip` counts predicate skips. `metric` is the current sample count. `ttl/s` is remaining cache lifetime, truncated to an integer. `duration/ms` is the last actual execution time. Use the `pg_exporter_query_*` metrics to compare all discovered databases.
 
-### GET /version
+### GET /version {#get-version}
 
 Returns version, revision, branch, Go version, build date, operating system, and architecture:
 

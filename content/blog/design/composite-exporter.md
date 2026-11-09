@@ -14,8 +14,8 @@ Composite mode combines PostgreSQL, PgBouncer, Patroni, pgBackRest, and PostgreS
 
 > **Status:** Implemented but unreleased.<br>
 > **Decision date:** 2026-08-11; cached components added on 2026-08-23 and 2026-08-24.<br>
-> **Last verified:** 2026-10-13.<br>
-> **Scope:** Composite coordinator at source commit `c0ba58a`; absent from stable `v1.4.1`.<br>
+> **Last verified:** 2026-11-09.<br>
+> **Scope:** Composite coordinator at source commit `c0ba58a` on the `snort` development branch; absent from stable `v1.6.0`.<br>
 > **Delivery:** Local tests passed. Not merged into `main` or tagged; packages, deployment, and production operation remain unverified.
 
 ## PostgreSQL remains authoritative {#primary-invariant}

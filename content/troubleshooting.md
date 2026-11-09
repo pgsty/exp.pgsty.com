@@ -9,7 +9,7 @@ categories: [Guide]
 
 Check the process, HTTP access, database connection, then the failing collector. `pg_up 1` means the last scrape reached the main target and completed its fatal collectors. Other collectors or discovered databases can still have errors.
 
-## Initial Checks
+## Initial Checks {#initial-checks}
 
 ```bash
 # Process and logs
@@ -38,9 +38,9 @@ curl -fsS http://127.0.0.1:9630/stat
 | Exporter is healthy but Prometheus target is down | Prometheus address, scheme, auth, TLS, firewall, telemetry path |
 {.full-width}
 
-## Process Will Not Start
+## Process Will Not Start {#process-will-not-start}
 
-### `no valid config path`
+### `no valid config path` {#no-valid-config-path}
 
 The config search order is `--config`, `PG_EXPORTER_CONFIG`, `./pg_exporter.yml`, `/etc/pg_exporter.yml`, then `/etc/pg_exporter`. Confirm the file exists and is readable by the runtime user:
 
@@ -53,13 +53,13 @@ sudo -u prometheus /usr/bin/pg_exporter \
 
 `--dry-run` parses and explains the raw configuration without needing a live database. A config directory is non-recursive and loads only `.yaml` / `.yml` files in alphabetic order; a duplicate top-level branch name from a later file overrides the earlier definition.
 
-### Invalid telemetry path
+### Invalid telemetry path {#invalid-telemetry-path}
 
 Since v1.4.0, `--web.telemetry-path` must be a canonical literal path beginning with `/`. It cannot contain a query, fragment, Go ServeMux wildcard, or collide with built-in endpoints such as `/up`, `/reload`, or `/version`.
 
 Use `/metrics` unless there is a concrete need to change it, and update the Prometheus `metrics_path` at the same time.
 
-### Address already in use
+### Address already in use {#address-already-in-use}
 
 ```bash
 lsof -nP -iTCP:9630 -sTCP:LISTEN
@@ -67,7 +67,7 @@ lsof -nP -iTCP:9630 -sTCP:LISTEN
 
 Stop the conflicting service or choose another `--web.listen-address`.
 
-## `pg_up` Is 0 or `/up` Returns 503
+## `pg_up` Is 0 or `/up` Returns 503 {#pg_up-is-0-or-up-returns-503}
 
 For the packaged service, add `--log.level=debug` to `PG_EXPORTER_OPTS` in `/etc/default/pg_exporter`, then restart the service. This preserves its user and connection settings:
 
@@ -100,7 +100,7 @@ The packaged service runs as `prometheus`; testing as your shell user can theref
 
 Non-blocking startup is normal: while the target is unavailable, the HTTP server remains up and the background probe retries. Use `--fail-fast` only when the orchestrator should treat initial database unreachability as a process startup failure.
 
-## Metrics Are Missing
+## Metrics Are Missing {#metrics-are-missing}
 
 Scrape `/metrics` once to build the plan. `/explain` shows collectors selected for the main target. For a missing collector, compare its YAML with the target version, role, and tags; debug logs report why a branch was rejected. Check for:
 
@@ -114,7 +114,7 @@ Scrape `/metrics` once to build the plan. `/explain` shows collectors selected f
 
 The include/exclude lists apply to additional discovered databases. The database in the connection URL is always monitored, even if its name appears in the default exclusion `template0,template1,postgres`. Predicates can skip a selected collector, and a successful query can return no rows; check `/stat` and the SQL result as well.
 
-## One Collector Fails
+## One Collector Fails {#one-collector-fails}
 
 Use `/stat` for the main target. Use exporter self-metrics, labeled by `datname` and `query`, for all monitored databases:
 
@@ -135,7 +135,7 @@ Common causes include:
 
 Run the collector SQL manually as the monitoring user in the same database. Preserve the result column names exactly, including zero-row result schemas.
 
-## Scrapes Are Slow or Time Out
+## Scrapes Are Slow or Time Out {#scrapes-are-slow-or-time-out}
 
 Since v1.6.0, at most two metrics requests are admitted across collection, waiting, and response writing. Collection is serial; the second request waits within its remaining budget, and further requests receive HTTP 503. The budget is 30 seconds, shortened by a valid positive finite `X-Prometheus-Scrape-Timeout-Seconds` header. A canceled waiter executes no SQL.
 
@@ -158,7 +158,7 @@ Typical remedies:
 
 Queries and discovered databases are scraped sequentially, so budget for their combined duration. Keep the full scrape below Prometheus `scrape_timeout` and `scrape_interval`. The HTTP server also has a 30-second write timeout.
 
-## Reload Fails
+## Reload Fails {#reload-fails}
 
 ```bash
 curl -i -X POST http://127.0.0.1:9630/reload
@@ -172,7 +172,7 @@ Restart the service after changing the target URL, listen address, logging, name
 
 Collector YAML can also be reloaded with `SIGHUP`; Unix builds additionally accept `SIGUSR1`. A reload rebuilds plans on the next scrape and resets per-query statistics.
 
-## Docker and Package Pitfalls
+## Docker and Package Pitfalls {#docker-and-package-pitfalls}
 
 | Symptom | Likely cause and fix |
 |:---|:---|
@@ -183,7 +183,7 @@ Collector YAML can also be reloaded with `SIGHUP`; Unix builds additionally acce
 | Container cannot reach host PostgreSQL | `localhost` means the container; use the database service DNS name or an explicit host route |
 {.full-width}
 
-## Evidence to Include in a Bug Report
+## Evidence to Include in a Bug Report {#evidence-to-include-in-a-bug-report}
 
 - `pg_exporter --version` or `curl http://127.0.0.1:9630/version` output, and installation method
 - Operating system and architecture

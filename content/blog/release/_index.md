@@ -4,7 +4,7 @@ linkTitle: "Release Notes"
 description: "A bilingual release note for every pg_exporter repository tag"
 weight: 30
 icon: fa-solid fa-clipboard-list
-# The archive publishes the compact table form: 36 notes are for scanning, not
+# The archive publishes the compact table form: 37 notes are for scanning, not
 # paging. `blog_index_toggle` keeps the row and card forms one control away.
 blog_index: table
 # The whole section reads immersively: a hero opening drawn from the section
@@ -23,8 +23,8 @@ cascade:
   sidebar_enabled: false
 ---
 
-This archive covers all **36 repository tags**, from `v0.0.1` to `v{{< param version >}}`, with one English and Chinese note per version.
+This archive covers all **37 repository tags**, from `v0.0.1` to `v{{< param version >}}`, with one English and Chinese note per version.
 
-Of these versions, 34 have GitHub Releases; `v0.0.1` and `v0.0.5` have Git tags only. Dates use the release time, or the commit time for tag-only versions, in Asia/Shanghai (`UTC+08:00`).
+Of these versions, 35 have GitHub Releases; `v0.0.1` and `v0.0.5` have Git tags only. Dates use the release time, or the commit time for tag-only versions, in Asia/Shanghai (`UTC+08:00`).
 
 For current packages and installation commands, use [Downloads](/download/).

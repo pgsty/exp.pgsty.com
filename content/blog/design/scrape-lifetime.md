@@ -14,7 +14,7 @@ summary: "v1.6.0: bounded waiting for two scrapers, request cancellation, and th
 > **Scope:** v1.6.0 at source `6bee809` on main, addressing [#116](https://github.com/pgsty/pg_exporter/issues/116). Not shipped in v1.5.0.<br>
 > **Delivery:** Tag v1.6.0 points to `6bee809`; the GitHub Release, versioned archives, RPM/DEB packages, and checksums are published. Source CI, artifact acceptance, and amd64/arm64 container TLS checks passed. Software publication does not establish production deployment or production-load verification.
 
-## Decision
+## Decision {#decision}
 
 Queries previously derived their contexts from `context.Background()`, allowing work to continue after the metrics client disconnected. More HTTP requests could wait indefinitely for the exporter lock. Bound this work while preserving failure isolation and cache reuse.
 
@@ -26,21 +26,21 @@ Keep the existing failure-cache policy: a refresh that fails, including a cancel
 
 After gathering produces the response snapshot, release the collection lock before encoding and writing. The request still occupies an admission slot until its response finishes, bounding both waiting and slow responses. Keep Prometheus encoding, compression, Go/process metrics, and handler instrumentation. The normal collector interface remains usable without storing request context on the exporter.
 
-## Alternatives and boundaries
+## Alternatives and boundaries {#alternatives-and-boundaries}
 
 Immediate rejection of every overlapping request causes avoidable gaps for two scrapers. Clearing the retry timestamp on cancellation repeatedly runs expensive queries and churns connections. Both were rejected during review. Canceling bounded queries with the request was also rejected: one client's disconnect became a failure cached for every scraper, and each lib/pq cancellation closes its connection. Letting the running collector finish normally costs up to its own timeout (2 seconds in the default configuration) of collection-lock time after the budget expires. Stopping between that collector's predicates and main query was rejected: it needs a separate not-attempted state and rollback, while saving only work bounded by the same deadline. Serving old results indefinitely would conceal stale measurements and needs a separate freshness contract. Background refresh, shared gathers, a parallel scheduler, new flags, and driver migration are outside this correction.
 
 The budget stops collection and cancels unbounded SQL. A running bounded collector can extend the response past the budget, normally by up to its own timeout. A stalled network can hold the driver longer, as in v1.5.0, so neither the budget nor a query timeout is a hard wall-clock limit, and no fixed encoding margin is reserved. The HTTP write deadline remains the transport limit. In particular, lib/pq connection handshakes need an appropriate DSN `connect_timeout`; a query context alone does not bound every network phase. See the [target-state record](/design/target-state-contracts/) for independent health probes.
 
-## Error Accounting
+## Error Accounting {#error-accounting}
 
 An interrupted pass does not increment `pg_exporter_scrape_error_count` or `pg_exporter_server_scrape_error_count`; its summary log is INFO `interrupted`. Query errors and fatal-query ERROR logs remain observable. A real failure coinciding with request cancellation can therefore be omitted from these two pass counters. Without request cancellation, connection/precheck failures and fatal query failures, including their own timeouts, retain their error accounting. Non-fatal failures remain query-level errors.
 
-## Acceptance
+## Acceptance {#acceptance}
 
 Verify repeated cancellation does not bypass TTL; healthy collectors and valid caches remain usable; retry resumes after TTL expiry. Exercise two overlapping scrapers, a canceled waiter, a full admission limit, cancellation of unbounded SQL, a client leaving during bounded SQL whose result must stay cached, an interrupted pass that must not increment error counters, and a slow response that must not hold the collection lock. Real PostgreSQL checks must confirm cancellation, bounded SQL attempts, and successful later scrapes. Validate PgBouncer separately. Local acceptance does not establish a release or production-load guarantee.
 
-## Local verification
+## Local verification {#local-verification}
 
 The full race suite and ten repeated runs of the focused concurrency tests passed. On PostgreSQL 18.6, a canceled refresh executed once during its TTL, while six following requests returned healthy metrics without repeating the failed SQL; expiry allowed a successful retry. Five rounds of two overlapping scrapers both returned HTTP 200, with one SQL refresh per round. Tests also cover canceled waiters, admission exhaustion, partial rows, predicate/precheck cancellation, and releasing the collection lock before a slow response finishes. No background refresh or stale-value fallback was added.
 

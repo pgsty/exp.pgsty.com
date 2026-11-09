@@ -12,10 +12,10 @@ categories: [参考]
 | 端点 | 方法 | 结果 |
 |:---|:---|:---|
 | [`/metrics`](#get-metrics) | GET | Prometheus 指标；用 `--web.telemetry-path` 修改路径 |
-| [`/up`](#健康检查) | GET、HEAD | 主连接目标的可用状态；别名 `/health`、`/liveness`、`/readiness`、`/read` |
-| [`/primary`](#流量路由) | GET、HEAD | 主库角色；别名 `/leader`、`/master`、`/read-write`、`/rw` |
-| [`/replica`](#流量路由) | GET、HEAD | 从库角色；别名 `/standby`、`/slave`、`/read-only`、`/ro` |
-| [`/reload`](#运维端点) | GET、POST | 重载采集器配置 |
+| [`/up`](#health-checks) | GET、HEAD | 主连接目标的可用状态；别名 `/health`、`/liveness`、`/readiness`、`/read` |
+| [`/primary`](#traffic-routing) | GET、HEAD | 主库角色；别名 `/leader`、`/master`、`/read-write`、`/rw` |
+| [`/replica`](#traffic-routing) | GET、HEAD | 从库角色；别名 `/standby`、`/slave`、`/read-only`、`/ro` |
+| [`/reload`](#operational-endpoints) | GET、POST | 重载采集器配置 |
 | [`/explain`](#get-explain) | GET | 主连接选中的采集器的纯文本说明 |
 | [`/stat`](#get-stat) | GET | 主连接采集器运行统计，纯文本格式 |
 | [`/version`](#get-version) | GET | 版本与构建信息，纯文本格式 |
@@ -24,9 +24,9 @@ categories: [参考]
 
 表中列出各端点的常用方法，只有 `/reload` 会明确拒绝其他方法。未匹配路径会交给根页面处理，配置探针时请使用表中的路径。
 
-## 指标端点
+## 指标端点 {#metrics-endpoint}
 
-### GET /metrics
+### GET /metrics {#get-metrics}
 
 每次请求都会采集主目标及自动发现数据库的指标。采集器缓存有效时，直接返回缓存结果。
 
@@ -58,7 +58,7 @@ pg_in_recovery 0
 
 刷新失败沿用原有失败 TTL。尤其是负数 timeout 的 fatal 采集器，被取消后会缓存 fatal 失败；后续有效抓取可能对该失败计数并返回 `pg_up 0`，直到成功刷新。建议 fatal 采集器保留正数 timeout。设计理由见 [采集生命周期](/zh/design/scrape-lifetime/)。
 
-### 自监控指标
+### 自监控指标 {#self-monitoring-metrics}
 
 PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`。`--namespace` 可以修改此类前缀，但不会改变 YAML 中定义的指标名。
 
@@ -93,9 +93,9 @@ PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`
 
 中断时，`pg_up` 保留主目标此前的可用状态；若本轮预检已成功，则保留为 1。首次预检在成功前被中断时，保持为 0，后续成功抓取可恢复。子数据库中断采用相同的单库规则，不增加主目标的错误计数。
 
-## 健康检查
+## 健康检查 {#health-checks}
 
-### GET /up
+### GET /up {#get-up}
 
 初始化后，HTTP 健康状态只由每秒一次的后台探测更新。慢采集不再占用探测所需的锁，采集完成也不会覆盖更新的探测结果。HTTP 健康请求只读取快照，不执行 SQL。`pg_up` 与 `pg_in_recovery` 仍属于采集指标：fatal 采集器失败可能使 `pg_up` 为 0，而数据库可达时 `/up` 仍返回 200。PostgreSQL 主连接池最多三个连接，PgBouncer 最多两个，每个发现数据库最多一个。
 
@@ -124,7 +124,7 @@ readinessProbe:
   periodSeconds: 5
 ```
 
-## 流量路由
+## 流量路由 {#traffic-routing}
 
 角色检查使用主连接 PostgreSQL 目标的 `pg_is_in_recovery()`。它们判断角色和连通性，不检查应用权限或事务只读设置。
 
@@ -138,19 +138,19 @@ readinessProbe:
 
 每个健康响应从同一个原子状态快照生成 HTTP 状态码与正文，修复并发状态变化时可能出现的矛盾响应；状态仍然来自缓存。指标路径校验还会确认请求在当前 HTTP mux 下确实进入指标处理器。为兼容旧版 mux，优先使用 `/metrics` 这样的未转义路径。
 
-### GET /primary
+### GET /primary {#get-primary}
 
 别名：`/leader`、`/master`、`/read-write`、`/rw`。
 
-### GET /replica
+### GET /replica {#get-replica}
 
 别名：`/standby`、`/slave`、`/read-only`、`/ro`。
 
-### GET /read
+### GET /read {#get-read}
 
 `/up` 的别名，主库和从库均可返回成功。
 
-### HAProxy 示例
+### HAProxy 示例 {#haproxy-example}
 
 在每个 PostgreSQL 实例旁运行 exporter。客户端流量发送到 5432 端口，健康检查发送到 9630 端口：
 
@@ -173,9 +173,9 @@ backend pg_replicas
 
 将 `/replica` 换为 `/read`，即可让读流量使用任意可用角色。
 
-## 运维端点
+## 运维端点 {#operational-endpoints}
 
-### GET /reload / POST /reload
+### GET /reload / POST /reload {#get-reload--post-reload}
 
 用 POST 重载当前选择的配置文件或目录：
 
@@ -193,7 +193,7 @@ curl -fsS -X POST http://127.0.0.1:9630/reload
 
 Unix 上还可以发送 `SIGHUP` 或 `SIGUSR1` 重载。`SIGTERM` 会结束进程，不等待活跃 HTTP 请求完成。修改连接 URL、固定标签、Tag 或监听地址需要重启进程。通过防火墙、反向代理或 `--web.config.file` 限制管理访问，详见[安全指南](/zh/security/)。
 
-### GET /explain
+### GET /explain {#get-explain}
 
 返回主连接选中的采集器的纯文本定义，包括 SQL、标签、TTL、超时和指标映射。首次规划前和刚完成重载时，输出为空。先执行一次抓取：
 
@@ -204,7 +204,7 @@ curl -fsS http://127.0.0.1:9630/explain
 
 此端点不执行 PostgreSQL `EXPLAIN` 或谓词查询，不列出被排除的分支，也不包含自动发现数据库的计划。分支排除原因见调试日志。查看其他数据库的计划时，用 `pg_exporter --explain --fail-fast --url=...` 直接连接该数据库。
 
-### GET /stat
+### GET /stat {#get-stat}
 
 返回主连接选中的采集器的纯文本统计表：
 
@@ -220,7 +220,7 @@ pg_db                    12         11         0          0          28         
 
 `total` 是调用次数，`hit` 是缓存命中次数，`error` 是报错次数，`skip` 是谓词跳过次数。`metric` 是当前样本数，`ttl/s` 是取整后的剩余缓存秒数，`duration/ms` 是最近一次实际执行耗时。比较所有自动发现数据库时，使用 `pg_exporter_query_*` 指标。
 
-### GET /version
+### GET /version {#get-version}
 
 返回版本、提交、分支、Go 版本、构建日期、操作系统和架构：
 

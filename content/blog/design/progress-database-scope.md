@@ -14,7 +14,7 @@ summary: "v1.6.0: keep cluster-wide progress and use numeric OIDs for user relat
 > **Scope:** v1.6.0 at source `6bee809` on main, [#115](https://github.com/pgsty/pg_exporter/issues/115); PostgreSQL 12+ vacuum, index creation, and cluster progress. Not shipped in v1.5.0.<br>
 > **Delivery:** Tag v1.6.0 points to `6bee809`; the GitHub Release, versioned archives, RPM/DEB packages, and checksums are published. Source CI, artifact acceptance, and amd64/arm64 container TLS checks passed. Software publication does not establish production deployment or production-load verification.
 
-## Decision
+## Decision {#decision}
 
 The progress views report work across the instance, but `relid::regclass` resolves names only within the connected database. An OID from another database can resolve to an unrelated local relation.
 
@@ -22,19 +22,19 @@ Keep `pg_vacuuming`, `pg_indexing`, and `pg_clustering` tagged `cluster, primary
 
 Keep metric names, labels, types, version ranges, TTLs, and three cluster-level queries per refresh. Cross-database coverage continues when auto-discovery is disabled, a database is excluded, or the monitoring role cannot connect to it, subject to the progress view's existing visibility rules. No new connections or name lookups are required.
 
-## Tradeoff and rejected alternatives
+## Tradeoff and rejected alternatives {#tradeoff-and-rejected-alternatives}
 
 A numeric OID is less readable than a relation name, but accurately reports the identifier available from the main connection. This fixes false names without losing catalog names, such as a VACUUM of `pg_attribute` in another database; it deliberately does not promise cross-database name resolution for user relations.
 
 Per-database collection was rejected because it increases refresh queries from three to three per monitored database, including when no progress exists. It also loses progress from excluded or inaccessible databases. Adding lookup connections for active tasks duplicates discovery and permissions handling. Renaming labels would require a separate metric migration. Base-backup progress is unchanged.
 
-## Acceptance and upgrade
+## Acceptance and upgrade {#acceptance-and-upgrade}
 
 Execute the PostgreSQL 12–16, 17, and 18+ SQL variants with local and foreign rows sharing the same relation OID. Verify the local name, the foreign numeric OID, and the name of a foreign system catalog, with one sample per task. Check primary/replica planning, that discovered connections do not duplicate cluster collectors, and cross-database coverage with discovery disabled or excluded databases.
 
 Update split YAML and generated configuration together. Existing installations must merge or replace these collector definitions; a binary-only upgrade does not apply this SQL correction. Local SQL tests do not establish production-load acceptance.
 
-## Local verification
+## Local verification {#local-verification}
 
 PostgreSQL 12, 17, and 18 passed monitoring-role SQL integration tests covering all three query-version branches. Temporary progress views include a local and foreign task with the same relation OID; the local task receives its name and the foreign task its numeric OID. A real PostgreSQL 18 index build remained visible once per metric with discovery disabled, with the database excluded, and when the monitoring role lacked CONNECT on that database. Planning tests cover PostgreSQL 12–19 and prevent duplicate collection on discovered connections.
 

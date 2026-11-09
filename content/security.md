@@ -9,7 +9,7 @@ categories: [Guide]
 
 Configure database access and HTTP access separately. Use a dedicated monitoring role for SQL, protect its credentials, and restrict the HTTP listener to monitoring clients.
 
-## Access to Protect
+## Access to Protect {#access-to-protect}
 
 | Access | What it permits or reveals | Control |
 |:---|:---|:---|
@@ -21,7 +21,7 @@ Configure database access and HTTP access separately. Use a dedicated monitoring
 | Collector SQL | Consumes database resources and may expose labels | Query review, least privilege, timeout, TTL, cardinality review |
 {.full-width .wide .expand}
 
-## Use a Dedicated Database Role
+## Use a Dedicated Database Role {#use-a-dedicated-database-role}
 
 For PostgreSQL 10+, start with a login that inherits the built-in `pg_monitor` role:
 
@@ -48,11 +48,11 @@ Size the connection limit for the selected databases. The main target pool allow
 
 For PgBouncer, add the monitoring account to `stats_users` and connect to the `pgbouncer` admin database. The bundled collectors use `SHOW` commands and do not need `admin_users` privileges.
 
-## Keep Passwords Out of Process Arguments
+## Keep Passwords Out of Process Arguments {#keep-passwords-out-of-process-arguments}
 
 Command arguments may be visible in process listings. Prefer one of these patterns:
 
-### `.pgpass`
+### `.pgpass` {#pgpass}
 
 First save the password in `./pgpass`:
 
@@ -75,7 +75,7 @@ sudo install -d -o prometheus -g prometheus -m 0750 /var/lib/prometheus
 sudo install -o prometheus -g prometheus -m 0600 ./pgpass /var/lib/prometheus/.pgpass
 ```
 
-### Secret file
+### Secret file {#secret-file}
 
 `PG_EXPORTER_URL_FILE` is convenient for systemd credentials, Docker/Kubernetes Secret mounts, and other file-based secret delivery:
 
@@ -91,7 +91,7 @@ Logs mask passwords in valid URLs and `password=` parameters. Malformed-URL diag
 
 Malformed URLs and invalid query escaping stop startup. Decoded query parameter names must be nonempty and contain neither Unicode whitespace nor `=`. Diagnostics use fixed text without the connection string or offending name. Rejecting these inputs prevents explicit TLS settings from being silently dropped during URL normalization. When `PG_EXPORTER_URL_FILE` is selected, empty or whitespace-only contents are also rejected; this check concerns the connection URL file, not TLS private-key files.
 
-## Secure the Database Connection
+## Secure the Database Connection {#secure-the-database-connection}
 
 If the URL omits `sslmode`, pg_exporter adds `sslmode=disable`. For a database connection across a network, set the TLS mode and CA path explicitly:
 
@@ -103,7 +103,7 @@ export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=
 
 The `scratch` image includes the system CA bundle and license, but no shell. Publicly trusted certificates can use the bundled roots; mount your private CA and set `sslrootcert` when using a private PKI with `sslmode=verify-ca` or `verify-full`.
 
-## Minimize HTTP Exposure
+## Minimize HTTP Exposure {#minimize-http-exposure}
 
 If Prometheus runs on the same host, bind only to loopback:
 
@@ -113,7 +113,7 @@ pg_exporter --web.listen-address=127.0.0.1:9630
 
 For remote scraping, allow only monitoring networks at the firewall or service-mesh layer. The same listener serves metrics and management endpoints.
 
-### TLS and Basic Auth
+### TLS and Basic Auth {#tls-and-basic-auth}
 
 `--web.config.file` uses the Prometheus exporter-toolkit format and is re-read on every HTTP request. A minimal example:
 
@@ -148,13 +148,13 @@ scrape_configs:
       - targets: ['db.example.com:9630']
 ```
 
-## Protect Configuration Files
+## Protect Configuration Files {#protect-configuration-files}
 
 The release packages install `/etc/pg_exporter.yml` and `/etc/default/pg_exporter` for the `prometheus` user with restrictive modes. Preserve those ownership and mode choices when copying or templating files. Do not place database passwords in the collector YAML; it is for queries and metric metadata, not connection secrets.
 
 Review custom labels before deployment. Database names, customer identifiers, tenant names, and SQL fingerprints can become Prometheus labels and spread to remote storage, alerts, and dashboards.
 
-## Verify Access
+## Verify Access {#verify-access}
 
 After starting the exporter, test the authenticated endpoint from the Prometheus host:
 
@@ -167,6 +167,6 @@ curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
 
 See [Production Deployment](/deploy/) for service examples and [Troubleshooting](/troubleshooting/) for connection and collector errors.
 
-## Toolchain security updates
+## Toolchain security updates {#toolchain-security-updates}
 
 v1.6.0 uses Go 1.27.3 and refreshed modules, including `x/net` 0.62.0. It retains the security fixes documented for v1.5.0. The [release security notes](/release/v1.5.0/#security-updates) list the fixed CVEs and distinguish static symbol/package matches from unimported module advisories. Upgrade the rebuilt binary as well as its collector configuration; updating the host compiler alone does not repair an existing binary.

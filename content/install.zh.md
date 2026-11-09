@@ -11,7 +11,7 @@ Linux 服务可选择软件包，独立运行可选择发布压缩包，Docker �
 
 软件仓库安装使用仓库当前提供的包，可能晚于 GitHub Release。需要精确安装 v1.6.0 时，使用下方带版本号的发布制品。
 
-## Pigsty
+## Pigsty {#pigsty}
 
 [Pigsty](https://pigsty.cc) 将 PG Exporter 与指标存储、告警规则和 Grafana 仪表盘一起部署。以下命令下载 Pigsty；随后按[安装指南](https://pigsty.cc/docs/setup/install/)配置并部署监控栈。
 
@@ -20,7 +20,7 @@ curl -fsSL https://repo.pigsty.io/get | bash
 cd ~/pigsty
 ```
 
-## 发布版本
+## 发布版本 {#release}
 
 从 [GitHub 发布页面](https://github.com/pgsty/pg_exporter/releases/latest)下载 RPM、DEB 或压缩包：
 
@@ -44,18 +44,18 @@ cd ~/pigsty
 
 下载 RPM 后用 `sudo dnf install ./<package>.rpm` 安装，DEB 用 `sudo apt install ./<package>.deb`。压缩包解压后，将二进制安装到 `$PATH` 中。压缩包还包含 `pg_exporter.yml`、`package/pg_exporter.default`、`package/pg_exporter.service` 与 `LICENSE`。
 
-安装后运行 `pg_exporter --version`。软件包用户按[部署指南](/zh/deploy/#systemd-部署rpmdeb-包)启动 systemd 服务；压缩包用户准备监控凭据后，按[前台运行示例](/zh/deploy/#进程设置)启动。
+安装后运行 `pg_exporter --version`。软件包用户按[部署指南](/zh/deploy/#systemd-deployment-rpmdeb-packages)启动 systemd 服务；压缩包用户准备监控凭据后，按[前台运行示例](/zh/deploy/#process-settings)启动。
 
 > [!NOTE] RPM 包名变更
 > 自 `v1.4.1` 起，官方 RPM 的包名及文件名前缀由 `pg_exporter` 统一为 `pg-exporter`，与 DEB 及仓库安装命令保持一致。新 RPM 同时声明兼容并替换旧包名 `pg_exporter`，可直接从旧版升级。
 
 从同一版本的发布页面下载 `checksums.txt`，安装前校验文件。Linux 可在下载目录运行 `sha256sum -c checksums.txt --ignore-missing`，已下载的每个制品都应显示 `OK`。macOS 使用 `shasum -a 256 <file>`，将结果与 `checksums.txt` 中对应行比较。
 
-## 软件仓库
+## 软件仓库 {#repository}
 
 `pg-exporter` 软件包也可以在 [`pigsty-infra`](https://ext.pgsty.com/repo/infra) 仓库中获取。您可以将该仓库添加到系统中，然后使用操作系统包管理器安装：
 
-### YUM
+### YUM {#yum}
 
 适用于 RHEL、RockyLinux、CentOS、Alma Linux、OracleLinux 等 EL 系发行版：
 
@@ -75,7 +75,7 @@ sudo yum makecache
 sudo yum install -y pg-exporter
 ```
 
-### APT
+### APT {#apt}
 
 适用于 Debian、Ubuntu 及兼容的 Linux 发行版：
 
@@ -93,7 +93,7 @@ sudo apt update
 sudo apt install -y pg-exporter
 ```
 
-## Docker
+## Docker {#docker}
 
 [官方镜像](https://hub.docker.com/r/pgsty/pg_exporter)支持 Linux amd64 与 arm64。拉取并确认需要部署的版本：
 
@@ -104,9 +104,9 @@ docker run --rm pgsty/pg_exporter:{{< param version >}} --version
 
 镜像内置 `/etc/pg_exporter.yml`，自定义采集器可挂载到该路径。自动发现默认启用，设置 `PG_EXPORTER_AUTO_DISCOVERY=false` 即可关闭。
 
-按 [Docker 部署示例](/zh/deploy/#docker-部署)挂载连接密钥并启动容器。镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
+按 [Docker 部署示例](/zh/deploy/#docker-deployment)挂载连接密钥并启动容器。镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
 
-## 从源码构建
+## 从源码构建 {#build-from-source}
 
 检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.6.0 要求 Go 1.27.3 或更高版本）：
 
@@ -119,9 +119,9 @@ sudo install -m 0755 /tmp/pg_exporter /usr/local/bin/pg_exporter
 sudo install -m 0644 pg_exporter.yml /etc/pg_exporter.yml
 ```
 
-源码安装的二进制位于 `/usr/local/bin/pg_exporter`，可按[前台运行示例](/zh/deploy/#进程设置)启动。需要 systemd 服务时，推荐安装 RPM/DEB 软件包；软件包会配置运行账号及使用 `/usr/bin/pg_exporter` 的服务单元。
+源码安装的二进制位于 `/usr/local/bin/pg_exporter`，可按[前台运行示例](/zh/deploy/#process-settings)启动。需要 systemd 服务时，推荐安装 RPM/DEB 软件包；软件包会配置运行账号及使用 `/usr/bin/pg_exporter` 的服务单元。
 
-## 兼容性
+## 兼容性 {#compatibility}
 
 PostgreSQL 10 及更高版本使用默认配置，其中已包含 PostgreSQL 19 分支。PostgreSQL 9.1–9.6 使用 [main 分支单独维护的 legacy 配置包](https://github.com/pgsty/pg_exporter/tree/main/legacy)，它不包含在带版本号的二进制压缩包或 RPM／DEB 中。请独立下载此配置：
 

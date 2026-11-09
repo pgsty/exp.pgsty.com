@@ -199,7 +199,7 @@ in Design records rather than the stable architecture diagram.
 ## Release history
 
 The archive contains one bilingual article per repository tag, newest first.
-The current set is 36 tags from `v0.0.1` through `v1.5.0`. GitHub has 34 formal
+The current set is 37 tags from `v0.0.1` through `v1.6.0`. GitHub has 35 formal
 Release objects; `v0.0.1` and `v0.0.5` are intentionally labeled as tag-only
 history. Do not silently drop either case.
 

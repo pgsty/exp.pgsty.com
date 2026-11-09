@@ -15,7 +15,7 @@ tags: [Design, PostgreSQL, Compatibility, Prometheus]
 > **范围：** pg_exporter `main` 提交 `d97ba38fc8390984df994b2f9ea58b43ecfc8b89` 中的 Collector 修正，基于 `72f00a4fa4e6eb7524174f2122b3fe1e1d608db4`；PostgreSQL `REL_19_RC1` 对应 `0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89`，另作 PG9.6–18 的针对性检查。这些修正从 v1.5.0 开始发布，v1.4.1 不包含。<br>
 > **交付：** 源码已提交并推送，v1.5.0 标签指向 `18912540fe5edce0ed0ee81fac0d989738ecaa87`；CI 与正式发布工作流通过，GitHub Release、RPM／DEB／压缩包和 Docker 镜像已发布。未据此声称生产部署或生产负载验收完成。
 
-## 已选定的修正
+## 已选定的修正 {#decisions}
 
 | 问题 | 决策 | 保留行为 |
 |:---|:---|:---|
@@ -25,7 +25,7 @@ tags: [Design, PostgreSQL, Compatibility, Prometheus]
 | 发布与订阅的关系数量统计集合不同 | 校正 HELP 与手册 | SQL、标签、数值和缺失样本行为；不新增序列指标 |
 {.wide .expand}
 
-## 订阅身份
+## 订阅身份 {#subscription-identity}
 
 `(datname, subname)` 可以唯一标识同一 PostgreSQL 集群中的订阅。上游对 `(subdbid, subname)` 有唯一约束，数据库名在同一集群内也唯一。查询必须通过订阅 OID 找到真实归属数据库：
 
@@ -38,7 +38,7 @@ JOIN pg_catalog.pg_database d ON d.oid = s.subdbid
 
 查询仍必须保持每个订阅一行。保留 apply leader 过滤和 PG19 对 sequence synchronization worker 的排除。数据库身份区分不同订阅；worker 过滤避免同一订阅重复出行，两者分别必要。
 
-### PG10–13 的额外权限前提
+### PG10–13 的额外权限前提 {#postgresql-10-13-permission-prerequisite}
 
 PG10–13 遗漏了 `pg_subscription.oid` 的默认公开读取权限。上游明确只为 PG14 修正，没有修改旧分支。因此，数据库标签方案在这些旧版本上有一项升级前提：
 
@@ -51,13 +51,13 @@ GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
 
 这是一项部署成本，不是自动权限修复。PG10–13 必须先授权，再部署修改后的配置。缺权限时查询失败，订阅指标缺失，但 HTTP 仍可能是 200；因此验收必须同时检查预期样本与查询错误，不能只检查 HTTP 状态。
 
-### 替代方案与迁移代价
+### 替代方案与迁移代价 {#alternatives-and-migration}
 
 额外增加 `subid` 标签可以省掉两个关联及旧版本授权。此次选定数据库身份，是为了便于按数据库阅读、筛选，并与其他 Collector 的标签习惯一致。在此需求下，两个目录关联和一项明确的旧版列授权，比新建权限包装函数或运行时 fallback 更小。不同时添加两种身份标签。
 
 保留 `id` GAUGE，不把它改成 LABEL 而删除 `pg_sub_id`。指标族名称与样本数量保持不变，但新标签会产生新时序；应检查对标签敏感的 PromQL 联接与聚合。数据库或订阅改名也会改变身份。跨集群仍由目标标签区分。
 
-## Receiver 状态字典
+## Receiver 状态字典 {#receiver-state-dictionary}
 
 已逐个对照 PG9.6 至 PG19 RC1 的发布边界源码。PG9.6–18 有六个 receiver 状态，PG19 增加 `connecting`。
 
@@ -82,7 +82,7 @@ PG9.6 自身只向非超级用户展示 receiver PID，其余统计字段为 NUL
 
 最终 legacy 查询已在 PG9.6–12 执行。真实 PG9.6.24 备库向管理员返回 streaming 状态 0，向普通 monitor 返回状态 -1；该监控角色的 HTTP 抓取返回 200 与 11 个 receiver 样本。host / port fixture 覆盖缺失字段、NULL、Unix 路径、IPv6、重复键与带引号输入；PG10–12 的新旧提取表达式结果一致。这里保留原有正则语义，包括其对含空格引号值的既有限制。
 
-## 可选复制源采集
+## 可选复制源采集 {#optional-replication-origins}
 
 当前与 legacy 配置已经设置 `skip: true`，应原样保留。文档明确由用户先准备权限，再显式启用。
 
@@ -98,7 +98,7 @@ GRANT EXECUTE ON FUNCTION
 
 标准 ACL 已允许公开读取 `pg_replication_origin` 目录，因此不需要重复授权。若部署收紧过目录 ACL，管理员还需自行准备查询所需的目录读取权限。
 
-## 发布与订阅计数
+## 发布与订阅计数 {#publication-and-subscription-counts}
 
 文档描述当前真实行为：
 
@@ -108,7 +108,7 @@ GRANT EXECUTE ON FUNCTION
 
 只修改说明与手册。保留订阅关系查询的 `DISTINCT subid, subname`，不在此补丁增加 `pg_pubseq_count`、`relkind` 标签、补零或新的对象计数定义。
 
-## 验证证据与剩余关口
+## 验证证据与剩余关口 {#validation-and-remaining-gates}
 
 最终配置和从上述 `main` 基线构建的二进制，已由非超级用户监控角色在 PG10.21、11.16、12.22、13.23、14.23、15.18、16.14、17.10、18.4 和 19 RC1 上验证。两个数据库中的同名订阅得到不同标签，重复样本键为零。PG10–13 在列授权前失败，仅在订阅库授权后仍失败，在主连接库授权后通过；始终不能读取 `subconninfo`。PG10–14 分支输出 14 个样本，PG15–18 输出 18 个，PG19 输出 42 个，差异来自原有指标族数量。
 
@@ -118,13 +118,13 @@ RC1 完整配置验证覆盖 disabled、active、自动发现开关及物理备�
 
 本地 Go race 测试、兼容 HTTP-mux 模式、`go vet`、依赖一致性，以及已有的 schema、版本覆盖、生成文件一致性、常量标签冲突检查均通过。无需修改 Go 实现或依赖。源码验证与双语文档构建独立于发布和生产验收。
 
-## 实施边界
+## 实施边界 {#implementation-boundaries}
 
 源码范围限于七个拆分 Collector 文件及两个生成配置包；companion 范围为成对的 Collector 手册和本 Design 记录。手册区分已有权限 / 计数语义与 v1.5.0 的身份、状态字典、PG9.6 SQL 修正。源码审阅、提交、推送、标签与正式制品发布均已完成；生产部署仍是独立动作。
 
 不包含驱动迁移、Gatherer 重构、运行时权限管理、新 Collector 分支、新指标族、订阅关系聚合改写或无关 legacy SQL 修复。
 
-## 上游依据
+## 上游依据 {#primary-references}
 
 - [RC1 订阅身份约束](https://github.com/postgres/postgres/blob/0b8bff042a997fe50fcd1c4c83b9ef1cc9ed8a89/src/include/catalog/pg_subscription.h)
 - [PG14 对订阅列权限的修正](https://github.com/postgres/postgres/commit/3590680b85a8e51ef8df550e5a10dedd0d2dfd88)

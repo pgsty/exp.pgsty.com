@@ -11,7 +11,7 @@ PG Exporter reads PostgreSQL or PgBouncer statistics and exposes them as Prometh
 
 Each exporter process monitors one PostgreSQL instance or one PgBouncer instance. To monitor both, run two processes.
 
-## How collection works
+## How collection works {#how-collection-works}
 
 A collector is a SQL query with a YAML definition. The definition tells the exporter how to convert result columns into metrics and labels.
 
@@ -21,13 +21,13 @@ When Prometheus requests `/metrics`, the exporter runs the selected queries and 
 
 The exporter provides the HTTP endpoint. Prometheus stores the history; Grafana or another dashboard tool displays it.
 
-## What you can monitor
+## What you can monitor {#what-you-can-monitor}
 
 The bundled collectors cover activity, replication, WAL, locks, transactions, database objects, and selected extensions. They use PostgreSQL monitoring views and PgBouncer administration commands. [Bundled collectors](/collectors/) lists their metrics and required permissions.
 
 The exporter also reports its own state. For example, `pg_up` reports whether the main database scrape completed without a fatal error. `pg_version` identifies the database version, and `pg_in_recovery` identifies its role.
 
-## Customize collection
+## Customize collection {#customize-collection}
 
 Start with the bundled configuration, [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/pg_exporter.yml). Add queries when you need more metrics. Each collector can have its own selection conditions, timeout, and cache TTL.
 
@@ -35,13 +35,13 @@ After you change the configuration, reload it through `/reload`. The exporter ch
 
 [Collector configuration](/config/) explains the YAML fields and gives examples.
 
-## Check collection
+## Check collection {#check-collection}
 
 Use `/explain` to see the selected collectors for the main database. Use `/stat` to see their query counts, error counts, and durations. The [HTTP API](/api/) also provides health checks and primary/replica endpoints.
 
 For connection errors, missing metrics, or slow queries, follow [troubleshooting](/troubleshooting/).
 
-## Versions and next steps
+## Versions and next steps {#versions-and-next-steps}
 
 These manuals describe **v{{< param version >}}**. The default configuration contains PostgreSQL 10–19 and PgBouncer 1.8–1.25 branches. A separate legacy configuration covers PostgreSQL 9.1–9.6. See [compatibility](/compatibility/) for details.
 

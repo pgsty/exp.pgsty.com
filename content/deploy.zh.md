@@ -11,7 +11,7 @@ categories: [参考]
 
 [命令参考](/zh/cmd/)列出参数、环境变量、默认值与优先级。命令行设置优先于对应的环境变量；日志、动作与 exporter-toolkit Web 参数只提供命令行形式。采集 SQL 与指标定义使用 [YAML 配置](/zh/config/)。
 
-## 进程设置
+## 进程设置 {#process-settings}
 
 以下前台运行示例通过 `.pgpass` 提供数据库密码：
 
@@ -25,15 +25,15 @@ pg_exporter \
 
 自动发现默认启用。启动时数据库不可用，exporter 仍会启动 HTTP 服务并在后台重试。设置 `--fail-fast` 后，初次数据库检查失败会使进程退出。
 
-### 连接 URL 的来源
+### 连接 URL 的来源 {#connection-url-sources}
 
-使用 `--url` 或 `PG_EXPORTER_URL` 指定目标，也可通过 `PG_EXPORTER_URL_FILE` 读取密钥文件。完整[优先级规则](/zh/cmd/#目标与配置优先级)见命令参考。URL 未指定 `sslmode` 时会使用 `disable`；远程 TLS 连接需显式设置该参数。
+使用 `--url` 或 `PG_EXPORTER_URL` 指定目标，也可通过 `PG_EXPORTER_URL_FILE` 读取密钥文件。完整[优先级规则](/zh/cmd/#target-and-configuration-precedence)见命令参考。URL 未指定 `sslmode` 时会使用 `disable`；远程 TLS 连接需显式设置该参数。
 
 使用 URL 文件时，清除 `PG_EXPORTER_URL`、`PGURL`，并省略 `--url`。软件包服务还需删除 `/etc/default/pg_exporter` 中默认的 `PG_EXPORTER_URL` 行。
 
-## 监控用户与凭据
+## 监控用户与凭据 {#monitoring-user-and-credentials}
 
-### 创建监控用户
+### 创建监控用户 {#create-the-monitoring-user}
 
 ```sql
 CREATE ROLE monitor WITH LOGIN PASSWORD 'replace-this-secret' CONNECTION LIMIT 5;
@@ -42,7 +42,7 @@ GRANT pg_monitor TO monitor;   -- PostgreSQL 10+
 
 主目标连接池最多三个连接，每个额外发现的数据库最多一个。按这个总量及共用角色的 exporter 数量设置 `CONNECTION LIMIT`。如果角色没有目标库的 `CONNECT` 权限，需要逐库授权；可选视图与扩展可能需要额外授权，参见[安全指南](/zh/security/)。
 
-### 使用 .pgpass 管理密码
+### 使用 .pgpass 管理密码 {#manage-passwords-with-pgpass}
 
 把密码从 URL 中拿掉，交给 libpq 的 `.pgpass` 机制：
 
@@ -58,17 +58,17 @@ export PG_EXPORTER_URL='postgres://monitor@localhost:5432/postgres'
 
 软件包服务使用 `prometheus` 用户。先用 `getent passwd prometheus` 检查主目录，再把 `.pgpass` 安装到该目录。软件包新建账号的主目录为 `/var/lib/prometheus`，目录与文件的安装命令见[安全指南](/zh/security/#pgpass)。
 
-### 数据库连接 TLS
+### 数据库连接 TLS {#tls-for-the-database-connection}
 
 ```bash
 export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=verify-full&sslrootcert=/etc/pg_exporter/ca.crt'
 ```
 
-### HTTP 端口侧的保护
+### HTTP 端口侧的保护 {#protecting-the-http-port}
 
 `/metrics` 之外，`/reload`、`/explain`、`/stat` 属于管理端点：能访问该端口的任何人都可以读取配置与运行态信息、触发重载。如果 exporter 暴露在共享网络中，请通过 `--web.config.file`（[exporter-toolkit web 配置](https://github.com/prometheus/exporter-toolkit/blob/v0.20.0/docs/web-configuration.md)）启用 TLS/Basic Auth，或在防火墙/反向代理层限制来源。
 
-## Systemd 部署（RPM/DEB 包）
+## Systemd 部署（RPM/DEB 包） {#systemd-deployment-rpmdeb-packages}
 
 软件包将二进制安装到 `/usr/bin/pg_exporter`，采集器安装到 `/etc/pg_exporter.yml`，运行设置放在 `/etc/default/pg_exporter`。RPM 的服务单元位于 `/usr/lib/systemd/system/pg_exporter.service`，DEB 位于 `/lib/systemd/system/pg_exporter.service`：
 
@@ -126,7 +126,7 @@ sudo journalctl -u pg_exporter -n 50 --no-pager
 curl -fsS -X POST http://127.0.0.1:9630/reload
 ```
 
-## Docker 部署
+## Docker 部署 {#docker-deployment}
 
 将实际数据库连接 URL 写入 `pg_exporter.url`。此例要求数据库证书与 `db.example.com` 匹配，并准备 CA 文件 `ca.crt`：
 
@@ -175,7 +175,7 @@ curl -fsS http://127.0.0.1:9630/metrics
 
 将 9630 端口发布到 Prometheus 可达的地址，并限制网络来源。如果 Prometheus 就在 Docker 宿主机上，使用 `-p 127.0.0.1:9630:9630`。
 
-## Kubernetes 部署
+## Kubernetes 部署 {#kubernetes-deployment}
 
 在 exporter 所在命名空间中，用上述 URL 与 CA 文件创建 Secret：
 
@@ -250,7 +250,7 @@ kubectl port-forward service/pg-exporter 9630:9630
 
 保持端口转发运行，在另一个终端检查 `/metrics`。按实际采集负载调整资源请求与上限；若启用 HTTP 认证，探针也需要相应凭据。
 
-## 自动发现
+## 自动发现 {#auto-discovery}
 
 自动发现会将同一 PostgreSQL 实例中的数据库加入监控。可用包含名单限定范围：
 
@@ -267,7 +267,7 @@ URL 指定的数据库始终会被监控。包含/排除名单只作用于额外
 - 每次抓取检查数据库的新增或删除。
 - `--no-auto-discovery` 将采集范围限定在 URL 指定的数据库。
 
-## 监控 PgBouncer
+## 监控 PgBouncer {#monitoring-pgbouncer}
 
 将 URL 的数据库名设为 `pgbouncer` 即可切换到 PgBouncer 模式（以此触发自动检测）：
 
@@ -280,9 +280,9 @@ pg_exporter --namespace=pgbouncer --web.listen-address=:9631
 
 未指定命名空间时，自监控指标默认使用 `pgbouncer` 前缀。软件包环境文件设置了 `PG_EXPORTER_NAMESPACE=pg`，部署 PgBouncer 服务时应改为 `pgbouncer`。该设置只影响内置自监控指标，不改变 YAML 定义的指标名。
 
-## Prometheus 抓取与告警
+## Prometheus 抓取与告警 {#prometheus-scraping-and-alerting}
 
-### 抓取配置
+### 抓取配置 {#scrape-configuration}
 
 ```yaml
 scrape_configs:
@@ -311,7 +311,7 @@ scrape_configs:
 
 可先使用 15 秒抓取间隔与 10 秒超时。采集结果在 `ttl` 到期前可以复用，内置采集器常用 10 秒 TTL。缩短间隔或增加监控库之前，先测量完整抓取的耗时。
 
-### 告警规则
+### 告警规则 {#alert-rules}
 
 以下示例使用默认的 `pg` 自监控指标命名空间：
 
@@ -344,6 +344,6 @@ groups:
           summary: "pg_exporter 抓取缓慢 ({{ $labels.instance }})"
 ```
 
-### 基于角色的流量路由
+### 基于角色的流量路由 {#role-based-traffic-routing}
 
-`/primary`、`/replica`、`/read` 等健康检查端点可以直接充当 HAProxy 等负载均衡器的健康检查探针，实现主从读写分离。端点语义与完整的 HAProxy 配置示例见 [API 参考](/zh/api/#流量路由)。
+`/primary`、`/replica`、`/read` 等健康检查端点可以直接充当 HAProxy 等负载均衡器的健康检查探针，实现主从读写分离。端点语义与完整的 HAProxy 配置示例见 [API 参考](/zh/api/#traffic-routing)。

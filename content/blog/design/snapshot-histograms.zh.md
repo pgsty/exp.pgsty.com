@@ -14,8 +14,8 @@ tags: [设计, Histogram, Prometheus, PostgreSQL]
 
 > **状态：** 已随 [v1.4.0](/zh/release/v1.4.0/) 发布。<br>
 > **决策日期：** 2026-07-11；2026-07-17 修订。<br>
-> **最后核验：** 2026-10-13。<br>
-> **范围：** 稳定版 `v1.4.1` 的 `HISTOGRAM` 列与 `pg_xact_age` 采集器，并对照开发提交 `c0ba58a` 核验。<br>
+> **最后核验：** 2026-11-09。<br>
+> **范围：** 稳定版 `v1.6.0` 的 `HISTOGRAM` 列与 `pg_xact_age` 采集器，并对照 `6bee809` 与开发提交 `c0ba58a` 核验。<br>
 > **交付进度：** 已实现、合并、打标签并发布软件包。针对性本地测试已通过；部署与生产运行未核验。
 
 PG Exporter 快照直方图对一次 SQL 执行返回的观测值分组。每次执行都重建分布。由于值可能下降，桶、计数和总和都以 Gauge 序列输出。
@@ -127,4 +127,4 @@ COMMIT;
 
 Exporter 无需保存事件历史，就能提供可聚合的当前分布。虽然序列使用常见 Histogram 后缀，仪表盘查询仍须遵循快照语义。
 
-完整语法见[采集器配置](/zh/config/#直方图列histogram)，发布内容见 [v1.4.0](/zh/release/v1.4.0/)。普通累计 Histogram 的查询方法见 Prometheus [Histograms and summaries](https://prometheus.io/docs/practices/histograms/)。
+完整语法见[采集器配置](/zh/config/#histogram-columns-histogram)，发布内容见 [v1.4.0](/zh/release/v1.4.0/)。普通累计 Histogram 的查询方法见 Prometheus [Histograms and summaries](https://prometheus.io/docs/practices/histograms/)。

@@ -11,9 +11,7 @@ YAML **采集器** 定义 SQL 查询、输出指标和执行条件。本页适�
 
 配置可以是单个 YAML 文件或一个目录。默认 `pg_exporter.yml` 由 [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config) 目录下的 57 个采集器文件和 1 个配置参考文件合并而成。
 
---------
-
-## 配置加载
+## 配置加载 {#configuration-loading}
 
 PG Exporter 按以下顺序搜索配置：
 
@@ -30,9 +28,7 @@ PG Exporter 按以下顺序搜索配置：
 - 若其他文件提供了有效采集器，加载器会跳过无效文件并记录警告。目录中有 YAML 文件但没有有效采集器定义时，加载失败
 - 选中的文件或目录就是完整配置，不会叠加其他标准路径。显式指定的路径加载失败时不会回退
 
---------
-
-## 简单的 Gauge 采集器
+## 简单的 Gauge 采集器 {#simple-gauge-collector}
 
 先按[快速上手](/zh/start/#run-and-verify)设置包含目标和凭据的 `PG_EXPORTER_URL`。将下列内容保存为 `connections.yml`；它导出连接总数及各状态的连接数。
 
@@ -69,11 +65,9 @@ pg_exporter --config=./connections.yml
 curl -fsS http://127.0.0.1:9630/metrics | grep '^pg_connections_'
 ```
 
-此文件只包含示例采集器。要在默认指标上增加自己的指标，见[自定义采集器](#自定义采集器)。
+此文件只包含示例采集器。要在默认指标上增加自己的指标，见[自定义采集器](#custom-collectors)。
 
---------
-
-## 采集器结构
+## 采集器结构 {#collector-structure}
 
 每个顶层键标识一个采集器分支。下面展示可用字段，使用时将 SQL 和列名替换为实际查询：
 
@@ -129,11 +123,9 @@ collector_branch_name:           # 此采集器的唯一标识符
 - SQL 结果必须包含所有 `LABEL` 和 `HISTOGRAM` 列，即使返回零行也一样。缺少这些列会拒绝整个采集器结果。缺失的 `GAUGE` 或 `COUNTER` 列会被记录到日志并略过
 - 如果使用单行内联 `metrics` 写法，`description` 建议始终使用双引号包裹，避免 YAML 歧义
 
---------
+## 核心配置元素 {#core-configuration-elements}
 
-## 核心配置元素
-
-### 采集器分支名称
+### 采集器分支名称 {#collector-branch-name}
 
 顶层键标识分支，`name` 设置指标前缀：
 
@@ -146,7 +138,7 @@ pg_stat_database:  # 必须唯一
 
 `priority` 控制执行顺序，数值越小越先执行。致命采集器先于非致命采集器执行。目录模式中，未指定的优先级为 `100 +` 成功加载文件的序号；单文件中则保留为零。有顺序要求时，请设置不同的优先级。
 
-### 查询定义
+### 查询定义 {#query-definition}
 
 检索指标的 SQL 查询：
 
@@ -163,7 +155,7 @@ query: |
   WHERE datname NOT IN ('template0', 'template1')
 ```
 
-### 指标类型
+### 指标类型 {#metric-types}
 
 将每个结果列声明为数值、标签或忽略列。标量指标名为 `<采集器名称>_<列名>`。列的 `rename` 修改指标后缀或标签名；列的 `name` 修改用于查找 SQL 结果的源列名。
 
@@ -174,9 +166,8 @@ query: |
 | `HISTOGRAM` | 快照直方图，派生 `_bucket` / `_count` / `_sum` 序列 | 事务年龄分布 |
 | `LABEL`     | 用作 Prometheus 标签                          | 数据库名称  |
 | `DISCARD`   | 忽略此列                                      | 内部值    |
-{.full-width}
 
-### 直方图列（HISTOGRAM）
+### 直方图列（HISTOGRAM） {#histogram-columns-histogram}
 
 `HISTOGRAM` 从 v1.4.0 起可用，按标签值将观测分组，每个非 NULL 值贡献一次观测。
 输出为三组 Gauge 指标：`<采集器>_<列名>_bucket`、`_count` 和 `_sum`。
@@ -218,7 +209,7 @@ pg_xact_age:
 histogram_quantile(0.95, pg_xact_age_seconds_bucket)
 ```
 
-### 缓存控制（TTL）
+### 缓存控制（TTL） {#cache-control-ttl}
 
 `ttl` 参数控制结果缓存：
 
@@ -236,7 +227,7 @@ pg_table_bloat:
 
 刷新失败时会清除旧结果。错误或谓词跳过的结果会保留到主查询 TTL 到期。谓词结果还可以设置独立的缓存时间。
 
-### 超时控制
+### 超时控制 {#timeout-control}
 
 防止查询运行时间过长：
 
@@ -250,7 +241,7 @@ timeout: -1    # 关闭该采集器的查询超时
 
 缓存 TTL 和超时配置拒绝 NaN、无穷大以及会使 Go `time.Duration` 溢出的正数。缓存 TTL 仍须非负；有限的负超时仍表示关闭查询期限。
 
-### 请求生命周期
+### 请求生命周期 {#request-lifetime}
 
 自 v1.6.0 起，采集、等待与响应写入阶段合计最多接纳两个指标请求。采集仍串行；第二个请求在剩余预算内等待，更多请求返回 HTTP 503。预算默认为 30 秒，合法、有限且为正数的 `X-Prometheus-Scrape-Timeout-Seconds` 请求头可以缩短它。等待期间取消的请求不执行 SQL。
 
@@ -260,7 +251,7 @@ timeout: -1    # 关闭该采集器的查询超时
 
 刷新失败沿用原有失败 TTL。尤其是负数 timeout 的 fatal 采集器，被取消后会缓存 fatal 失败；后续有效抓取可能对该失败计数并返回 `pg_up 0`，直到成功刷新。建议 fatal 采集器保留正数 timeout。设计理由见 [采集生命周期](/zh/design/scrape-lifetime/)。
 
-### 版本兼容性
+### 版本兼容性 {#version-compatibility}
 
 控制哪些 PostgreSQL 版本可以运行此采集器：
 
@@ -279,9 +270,7 @@ max_version: 140000  # 低于 PostgreSQL 14.0
 - `190000` 表示 19.0
 - `90600` 表示 9.6（Legacy 配置场景）
 
---------
-
-## 执行模型
+## 执行模型 {#execution-model}
 
 采集器按以下步骤工作：
 
@@ -291,13 +280,11 @@ max_version: 140000  # 低于 PostgreSQL 14.0
 
 元数据预检成功后，连接用户名、Schema 集合或扩展集合变化也会触发重新规划。新增的符合条件采集器在下一次抓取生效；依赖被移除后，对应采集器不再选中。集合不变则保留计划和缓存；重新规划与重载一样会重置查询统计与缓存。
 
---------
-
-## 标签系统
+## 标签系统 {#tag-system}
 
 标签控制采集器的执行时机和位置：
 
-### 内置标签
+### 内置标签 {#built-in-tags}
 
 | 标签                    | 描述                   |
 |-----------------------|----------------------|
@@ -305,11 +292,10 @@ max_version: 140000  # 低于 PostgreSQL 14.0
 | `primary` / `master` / `leader`  | 仅在主服务器上执行            |
 | `standby` / `replica` / `slave` | 仅在从服务器上执行            |
 | `pgbouncer`           | 仅用于 PgBouncer 连接     |
-{.full-width}
 
 `cluster` 不会协调不同 exporter 进程或 PostgreSQL 实例。采集器上的所有标签都必须满足。
 
-### 前缀标签
+### 前缀标签 {#prefixed-tags}
 
 | 前缀 | 示例 | 描述 |
 |------|------|------|
@@ -318,9 +304,8 @@ max_version: 140000  # 低于 PostgreSQL 14.0
 | `extension:` | `extension:pg_stat_statements` | 仅当扩展已安装时执行 |
 | `schema:` | `schema:public` | 仅当模式存在时执行 |
 | `not:` | `not:slow` | 当导出器没有该标签时执行 |
-{.full-width}
 
-### 自定义标签
+### 自定义标签 {#custom-tags}
 
 向导出器传递自定义标签：
 
@@ -335,9 +320,7 @@ expensive_metrics:
   tags: [critical]  # 仅在有 'critical' 标签时运行
 ```
 
---------
-
-## 谓词查询
+## 谓词查询 {#predicate-queries}
 
 在执行主查询之前进行条件检查：
 
@@ -355,11 +338,9 @@ predicate_queries:
 
 给谓词添加 `ttl: 60`，可以缓存其通过或跳过结果 60 秒。默认值为 0，在主查询每次刷新时重新检查。错误不会写入谓词缓存。`--disable-cache` 不会绕过谓词缓存。
 
---------
+## 指标定义 {#metric-definition}
 
-## 指标定义
-
-### 基本定义
+### 基本定义 {#basic-definition}
 
 ```yaml
 metrics:
@@ -368,7 +349,7 @@ metrics:
       description: "已连接的后端进程数"
 ```
 
-### 高级选项
+### 高级选项 {#advanced-options}
 
 ```yaml
 metrics:
@@ -380,11 +361,9 @@ metrics:
       description: "检查点写入时间（秒）"
 ```
 
---------
-
 对 `GAUGE` 和 `COUNTER`，SQL NULL 默认转换为 `NaN`，可用 `default` 指定替代值。数值和默认值都会乘以 `scale`（默认 1）。时间戳转换为 Unix 秒数，布尔值转换为 0 或 1，两者不受缩放影响。NULL 标签转换为空字符串。
 
-## 采集器组织
+## 采集器组织 {#collector-organization}
 
 PG Exporter 自带预先组织好的采集器：
 
@@ -403,11 +382,9 @@ PG Exporter 自带预先组织好的采集器：
 | 1000+ | 扩展        | 扩展特定指标        |
 {.full-width .wide .expand}
 
---------
+## 实际示例 {#real-world-examples}
 
-## 实际示例
-
-### 带标签的 Counter
+### 带标签的 Counter {#counter-with-labels}
 
 ```yaml
 pg_table_stats:
@@ -435,7 +412,7 @@ pg_table_stats:
     - n_dead_tup: {usage: GAUGE, description: "死亡元组数"}
 ```
 
-### 版本特定采集器
+### 版本特定采集器 {#version-specific-collector}
 
 此示例使用 PostgreSQL 14–17 的列。PostgreSQL 18 将 WAL 耗时统计移入 `pg_stat_io`，内置 `pg_wal` 采集器为此提供了不同分支。
 
@@ -462,7 +439,7 @@ pg_wal_stats:
     - wal_sync_time: {usage: COUNTER, scale: 0.001}
 ```
 
-### 扩展依赖采集器
+### 扩展依赖采集器 {#extension-dependent-collector}
 
 此示例要求 PostgreSQL 13+ 的 `pg_stat_statements` 结构，且扩展所在模式已加入搜索路径。
 
@@ -484,11 +461,9 @@ pg_stat_statements_metrics:
     - mean_time: {usage: GAUGE, scale: 0.001}
 ```
 
---------
+## 自定义采集器 {#custom-collectors}
 
-## 自定义采集器
-
-### 创建自己的指标
+### 创建自己的指标 {#creating-your-own-metrics}
 
 1. 在默认配置的基础上增加指标时，先将完整配置复制到新目录：
 
@@ -528,7 +503,7 @@ pg_exporter --explain --fail-fast --config=/etc/pg_exporter/
 
 软件包服务首次切换到此目录时，将 `/etc/default/pg_exporter` 中的 `PG_EXPORTER_CONFIG` 改为 `/etc/pg_exporter`，再重启服务。之后修改目录中的 YAML 文件，可用 `POST /reload` 重载。
 
-### 条件指标
+### 条件指标 {#conditional-metrics}
 
 使用谓词查询实现条件指标：
 
@@ -565,15 +540,13 @@ partition_metrics:
     - total_size: {usage: GAUGE}
 ```
 
---------
-
-## 性能优化
+## 性能优化 {#performance-optimization}
 
 用监控角色测量 SQL 耗时。为高开销采集器设置较长的 TTL，并给正常执行留足超时时间。不需要的采集器可设置 `skip: true`。实例级 SQL 加上 `tags: [cluster]`，避免被自动发现的数据库重复执行。
 
 控制标签取值数量，同时保留能唯一标识结果行的列。例如，跨数据库采集表指标时，表名还需要配合数据库和模式名。不需要对象级序列时，优先在 SQL 中汇总。
 
-### 监控采集器性能
+### 监控采集器性能 {#monitoring-collector-performance}
 
 检查采集器执行统计：
 
@@ -585,11 +558,9 @@ curl http://localhost:9630/stat
 curl -s http://localhost:9630/metrics | grep -E 'pg_exporter_query_scrape_(duration|error_count)'
 ```
 
---------
+## 配置故障排查 {#troubleshooting-configuration}
 
-## 配置故障排查
-
-### 验证配置
+### 验证配置 {#validate-configuration}
 
 ```bash
 # 干运行 - 显示解析后的配置
@@ -599,7 +570,7 @@ pg_exporter --dry-run
 pg_exporter --explain
 ```
 
-### 常见问题
+### 常见问题 {#common-issues}
 
 | 问题    | 解决方案               |
 |-------|--------------------|
@@ -607,9 +578,8 @@ pg_exporter --explain
 | 抓取缓慢  | 增加 TTL、添加超时、禁用昂贵查询 |
 | 内存使用高 | 汇总结果或筛选明确的对象集合   |
 | 权限错误  | 验证监控用户的查询权限        |
-{.full-width}
 
-### 调试日志
+### 调试日志 {#debug-logging}
 
 启用调试日志进行故障排查：
 

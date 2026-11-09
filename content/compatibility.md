@@ -9,7 +9,7 @@ categories: [Reference]
 
 Choose an artifact for the exporter host and a collector configuration for the database version. Then install any views or extensions required by the collectors you enable. This page describes the default configuration shipped with v{{< param version >}} and the separately maintained legacy bundle.
 
-## Database Targets
+## Database Targets {#database-targets}
 
 | Target | Status | Configuration |
 |:---|:---|:---|
@@ -24,7 +24,7 @@ PostgreSQL 19 branches cover recovery, locks, autovacuum scores, WAL, subscripti
 
 The bundled PgBouncer collectors require 1.8 or later. That version changed the `SHOW STATS` fields used by these queries. The latest configured branches have no upper version bound. When you upgrade PgBouncer, check collector results against the [upstream changelog](https://www.pgbouncer.org/changelog.html).
 
-## Release Validation
+## Release Validation {#release-validation}
 
 The v1.6.0 release artifacts passed primary collection as a non-superuser on PostgreSQL 9.2–9.6 with the legacy bundle, PostgreSQL 10–18 and 19 RC1 with the default bundle, and PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, concurrent scrape/health/reload, HTTPS authentication, package installation, and upgrades from 1.5.0 were also tested. PostgreSQL 19 evidence refers to RC1. Windows and Intel macOS artifacts received static checks, not runtime acceptance.
 
@@ -32,7 +32,7 @@ A separate follow-up verified PostgreSQL 9.1–9.6 with legacy configuration fro
 
 ## Metric and Dashboard Compatibility {#metric-compatibility}
 
-An exporter upgrade and a PostgreSQL major-version upgrade can change different parts of the metric contract. The comparisons below use the bundled SQL collectors at tags [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config) and [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config), including each column's `rename` setting. They describe exported metric names, not just PostgreSQL view columns or YAML filenames. Custom collectors and application-specific alert rules need their own review.
+An exporter upgrade and a PostgreSQL major-version upgrade can change different parts of the metric contract. The comparisons below use the bundled SQL collectors at tags [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config), [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config), and [`v1.6.0`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config), including each column's `rename` setting. They describe exported metric names, not just PostgreSQL view columns or YAML filenames. Custom collectors and application-specific alert rules need their own review.
 
 ### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}
 
@@ -142,7 +142,7 @@ groups:
 
 Adapt the selector and matching labels to your target identity; monitor `up` and `pg_up` failures separately. For a known individual target, [`absent_over_time()`](https://prometheus.io/docs/prometheus/latest/querying/functions/#absent_over_time) is another option. A fleet-wide `absent(metric)` alone cannot detect one missing target while others still emit the metric. Likewise, `pg_recv_state != 0` cannot detect a receiver row that has disappeared; streaming-standby monitoring needs a separate expected-receiver presence check.
 
-## v{{< param version >}} Release Artifacts
+## v{{< param version >}} Release Artifacts {#release-artifacts}
 
 | Artifact | Operating system | Architectures |
 |:---|:---|:---|
@@ -159,11 +159,11 @@ Release archives include the binary, merged default config, license, default env
 > [!NOTE] RPM name since v1.4.1
 > The official RPM package and artifact prefix is `pg-exporter`. It declares `Provides` and `Obsoletes` for the former `pg_exporter` name, so direct upgrades remain possible. The executable and configuration names remain `pg_exporter` and `/etc/pg_exporter.yml`.
 
-## Container Constraints
+## Container Constraints {#container-constraints}
 
 The `scratch` image includes the system CA bundle and license, but no shell. Publicly trusted certificates can use the bundled roots; mount your private CA and set `sslrootcert` when using a private PKI with `sslmode=verify-ca` or `verify-full`.
 
-## Collector-Level Requirements
+## Collector-Level Requirements {#collector-level-requirements}
 
 Collector selection also depends on the target database:
 

@@ -11,7 +11,7 @@ A YAML **collector** defines a SQL query, its metrics, and when to run it. This 
 
 Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config).
 
-## Configuration Loading
+## Configuration Loading {#configuration-loading}
 
 PG Exporter searches for configuration in the following order:
 
@@ -28,7 +28,7 @@ Directory mode details:
 - Invalid files are skipped with a warning when other files provide valid collectors. A directory with YAML files but no valid collector definitions returns an error
 - The selected file or directory is the complete configuration. It is not merged with another standard path. An explicit path that fails to load does not fall back to the defaults
 
-## Simple Gauge Collector
+## Simple Gauge Collector {#simple-gauge-collector}
 
 Set `PG_EXPORTER_URL` with your target and credentials as shown in [Quick Start](/start/#run-and-verify). Save the following definition as `connections.yml`. It exports the total connection count and the counts by state.
 
@@ -67,7 +67,7 @@ curl -fsS http://127.0.0.1:9630/metrics | grep '^pg_connections_'
 
 This file contains only the example collector. To add metrics to the default configuration, see [Custom Collectors](#custom-collectors).
 
-## Collector Structure
+## Collector Structure {#collector-structure}
 
 Each top-level key identifies one collector branch. This example shows the available fields; replace the SQL and column names with those for your query:
 
@@ -123,9 +123,9 @@ Validation rules:
 - SQL results must include every `LABEL` and `HISTOGRAM` column, even for zero-row results. Missing either rejects the whole collector result. A missing `GAUGE` or `COUNTER` column is logged and omitted
 - If you use one-line inline `metrics` definitions, keep `description` values double-quoted to avoid YAML ambiguity
 
-## Core Configuration Elements
+## Core Configuration Elements {#core-configuration-elements}
 
-### Collector Branch Name
+### Collector Branch Name {#collector-branch-name}
 
 The top-level key identifies the branch; `name` sets its metric prefix:
 
@@ -138,7 +138,7 @@ Branches for different server versions can share `name`. Their version ranges an
 
 `priority` sets execution order, with lower values first. Fatal collectors run before non-fatal collectors. In directory mode, omitted priorities become `100 +` the successfully loaded file’s position. In a single file, an omitted priority stays zero. Set distinct priorities when order matters.
 
-### Query Definition
+### Query Definition {#query-definition}
 
 The SQL query that retrieves metrics:
 
@@ -155,7 +155,7 @@ query: |
   WHERE datname NOT IN ('template0', 'template1')
 ```
 
-### Metric Types
+### Metric Types {#metric-types}
 
 Declare each result column as a value, label, or discarded column. A scalar metric is named `<collector name>_<column name>`. Column `rename` replaces the metric suffix or label name; column `name` overrides the SQL column name used for lookup.
 
@@ -167,7 +167,7 @@ Declare each result column as a value, label, or discarded column. A scalar metr
 | `LABEL`     | Use as a Prometheus label                                        | Database name                |
 | `DISCARD`   | Ignore this column                                               | Internal values              |
 
-### Histogram Columns (HISTOGRAM)
+### Histogram Columns (HISTOGRAM) {#histogram-columns-histogram}
 
 `HISTOGRAM`, available since v1.4.0, groups observations by their label values.
 Each non-NULL value contributes one observation. The output consists of three
@@ -215,7 +215,7 @@ For the example above, the 95th percentile is:
 histogram_quantile(0.95, pg_xact_age_seconds_bucket)
 ```
 
-### Cache Control (TTL)
+### Cache Control (TTL) {#cache-control-ttl}
 
 The `ttl` parameter controls result caching:
 
@@ -236,7 +236,7 @@ the metric. `--disable-cache` forces main-query refreshes.
 A failed refresh clears the old result. The error or predicate-skip result remains
 cached until the main TTL expires. Predicate results can have a separate TTL.
 
-### Timeout Control
+### Timeout Control {#timeout-control}
 
 Prevent queries from running too long:
 
@@ -252,7 +252,7 @@ the separate `--connect-timeout` flag, measured in milliseconds.
 
 Cache TTLs and timeouts reject NaN, infinity, and positive values that overflow Go's `time.Duration`. Cache TTLs remain nonnegative; finite negative timeouts still disable the deadline.
 
-### Request Lifetime
+### Request Lifetime {#request-lifetime}
 
 Since v1.6.0, at most two metrics requests are admitted across collection, waiting, and response writing. Collection is serial; the second request waits within its remaining budget, and further requests receive HTTP 503. The budget is 30 seconds, shortened by a valid positive finite `X-Prometheus-Scrape-Timeout-Seconds` header. A canceled waiter executes no SQL.
 
@@ -262,7 +262,7 @@ An interrupted pass does not increment `pg_exporter_scrape_error_count` or `pg_e
 
 Failed refreshes retain the existing failure TTL. In particular, canceling a negative-timeout fatal collector caches a fatal failure: a later live scrape can count that failure and report `pg_up 0` until a successful refresh. Keep a positive timeout on fatal collectors. See [scrape lifetime](/design/scrape-lifetime/) for the rationale.
 
-### Version Compatibility
+### Version Compatibility {#version-compatibility}
 
 Control which PostgreSQL versions can run this collector:
 
@@ -282,7 +282,7 @@ Version numbers follow PostgreSQL `server_version_num` rules:
 - `190000` = 19.0
 - `90600` = 9.6, relevant when using the legacy config bundle
 
-## Execution Model
+## Execution Model {#execution-model}
 
 A collector passes through three steps:
 
@@ -292,11 +292,11 @@ A collector passes through three steps:
 
 Successful metadata prechecks also replan when the connected username, schema set, or extension set changes. New eligible collectors appear on the next scrape; removed dependencies stop selecting their collectors. Unchanged sets retain the plan and caches. Replanning resets query statistics and caches, as a reload does.
 
-## Tag System
+## Tag System {#tag-system}
 
 Tags control when and where collectors execute:
 
-### Built-in Tags
+### Built-in Tags {#built-in-tags}
 
 | Tag                   | Description                         |
 |-----------------------|-------------------------------------|
@@ -308,7 +308,7 @@ Tags control when and where collectors execute:
 `cluster` does not coordinate separate exporter processes or PostgreSQL instances.
 All tags on a collector must match.
 
-### Prefixed Tags
+### Prefixed Tags {#prefixed-tags}
 
 | Prefix       | Example                        | Description                 |
 |--------------|--------------------------------|-----------------------------|
@@ -318,7 +318,7 @@ All tags on a collector must match.
 | `schema:`    | `schema:public`                | Only if schema exists       |
 | `not:`       | `not:slow`                     | NOT when exporter has tag   |
 
-### Custom Tags
+### Custom Tags {#custom-tags}
 
 Pass custom tags to the exporter:
 
@@ -333,7 +333,7 @@ expensive_metrics:
   tags: [critical]  # Only runs with 'critical' tag
 ```
 
-## Predicate Queries
+## Predicate Queries {#predicate-queries}
 
 Execute conditional checks before main query:
 
@@ -355,9 +355,9 @@ Add `ttl: 60` to a predicate to cache its pass/skip result for 60 seconds. The
 default, 0, checks it whenever the main query refreshes. Errors are not stored in
 the predicate cache. `--disable-cache` does not bypass predicate caches.
 
-## Metric Definition
+## Metric Definition {#metric-definition}
 
-### Basic Definition
+### Basic Definition {#basic-definition}
 
 ```yaml
 metrics:
@@ -366,7 +366,7 @@ metrics:
       description: "Number of backends connected"
 ```
 
-### Advanced Options
+### Advanced Options {#advanced-options}
 
 ```yaml
 metrics:
@@ -383,7 +383,7 @@ Numeric values and defaults are multiplied by `scale` (default 1). Timestamps
 become Unix seconds and Booleans become 0 or 1; neither is scaled. A NULL label
 becomes an empty string.
 
-## Collector Organization
+## Collector Organization {#collector-organization}
 
 PG Exporter ships with pre-organized collectors:
 
@@ -402,9 +402,9 @@ PG Exporter ships with pre-organized collectors:
 | 1000+ | Extensions    | Extension-specific metrics      |
 {.full-width .wide .expand}
 
-## Real-World Examples
+## Real-World Examples {#real-world-examples}
 
-### Counter with Labels
+### Counter with Labels {#counter-with-labels}
 
 ```yaml
 pg_table_stats:
@@ -432,7 +432,7 @@ pg_table_stats:
     - n_dead_tup: {usage: GAUGE, description: "Dead tuples"}
 ```
 
-### Version-Specific Collector
+### Version-Specific Collector {#version-specific-collector}
 
 This example uses columns available on PostgreSQL 14–17. PostgreSQL 18 moves WAL
 timing statistics to `pg_stat_io`; the bundled `pg_wal` collector has separate branches.
@@ -460,7 +460,7 @@ pg_wal_stats:
     - wal_sync_time: {usage: COUNTER, scale: 0.001}
 ```
 
-### Extension-Dependent Collector
+### Extension-Dependent Collector {#extension-dependent-collector}
 
 This example requires the PostgreSQL 13+ `pg_stat_statements` schema and a search
 path that contains the extension.
@@ -483,9 +483,9 @@ pg_stat_statements_metrics:
     - mean_time: {usage: GAUGE, scale: 0.001}
 ```
 
-## Custom Collectors
+## Custom Collectors {#custom-collectors}
 
-### Creating Your Own Metrics
+### Creating Your Own Metrics {#creating-your-own-metrics}
 
 1. To add metrics to the default configuration, first copy the complete configuration into a new directory:
 
@@ -526,7 +526,7 @@ pg_exporter --explain --fail-fast --config=/etc/pg_exporter/
 
 To switch a packaged service to this directory, set `PG_EXPORTER_CONFIG=/etc/pg_exporter` in `/etc/default/pg_exporter` and restart the service. For later YAML edits in that directory, use `POST /reload`.
 
-### Conditional Metrics
+### Conditional Metrics {#conditional-metrics}
 
 Use predicate queries for conditional metrics:
 
@@ -563,7 +563,7 @@ partition_metrics:
     - total_size: {usage: GAUGE}
 ```
 
-## Performance Optimization
+## Performance Optimization {#performance-optimization}
 
 Measure SQL duration with the monitoring role. Give expensive collectors a longer
 TTL and enough timeout to complete under normal load. Set `skip: true` on
@@ -574,7 +574,7 @@ Keep labels bounded and include enough columns to identify each result row.
 For example, table names need a database and schema when collecting several
 databases. Prefer aggregated SQL when object-level series are not needed.
 
-### Monitoring Collector Performance
+### Monitoring Collector Performance {#monitoring-collector-performance}
 
 Check collector execution statistics:
 
@@ -586,9 +586,9 @@ curl http://localhost:9630/stat
 curl -s http://localhost:9630/metrics | grep -E 'pg_exporter_query_scrape_(duration|error_count)'
 ```
 
-## Troubleshooting Configuration
+## Troubleshooting Configuration {#troubleshooting-configuration}
 
-### Validate Configuration
+### Validate Configuration {#validate-configuration}
 
 ```bash
 # Dry run - shows parsed configuration
@@ -598,7 +598,7 @@ pg_exporter --dry-run
 pg_exporter --explain
 ```
 
-### Common Issues
+### Common Issues {#common-issues}
 
 | Problem           | Solution                                             |
 |-------------------|------------------------------------------------------|
@@ -607,7 +607,7 @@ pg_exporter --explain
 | High memory usage | Aggregate results or filter a defined set of objects                    |
 | Permission errors | Verify query permissions for monitoring user         |
 
-### Debug Logging
+### Debug Logging {#debug-logging}
 
 Enable debug logging to troubleshoot:
 

@@ -15,7 +15,7 @@ Across version branches, v1.6.0 defines **59 collector namespaces and 460 distin
 
 Before upgrading PostgreSQL or replacing the collector configuration, review the [metric compatibility and migration tables](/compatibility/#metric-compatibility). They distinguish v1.5.0 label/state corrections, PG19 additions and semantic changes, and metrics removed at earlier PostgreSQL version boundaries, with checks for missing-series alerts.
 
-## Numbering Map
+## Numbering Map {#numbering-map}
 
 | Range | Area | Typical scope |
 |:---|:---|:---|
@@ -32,7 +32,7 @@ Before upgrading PostgreSQL or replacing the collector configuration, review the
 | `1000+` | Optional integrations | wait sampling, TimescaleDB, Citus, heartbeat |
 {.full-width .wide .expand}
 
-## Complete Inventory
+## Complete Inventory {#complete-inventory}
 
 | File | Namespace | Scope and requirement |
 |:---|:---|:---|
@@ -96,9 +96,10 @@ Before upgrading PostgreSQL or replacing the collector configuration, review the
 | [`2000-pg_heartbeat.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/config/2000-pg_heartbeat.yml) | `pg_heartbeat` | Disabled by default; requires `monitor.heartbeat` in the `postgres` database |
 {.full-width .wide .expand}
 
+> [!NOTE]
 > **v1.6.0:** VACUUM, index-build, and CLUSTER progress remains cluster-wide. `relname` resolves names in the connected database and for system catalogs, and uses numeric OIDs for other databases' relations; discovery filters do not remove this coverage. Existing installations must update their collector YAML. See [progress database scope](/design/progress-database-scope/).
 
-## Plan Before Enabling
+## Plan Before Enabling {#plan-before-enabling}
 
 The planner selects branches by target type, server version, recovery role, database, extensions, schemas, username, and tags. Predicates run later, when a collector refreshes its results. After the first scrape, inspect the current plan for the main target:
 
@@ -111,7 +112,7 @@ curl -fsS http://127.0.0.1:9630/explain
 
 `pg_origin`, `pg_shmem`, both bloat collectors, the TimescaleDB collector, and `pg_heartbeat` use `skip: true`. Prepare their required permissions and objects before setting `skip: false`. The heartbeat collector reads a table maintained by a separate heartbeat writer.
 
-### Replication origin permissions
+### Replication origin permissions {#replication-origin-permissions}
 
 `pg_origin` remains disabled by default. On PostgreSQL 14+ with standard catalog ACLs, an administrator must grant access in the exporter's **main connection database**, substituting the actual monitoring role for `monitor`:
 
@@ -123,7 +124,7 @@ GRANT EXECUTE ON FUNCTION
 
 Then explicitly set `skip: false` for this collector in the configuration you load, reload or restart the exporter, and check its query errors and expected origin samples. `pg_monitor` membership alone is insufficient. PostgreSQL 13 and older also check for superuser inside the function, so these grants alone cannot enable direct access for an ordinary monitoring role; keep this optional collector disabled there. The exporter does not grant privileges automatically.
 
-### Publication and subscription counts
+### Publication and subscription counts {#publication-and-subscription-counts}
 
 `pg_pubrel_count` counts table entries returned by `pg_get_publication_tables()`. It excludes sequences, including on PG19. Empty and sequence-only publications produce **no series**, rather than an explicit zero.
 
@@ -131,7 +132,7 @@ Then explicitly set `skip: false` for this collector in the configuration you lo
 
 Do not treat equal publication/subscription counts as a replication-health test: the two collectors count different sets. Publication overlap, partition handling, refresh, and synchronization progress also affect the counts.
 
-### Subscription identity and receiver states
+### Subscription identity and receiver states {#subscription-identity-and-receiver-states}
 
 The v1.5.0 configuration corrects subscription identity and receiver states. Review these upgrade requirements when replacing an older collector configuration:
 
@@ -147,7 +148,7 @@ The v1.5.0 configuration corrects subscription identity and receiver states. Rev
 | connecting (PG19+) | 5 | restarting | 8 |
 | unknown / NULL | -1 | stopped | 9 |
 
-## Cardinality and Cost
+## Cardinality and Cost {#cardinality-and-cost}
 
 Per-relation and per-query collectors are the main cardinality drivers. Review these before enabling them on a large estate:
 
@@ -158,7 +159,7 @@ Per-relation and per-query collectors are the main cardinality drivers. Review t
 
 Use `ttl` to limit how often expensive SQL runs. Set `timeout` from measured query duration. The scrape timeout must allow for the complete collection pass, including all discovered databases. Compare `pg_exporter_scrape_duration` and the series count before and after a change.
 
-## Customize Collectors
+## Customize Collectors {#customize-collectors}
 
 Start with a copy of the complete configuration directory. Put local definitions in a later file, such as `9990-local.yml`. To replace an existing branch, use its exact top-level key and provide the full definition; directory loading replaces the whole branch. Give new branches unique keys and keep version ranges for the same metric family separate.
 

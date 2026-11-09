@@ -35,7 +35,7 @@ PG Exporter 为 Prometheus 采集 PostgreSQL 与 PgBouncer 指标。本文档对
 - [兼容性](/zh/compatibility/) — 核对数据库版本、平台与架构。
 {.cards}
 
-## 开发与发布
+## 开发与发布 {#development-and-releases}
 
 - [开发指南](/zh/development/) — 构建导出器、修改采集器并运行测试。
 - [设计记录](/zh/design/) — 了解架构决策与未发布功能的设计。

@@ -15,7 +15,7 @@ PG Exporter v{{< param version >}} 在 [`config/`](https://github.com/pgsty/pg_e
 
 升级 PostgreSQL 或替换采集器配置前，请核对[指标兼容性与迁移对照表](/zh/compatibility/#metric-compatibility)。其中区分 v1.5.0 的标签／状态修正、PG19 的新增指标与语义变化、较早 PostgreSQL 版本已移除的指标，并提供避免告警因时序缺失而静默的检查方法。
 
-## 编号分区
+## 编号分区 {#numbering-map}
 
 | 范围 | 领域 | 典型范围 |
 |:---|:---|:---|
@@ -32,7 +32,7 @@ PG Exporter v{{< param version >}} 在 [`config/`](https://github.com/pgsty/pg_e
 | `1000+` | 可选集成 | 等待采样、TimescaleDB、Citus、心跳 |
 {.full-width .wide .expand}
 
-## 完整清单
+## 完整清单 {#complete-inventory}
 
 | 文件 | 命名空间 | 范围与前置条件 |
 |:---|:---|:---|
@@ -96,9 +96,10 @@ PG Exporter v{{< param version >}} 在 [`config/`](https://github.com/pgsty/pg_e
 | [`2000-pg_heartbeat.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/config/2000-pg_heartbeat.yml) | `pg_heartbeat` | 默认禁用；要求 `postgres` 库中的 `monitor.heartbeat` 表 |
 {.full-width .wide .expand}
 
+> [!NOTE]
 > **v1.6.0：** VACUUM、建索引与 CLUSTER 进度保持集群级采集；`relname` 在当前连接库及系统目录上解析名称，其他库的关系使用数字 OID，自动发现过滤不影响此覆盖。现有安装需更新采集器 YAML。详见[进度指标的数据库范围](/zh/design/progress-database-scope/)。
 
-## 启用前先看计划
+## 启用前先看计划 {#plan-before-enabling}
 
 规划器根据目标类型、服务器版本、恢复角色、数据库、扩展、模式、用户名和标签筛选分支。谓词查询在之后刷新采集结果时执行。先完成一次抓取，再查看主连接的当前计划：
 
@@ -111,7 +112,7 @@ curl -fsS http://127.0.0.1:9630/explain
 
 `pg_origin`、`pg_shmem`、两个膨胀采集器、TimescaleDB 采集器和 `pg_heartbeat` 均设置了 `skip: true`。准备好所需权限和对象后，再改为 `skip: false`。心跳采集器只负责读取，心跳表由独立任务维护。
 
-### 复制源权限
+### 复制源权限 {#replication-origin-permissions}
 
 `pg_origin` 保持默认关闭。在采用标准目录 ACL 的 PostgreSQL 14+ 上，由管理员在 Exporter 的 **主连接数据库** 中执行以下授权，将 `monitor` 替换为实际监控角色：
 
@@ -123,7 +124,7 @@ GRANT EXECUTE ON FUNCTION
 
 之后在实际加载的配置中显式将此采集器设为 `skip: false`，重载或重启 Exporter，并核对查询错误和预期的 origin 指标。只有 `pg_monitor` 成员身份并不足够。PostgreSQL 13 及更早版本还会在函数内部检查超级用户身份，上述授权无法让普通监控角色直接调用，应保持此可选采集器关闭。Exporter 不会自动授予权限。
 
-### 发布与订阅计数
+### 发布与订阅计数 {#publication-and-subscription-counts}
 
 `pg_pubrel_count` 统计 `pg_get_publication_tables()` 返回的表条目，即使在 PG19 上也不包含序列。空发布和仅包含序列的发布 **不会产生时序**，而不是显式输出零。
 
@@ -131,7 +132,7 @@ GRANT EXECUTE ON FUNCTION
 
 不能用发布端与订阅端数量相等来判断复制健康：两者统计的集合不同，发布重叠、分区处理、刷新与同步进度也会影响数量。
 
-### 订阅身份与接收器状态
+### 订阅身份与接收器状态 {#subscription-identity-and-receiver-states}
 
 v1.5.0 配置修正了订阅身份与接收器状态。替换旧采集器配置时，请核对以下升级要求：
 
@@ -147,7 +148,7 @@ v1.5.0 配置修正了订阅身份与接收器状态。替换旧采集器配置�
 | connecting（PG19+） | 5 | restarting | 8 |
 | 未知 / NULL | -1 | stopped | 9 |
 
-## 基数与开销
+## 基数与开销 {#cardinality-and-cost}
 
 每对象和每查询采集器是主要的基数来源。在大规模环境中启用前重点检查：
 
@@ -158,7 +159,7 @@ v1.5.0 配置修正了订阅身份与接收器状态。替换旧采集器配置�
 
 用 `ttl` 控制高开销 SQL 的执行频率，按实测耗时设置 `timeout`。抓取超时需要容纳所有采集器和自动发现数据库的完整采集过程。变更前后比较 `pg_exporter_scrape_duration` 和时序数量。
 
-## 定制采集器
+## 定制采集器 {#customize-collectors}
 
 先复制完整的配置目录，再将本地定义放入排序靠后的文件，如 `9990-local.yml`。覆盖已有分支时，使用相同的顶层键并提供完整定义；目录加载会替换整个分支。新分支使用唯一键，同一指标族的版本范围应互不重叠。
 

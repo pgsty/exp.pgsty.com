@@ -9,7 +9,7 @@ categories: [指南]
 
 按进程、HTTP 访问、数据库连接、单个采集器的顺序检查。`pg_up 1` 表示上次抓取成功连接主目标，并完成了标记为 `fatal` 的采集器；其他采集器或自动发现库仍可能出错。
 
-## 初步检查
+## 初步检查 {#initial-checks}
 
 ```bash
 # 进程与日志
@@ -38,9 +38,9 @@ curl -fsS http://127.0.0.1:9630/stat
 | exporter 健康但 Prometheus Target Down | Prometheus 地址、协议、认证、TLS、防火墙、指标路径 |
 {.full-width}
 
-## 进程无法启动
+## 进程无法启动 {#process-will-not-start}
 
-### `no valid config path`
+### `no valid config path` {#no-valid-config-path}
 
 配置搜索顺序为 `--config`、`PG_EXPORTER_CONFIG`、`./pg_exporter.yml`、`/etc/pg_exporter.yml`、`/etc/pg_exporter`。确认运行用户可以读取文件：
 
@@ -53,13 +53,13 @@ sudo -u prometheus /usr/bin/pg_exporter \
 
 `--dry-run` 不需要在线数据库，会解析并解释原始配置。配置目录不递归，只按字母顺序加载 `.yaml` / `.yml`；后加载文件中的同名顶层分支会覆盖前一个定义。
 
-### 指标路径非法
+### 指标路径非法 {#invalid-telemetry-path}
 
 自 v1.4.0 起，`--web.telemetry-path` 必须是以 `/` 开头的规范字面路径，不能包含查询串、Fragment、Go ServeMux 通配符，也不能与 `/up`、`/reload`、`/version` 等内置端点冲突。
 
 没有明确需求时保持 `/metrics`，修改后还要同步调整 Prometheus 的 `metrics_path`。
 
-### 地址已被占用
+### 地址已被占用 {#address-already-in-use}
 
 ```bash
 lsof -nP -iTCP:9630 -sTCP:LISTEN
@@ -67,7 +67,7 @@ lsof -nP -iTCP:9630 -sTCP:LISTEN
 
 停止冲突服务或更换 `--web.listen-address`。
 
-## `pg_up` 为 0 或 `/up` 返回 503
+## `pg_up` 为 0 或 `/up` 返回 503 {#pg_up-is-0-or-up-returns-503}
 
 软件包服务可在 `/etc/default/pg_exporter` 的 `PG_EXPORTER_OPTS` 中设置 `--log.level=debug`，再重启服务。这样会保留原来的运行用户与连接设置：
 
@@ -100,7 +100,7 @@ pg_exporter --config=/etc/pg_exporter.yml --log.level=debug
 
 非阻塞启动是正常行为：目标不可用时 HTTP 服务器仍会运行，后台探测继续重试。只有希望编排系统将初始数据库不可达视为进程启动失败时，才使用 `--fail-fast`。
 
-## 指标缺失
+## 指标缺失 {#metrics-are-missing}
 
 先抓取一次 `/metrics` 以生成计划。`/explain` 只显示主目标上选中的采集器。采集器缺失时，对照 YAML 检查服务器版本、角色与标签；调试日志会记录分支未被选中的原因。重点检查：
 
@@ -114,7 +114,7 @@ pg_exporter --config=/etc/pg_exporter.yml --log.level=debug
 
 包含/排除名单只影响额外发现的数据库。连接 URL 指定的数据库始终会被监控，即使它在默认排除名单 `template0,template1,postgres` 中。选中的采集器也可能被谓词跳过，或者查询成功但返回零行；结合 `/stat` 与 SQL 结果检查。
 
-## 单个采集器失败
+## 单个采集器失败 {#one-collector-fails}
 
 通过 `/stat` 检查主目标。全部监控库的采集器状态由带 `datname`、`query` 标签的自监控指标提供：
 
@@ -135,7 +135,7 @@ pg_exporter_query_scrape_error_count > 0
 
 请在相同数据库中以监控用户手工执行采集器 SQL，并确保即使返回零行，结果列名也完整一致。
 
-## 抓取缓慢或超时
+## 抓取缓慢或超时 {#scrapes-are-slow-or-time-out}
 
 自 v1.6.0 起，采集、等待与响应写入阶段合计最多接纳两个指标请求。采集仍串行；第二个请求在剩余预算内等待，更多请求返回 HTTP 503。预算默认为 30 秒，合法、有限且为正数的 `X-Prometheus-Scrape-Timeout-Seconds` 请求头可以缩短它。等待期间取消的请求不执行 SQL。
 
@@ -158,7 +158,7 @@ pg_exporter_query_scrape_error_count > 0
 
 查询与自动发现库按顺序抓取，需要为总耗时留出预算。完整抓取应短于 Prometheus 的 `scrape_timeout` 与 `scrape_interval`；HTTP 服务另有 30 秒写超时。
 
-## 重载失败
+## 重载失败 {#reload-fails}
 
 ```bash
 curl -i -X POST http://127.0.0.1:9630/reload
@@ -172,7 +172,7 @@ curl -i -X POST http://127.0.0.1:9630/reload
 
 采集器 YAML 也可以通过 `SIGHUP` 重载；Unix 构建还支持 `SIGUSR1`。重载后，下次抓取重建计划，逐查询统计随之清零。
 
-## Docker 与软件包常见坑
+## Docker 与软件包常见坑 {#docker-and-package-pitfalls}
 
 | 现象 | 可能原因与修复 |
 |:---|:---|
@@ -183,7 +183,7 @@ curl -i -X POST http://127.0.0.1:9630/reload
 | 容器无法访问宿主机 PostgreSQL | `localhost` 指容器自身；使用数据库服务 DNS 或明确的宿主机路由 |
 {.full-width}
 
-## Bug 报告应包含的证据
+## Bug 报告应包含的证据 {#evidence-to-include-in-a-bug-report}
 
 - `pg_exporter --version` 或 `curl http://127.0.0.1:9630/version` 输出，以及安装方式
 - 操作系统与体系结构

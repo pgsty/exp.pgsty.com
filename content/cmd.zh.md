@@ -20,7 +20,7 @@ pg_exporter --help-man   # man page 形式
 布尔参数用 `--flag` 开启、`--no-flag` 关闭；`--flag=true` 与
 `--flag=false` 形式也会在解析前被规范化。
 
-## 目标与配置优先级
+## 目标与配置优先级 {#target-and-configuration-precedence}
 
 PG Exporter 按以下顺序选择连接 URL：
 
@@ -42,7 +42,7 @@ URL 中省略的字段可由驱动支持的环境变量补齐，例如 `PGHOST`�
 `PGDATABASE` 与 `PGPASSFILE`。PG Exporter 会清除 `PGSERVICE` 和 `PGSERVICEFILE`，
 避免服务文件覆盖连接目标。凭据文件的设置方法见[生产部署](/zh/deploy/)。
 
-## 采集参数
+## 采集参数 {#collection-flags}
 
 | 参数 | 环境变量 | 默认值 | 用途 |
 |:---|:---|:---|:---|
@@ -71,7 +71,7 @@ Go/进程指标与健康端点仍然可用。`--disable-cache` 绕过主查询�
 将 `--connect-timeout` 设为高于目标正常往返耗时的值。零值或负值仍使用 100 ms。
 采集器 SQL 使用独立的 YAML `timeout`。固定标签附加到指标序列上，Tag 用来选择采集器。
 
-## HTTP 参数
+## HTTP 参数 {#http-flags}
 
 | 参数 | 环境变量 | 默认值 | 用途 |
 |:---|:---|:---|:---|
@@ -85,7 +85,7 @@ Go/进程指标与健康端点仍然可用。`--disable-cache` 绕过主查询�
 `/explain`、`/stat`、`/version` 等内置路由冲突。启动还会验证该路径实际进入指标处理器，而非重定向或其他处理器。转义路径必须兼容当前 HTTP mux；优先使用 `/metrics` 这样的普通路径。各端点的方法与响应语义参见
 [HTTP API](/zh/api/)。
 
-## 动作与日志
+## 动作与日志 {#actions-and-logging}
 
 | 参数 | 默认值 | 用途 |
 |:---|:---|:---|
@@ -100,7 +100,7 @@ Go/进程指标与健康端点仍然可用。`--disable-cache` 绕过主查询�
 `PG_EXPORTER_*` 环境变量。用 `--explain --fail-fast` 要求目标预检查成功。
 `--dry-run` 校验采集器定义；实际抓取还会检查权限、结果列和输出值。启动和重载时还会检查固定标签冲突。日志写入标准错误。
 
-## 示例
+## 示例 {#examples}
 
 ```bash
 # 同机 PostgreSQL，使用 libpq 默认连接参数

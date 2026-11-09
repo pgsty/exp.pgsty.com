@@ -112,7 +112,7 @@ capabilities:
         items:
           - { icon: fa-solid fa-chart-line, title: /metrics, detail: 抓取输出, url: api/#get-metrics }
           - { icon: fa-solid fa-heart-pulse, title: /up, detail: 目标健康, url: api/#get-up }
-          - { icon: fa-solid fa-route, title: /primary · /replica, detail: 角色路由, url: api/#流量路由 }
+          - { icon: fa-solid fa-route, title: /primary · /replica, detail: 角色路由, url: api/#traffic-routing }
           - { icon: fa-solid fa-magnifying-glass, title: /explain, detail: 已选查询, url: api/#get-explain }
           - { icon: fa-solid fa-gauge-high, title: /stat, detail: 查询统计, url: api/#get-stat }
           - { icon: fa-solid fa-rotate, title: /reload, detail: 热重载, url: api/#get-reload--post-reload }

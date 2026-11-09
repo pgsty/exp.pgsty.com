@@ -14,8 +14,8 @@ Composite 模式把 PostgreSQL、PgBouncer、Patroni、pgBackRest 和 PostgreSQL
 
 > **状态：** 已实现，未发布。<br>
 > **决策日期：** 2026-08-11；2026-08-23 与 2026-08-24 增加缓存组件。<br>
-> **最后核验：** 2026-10-13。<br>
-> **范围：** 源码提交 `c0ba58a` 的 Composite 协调层；稳定版 `v1.4.1` 尚未包含。<br>
+> **最后核验：** 2026-11-09。<br>
+> **范围：** `snort` 开发分支提交 `c0ba58a` 的 Composite 协调层；稳定版 `v1.6.0` 尚未包含。<br>
 > **交付进度：** 本地测试通过；未合入 `main` 或发布标签；软件包、部署与生产运行未核验。
 
 ## PostgreSQL 保持主导 {#primary-invariant}

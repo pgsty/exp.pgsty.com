@@ -11,7 +11,7 @@ PG Exporter 将 SQL 和指标定义放在 YAML 中，由 Go 运行时加载定�
 
 用户手册以稳定版 **v{{< param version >}}** 为准。独立的 `snort` 开发分支包含实验性的 Composite、Patroni、pgBackRest 和 PostgreSQL 日志功能，`main` 与 v1.6.0 不包含这些功能，其约定与状态见[设计归档](/zh/design/)。
 
-## 仓库结构
+## 仓库结构 {#repository-layout}
 
 | 路径 | 用途 |
 |:---|:---|
@@ -26,7 +26,7 @@ PG Exporter 将 SQL 和指标定义放在 YAML 中，由 Go 运行时加载定�
 | `.goreleaser.yml` | 跨平台压缩包、RPM/DEB、校验和、Docker 镜像与 GitHub Release |
 {.full-width}
 
-## 工具链
+## 工具链 {#toolchain}
 
 v1.6.0 标签声明 Go **1.27.3**。按所构建版本的要求选择工具链。构建稳定标签：
 
@@ -42,7 +42,7 @@ make build
 
 修改代码时，从选定的源版本建立工作分支。编辑前阅读 `AGENTS.md`，并检查 `git status --short --branch`。
 
-## 改动前后运行测试
+## 改动前后运行测试 {#test-before-and-after-a-change}
 
 ```bash
 go mod tidy -diff
@@ -61,7 +61,7 @@ make goreleaser-build
 
 此命令会在需要时安装 GoReleaser，并重建 `dist/` 中的快照产物。二进制、软件包和发布压缩包不应加入 Git。
 
-## 修改或新增采集器
+## 修改或新增采集器 {#change-or-add-a-collector}
 
 1. 选择数字分组与唯一的顶层分支名。
 2. 多个版本/角色分支需要输出同一指标族时，用 `name` 固定指标命名空间。
@@ -77,7 +77,7 @@ make goreleaser-build
 
 公共接口或架构决策写入伴生仓库的双语[设计归档](/zh/design/)，说明源代码版本、决策、备选方案和交付状态。标签和产物发布前，将新行为标为未发布。小型代码修复补充测试和相关手册即可，无需新建设计文章。
 
-### 列规则
+### 列规则 {#column-rules}
 
 - `LABEL` 变为 Prometheus 标签，应避免无边界或敏感值。
 - `GAUGE` 用于可双向变化的值。
@@ -88,7 +88,7 @@ make goreleaser-build
 
 采集器包含直方图时，`le` 是保留标签。指标名与标签名在加载配置时完成校验，非法名称会在抓取前失败。
 
-## 重建配置
+## 重建配置 {#regenerate-configs}
 
 ```bash
 make conf     # config/*.yml -> pg_exporter.yml
@@ -99,7 +99,7 @@ git diff -- pg_exporter.yml legacy/pg_exporter.yml
 
 这两个生成的 YAML 文件已由 Git 跟踪。CI 会检查它们与有序源文件是否一致。修改配置片段后重新生成 YAML，并将两者一起纳入改动。
 
-## 本地验证采集器
+## 本地验证采集器 {#exercise-a-collector-locally}
 
 ```bash
 # 只验证语法/Schema，不需要目标
@@ -122,7 +122,7 @@ curl -fsS localhost:9630/stat
 
 缓存或可选组件还应测试禁用路径、故障隔离、重载和关闭。日志持久化状态还需覆盖重启、轮转、截断、半条记录和状态文件权限。
 
-## 发布流水线
+## 发布流水线 {#release-pipeline}
 
 GoReleaser 会生成：
 
@@ -136,7 +136,7 @@ GoReleaser 会生成：
 
 本地快照构建用于检查打包，不会发布版本。带标签产物通过发布工作流交付；部署后另行验证实际安装的版本。
 
-## 文档工作流
+## 文档工作流 {#documentation-workflow}
 
 在伴生仓库 `exp.pgsty.com` 中编辑本站文档。同步修改中英文页面后运行：
 

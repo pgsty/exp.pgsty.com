@@ -11,7 +11,7 @@ PG Exporter 读取 PostgreSQL 或 PgBouncer 的统计信息，并将其转换为
 
 每个导出器进程监控一个 PostgreSQL 实例或一个 PgBouncer 实例。同时监控两者时，需要运行两个进程。
 
-## 如何采集指标
+## 如何采集指标 {#how-collection-works}
 
 一个采集器由一条 SQL 查询及其 YAML 定义组成。YAML 定义告诉导出器如何将查询结果列转换为指标和标签。
 
@@ -21,13 +21,13 @@ Prometheus 请求 `/metrics` 时，导出器执行选中的查询并返回指标
 
 导出器提供 HTTP 指标端点，Prometheus 保存历史数据，Grafana 等仪表盘工具负责展示。
 
-## 可以监控什么
+## 可以监控什么 {#what-you-can-monitor}
 
 内置采集器覆盖活动会话、复制、WAL、锁、事务、数据库对象及部分扩展，数据来自 PostgreSQL 监控视图和 PgBouncer 管理命令。[内置采集器](/zh/collectors/)列出了指标及所需权限。
 
 导出器也会报告自身状态。例如，`pg_up` 表示主数据库抓取是否完成且没有致命错误，`pg_version` 表示数据库版本，`pg_in_recovery` 表示主备角色。
 
-## 自定义采集
+## 自定义采集 {#customize-collection}
 
 先使用内置配置 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/pg_exporter.yml)，需要更多指标时再添加查询。每个采集器都可以单独设置选择条件、超时与缓存 TTL。
 
@@ -35,13 +35,13 @@ Prometheus 请求 `/metrics` 时，导出器执行选中的查询并返回指标
 
 [采集器配置](/zh/config/)介绍了 YAML 字段及用法示例。
 
-## 检查采集结果
+## 检查采集结果 {#check-collection}
 
 通过 `/explain` 查看主数据库选中的采集器，通过 `/stat` 查看查询次数、报错次数与耗时。[HTTP API](/zh/api/)还提供健康检查和主备角色端点。
 
 遇到连接错误、指标缺失或查询缓慢时，按[故障排查](/zh/troubleshooting/)定位问题。
 
-## 版本与下一步
+## 版本与下一步 {#versions-and-next-steps}
 
 本文档对应 **v{{< param version >}}**。默认配置包含 PostgreSQL 10–19 和 PgBouncer 1.8–1.25 的采集分支，独立 legacy 配置覆盖 PostgreSQL 9.1–9.6。详情见[兼容性](/zh/compatibility/)。
 

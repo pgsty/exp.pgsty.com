@@ -14,8 +14,8 @@ PostgreSQL logs record events that SQL snapshots can miss: deadlocks, authentica
 
 > **Status:** Implemented but unreleased.<br>
 > **Decision date:** 2026-08-24.<br>
-> **Last verified:** 2026-10-13.<br>
-> **Scope:** Default-off PostgreSQL 14+ CSV log collector at source commit `c0ba58a`; absent from stable `v1.4.1`.<br>
+> **Last verified:** 2026-11-09.<br>
+> **Scope:** Default-off PostgreSQL 14+ CSV log collector at source commit `c0ba58a` on the `snort` development branch; absent from stable `v1.6.0`.<br>
 > **Replaces:** The [separate observability-product proposal](/design/observability-product-pivot/).<br>
 > **Delivery:** Local tests passed. Not merged into `main` or tagged; packages, deployment, and production operation remain unverified.
 

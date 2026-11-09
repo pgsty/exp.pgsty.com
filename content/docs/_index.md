@@ -35,7 +35,7 @@ PG Exporter collects PostgreSQL and PgBouncer metrics for Prometheus. These manu
 - [Compatibility](/compatibility/) — Check database versions, platforms, and architectures.
 {.cards}
 
-## Development and releases
+## Development and releases {#development-and-releases}
 
 - [Development](/development/) — Build the exporter, change collectors, and run tests.
 - [Design records](/design/) — Read architecture decisions and plans for unreleased features.

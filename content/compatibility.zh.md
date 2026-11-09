@@ -9,7 +9,7 @@ categories: [参考]
 
 按运行主机选择安装包，按数据库版本选择采集配置，再安装所需的视图或扩展。本页说明 v{{< param version >}} 随附的默认配置，以及单独维护的 legacy 配置的兼容范围。
 
-## 数据库目标
+## 数据库目标 {#database-targets}
 
 | 目标 | 状态 | 配置 |
 |:---|:---|:---|
@@ -18,21 +18,21 @@ categories: [参考]
 | PostgreSQL 9.1-9.6 | Legacy 支持 | main 上维护的 `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 及更早版本 | 不支持 | — |
 | PgBouncer 1.8+ | 按版本选择采集器 | `0910`-`0940` 采集器文件；连接管理数据库 |
-{.full-width}
+{.full-width .wide .expand}
 
 PostgreSQL 19 分支覆盖恢复、锁、自动清理评分、WAL、订阅、接收器与复制槽。采集器按服务器版本号选择分支；首次抓取后，检查 `/stat`，确认查询与实际服务器构建匹配。
 
 内置 PgBouncer 采集器要求 1.8 或更高版本。1.8 调整了查询所用的 `SHOW STATS` 字段。最新配置分支未设版本上限；升级 PgBouncer 后，结合[上游变更日志](https://www.pgbouncer.org/changelog.html)检查采集结果。
 
-## 发布验证
+## 发布验证 {#release-validation}
 
 v1.6.0 发布制品已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配置）、10–18 与 19 RC1（默认配置）的主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复、并发采集／健康检查／重载、HTTPS 认证、软件包安装及从 1.5.0 升级。PG19 证据对应 RC1；Windows 与 Intel macOS 制品仅做静态检查，没有实际运行验收。
 
-后续使用 main 上 `282e19d` 的 legacy 配置，补充验证了 PostgreSQL 9.1–9.6 中有 TOAST 和无 TOAST 的表。PG9.1 需要这份维护版本：包括 v1.6.0 在内的旧标签中的 legacy 查询，可能因关系 OID 0 失败。该配置修复不属于 v1.6.0 发布制品，获取方式见 [安装说明](/zh/install/#兼容性)。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
+后续使用 main 上 `282e19d` 的 legacy 配置，补充验证了 PostgreSQL 9.1–9.6 中有 TOAST 和无 TOAST 的表。PG9.1 需要这份维护版本：包括 v1.6.0 在内的旧标签中的 legacy 查询，可能因关系 OID 0 失败。该配置修复不属于 v1.6.0 发布制品，获取方式见 [安装说明](/zh/install/#compatibility)。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
 
 ## 指标、仪表盘与告警兼容性 {#metric-compatibility}
 
-升级 Exporter 和升级 PostgreSQL 大版本，可能改变指标契约的不同部分。以下对照以 [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config) 与 [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config) 标签中的内置 SQL 采集器为准，包含各列的 `rename` 映射；列出的是实际导出的指标名，不只是 PostgreSQL 视图列名或 YAML 文件名。自定义采集器与业务告警规则仍需单独检查。
+升级 Exporter 和升级 PostgreSQL 大版本，可能改变指标契约的不同部分。以下对照以 [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config)、[`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config) 与 [`v1.6.0`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config) 标签中的内置 SQL 采集器为准，包含各列的 `rename` 映射；列出的是实际导出的指标名，不只是 PostgreSQL 视图列名或 YAML 文件名。自定义采集器与业务告警规则仍需单独检查。
 
 ### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}
 
@@ -60,7 +60,7 @@ v1.6.0 发布制品已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配
 | `pg_subrel_count`、`pg_pubrel_count` | HELP 文本澄清已有的表／序列统计口径；本版未改变它们的 SQL、标签或数值。 | 不要将两者当作同一对象集合来比较；PG19 的行为见下表。 |
 {.full-width .wide .expand}
 
-这些修正需要同时部署新版 YAML 和二进制。PG10–13 的订阅采集器还需要[订阅 OID 授权](/zh/collectors/#订阅身份与接收器状态)，否则查询失败，指标会缺失。兼容性决策详见[复制采集器设计记录](/zh/design/replication-collector-contracts/)。
+这些修正需要同时部署新版 YAML 和二进制。PG10–13 的订阅采集器还需要[订阅 OID 授权](/zh/collectors/#subscription-identity-and-receiver-states)，否则查询失败，指标会缺失。兼容性决策详见[复制采集器设计记录](/zh/design/replication-collector-contracts/)。
 
 ### 使用 v1.5.0 配置，PostgreSQL 18 → 19 {#postgresql-19-metrics}
 
@@ -142,7 +142,7 @@ groups:
 
 按实际目标身份调整选择器与匹配标签，并分别监控 `up` 和 `pg_up` 故障。已知的单个目标也可使用 [`absent_over_time()`](https://prometheus.io/docs/prometheus/latest/querying/functions/#absent_over_time)。仅对整个集群执行 `absent(metric)`，无法发现其他目标仍有数据时的单目标缺失。同理，`pg_recv_state != 0` 无法发现已经消失的接收器行；预期持续流复制的备库还需要单独检查接收器是否存在。
 
-## v{{< param version >}} 发布产物
+## v{{< param version >}} 发布产物 {#release-artifacts}
 
 | 产物 | 操作系统 | 体系结构 |
 |:---|:---|:---|
@@ -152,18 +152,18 @@ groups:
 | RPM | RHEL 兼容 Linux | x86_64、aarch64、ppc64le |
 | DEB | Debian/Ubuntu 兼容 Linux | amd64、arm64、ppc64le |
 | Docker 镜像 | Linux 容器 | amd64、arm64 |
-{.full-width}
+{.full-width .wide .expand}
 
 发布压缩包包含二进制、合并后的默认配置、许可证、默认环境文件与 systemd 单元。PostgreSQL 9.x 配置需要从对应源码标签获取，不在这些二进制压缩包中。macOS 与 Windows 产物适合开发或连接远端目标；软件包提供的服务集成只适用于 Linux。
 
 > [!NOTE] v1.4.1 起的 RPM 包名
 > 官方 RPM 包名与产物前缀改为 `pg-exporter`。新包为旧的 `pg_exporter` 名称声明了 `Provides` 与 `Obsoletes`，因此可以直接升级。可执行文件与配置名仍为 `pg_exporter` 和 `/etc/pg_exporter.yml`。
 
-## 容器约束
+## 容器约束 {#container-constraints}
 
 镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
 
-## 采集器级前置条件
+## 采集器级前置条件 {#collector-level-requirements}
 
 采集器还会按目标数据库的实际条件选择：
 

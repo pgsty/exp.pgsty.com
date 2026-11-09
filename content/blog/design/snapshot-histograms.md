@@ -14,8 +14,8 @@ A scalar metric cannot describe the distribution of a changing population. One 3
 
 > **Status:** Shipped in [v1.4.0](/release/v1.4.0/).<br>
 > **Decision date:** 2026-07-11; revised on 2026-07-17.<br>
-> **Last verified:** 2026-10-13.<br>
-> **Scope:** `HISTOGRAM` columns and the `pg_xact_age` collector in stable `v1.4.1`, checked against development commit `c0ba58a`.<br>
+> **Last verified:** 2026-11-09.<br>
+> **Scope:** `HISTOGRAM` columns and the `pg_xact_age` collector in stable `v1.6.0`, checked against `6bee809` and development commit `c0ba58a`.<br>
 > **Delivery:** Implementation, merge, release tag, and package publication completed. Focused local tests passed. Deployment and production operation remain unverified.
 
 A PG Exporter snapshot Histogram groups the observations returned by one SQL execution. Each execution starts a new distribution. The exporter exposes its buckets, count, and sum as Gauge series because their values can decrease.

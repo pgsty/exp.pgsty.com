@@ -14,8 +14,8 @@ tags: [Design, pgBackRest, Prometheus, Reliability]
 
 > **Status:** Implemented but unreleased.<br>
 > **Decision date:** 2026-08-23.<br>
-> **Last verified:** 2026-10-13.<br>
-> **Scope:** Optional `--pgbackrest` component at source commit `c0ba58a`; absent from stable `v1.4.1`.<br>
+> **Last verified:** 2026-11-09.<br>
+> **Scope:** Optional `--pgbackrest` component at source commit `c0ba58a` on the `snort` development branch; absent from stable `v1.6.0`.<br>
 > **Delivery:** Local tests passed. Not merged into `main` or tagged; packages, deployment, and production operation remain unverified.
 
 PG Exporter therefore runs pgBackRest in a background worker. The worker validates the result and publishes an immutable snapshot. `/metrics` reads the latest snapshot without waiting for a command.
