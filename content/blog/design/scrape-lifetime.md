@@ -9,10 +9,10 @@ tags: [Design, Reliability]
 summary: "v1.6.0: bounded waiting for two scrapers, request cancellation, and the existing failure-cache policy."
 ---
 
-> **Status:** Implemented in v1.6.0.<br>
+> **Status:** Shipped in v1.6.0.<br>
 > **Decision / last verification:** 2026-11-09.<br>
 > **Scope:** v1.6.0 at source `6bee809` on main, addressing [#116](https://github.com/pgsty/pg_exporter/issues/116). Not shipped in v1.5.0.<br>
-> **Delivery:** Source committed and pushed as `6bee809`; local validation and [Test Release](https://github.com/pgsty/pg_exporter/actions/runs/42549895870) passed. Versioned archives, RPM/DEB packages, and checksums are built for the draft. A public tag, public images, deployment, and production verification remain separate gates.
+> **Delivery:** Tag v1.6.0 points to `6bee809`; the GitHub Release, versioned archives, RPM/DEB packages, and checksums are published. Source CI, artifact acceptance, and amd64/arm64 container TLS checks passed. Software publication does not establish production deployment or production-load verification.
 
 ## Decision
 

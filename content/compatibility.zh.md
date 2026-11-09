@@ -7,7 +7,7 @@ icon: fa-solid fa-layer-group
 categories: [参考]
 ---
 
-按运行主机选择安装包，按数据库版本选择采集配置，再安装所需的视图或扩展。本页说明 v{{< param version >}} 随附配置的兼容范围。
+按运行主机选择安装包，按数据库版本选择采集配置，再安装所需的视图或扩展。本页说明 v{{< param version >}} 随附的默认配置，以及单独维护的 legacy 配置的兼容范围。
 
 ## 数据库目标
 
@@ -15,7 +15,7 @@ categories: [参考]
 |:---|:---|:---|
 | PostgreSQL 10-18 | 默认支持 | `pg_exporter.yml` / `config/` |
 | PostgreSQL 19 | 已包含版本专用分支 | 默认配置；在实际服务器构建上检查查询结果 |
-| PostgreSQL 9.1-9.6 | Legacy 支持 | `legacy/pg_exporter.yml` / `legacy/config/` |
+| PostgreSQL 9.1-9.6 | Legacy 支持 | main 上维护的 `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 及更早版本 | 不支持 | — |
 | PgBouncer 1.8+ | 按版本选择采集器 | `0910`-`0940` 采集器文件；连接管理数据库 |
 {.full-width}
@@ -26,7 +26,9 @@ PostgreSQL 19 分支覆盖恢复、锁、自动清理评分、WAL、订阅、接
 
 ## 发布验证
 
-v1.5.0 候选已以非超级用户通过 PostgreSQL 9.1–9.6、10–18、19 RC1 的默认主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复及并发采集／健康检查／重载。PG19 证据对应 RC1，不等于覆盖所有正式版构建、扩展与生产负载。
+v1.6.0 发布制品已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配置）、10–18 与 19 RC1（默认配置）的主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复、并发采集／健康检查／重载、HTTPS 认证、软件包安装及从 1.5.0 升级。PG19 证据对应 RC1；Windows 与 Intel macOS 制品仅做静态检查，没有实际运行验收。
+
+后续使用 main 上 `282e19d` 的 legacy 配置，补充验证了 PostgreSQL 9.1–9.6 中有 TOAST 和无 TOAST 的表。PG9.1 需要这份维护版本：包括 v1.6.0 在内的旧标签中的 legacy 查询，可能因关系 OID 0 失败。该配置修复不属于 v1.6.0 发布制品，获取方式见 [安装说明](/zh/install/#兼容性)。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
 
 ## 指标、仪表盘与告警兼容性 {#metric-compatibility}
 

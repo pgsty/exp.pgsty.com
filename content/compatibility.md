@@ -7,7 +7,7 @@ icon: fa-solid fa-layer-group
 categories: [Reference]
 ---
 
-Choose an artifact for the exporter host and a collector configuration for the database version. Then install any views or extensions required by the collectors you enable. This page describes the configuration shipped with v{{< param version >}}.
+Choose an artifact for the exporter host and a collector configuration for the database version. Then install any views or extensions required by the collectors you enable. This page describes the default configuration shipped with v{{< param version >}} and the separately maintained legacy bundle.
 
 ## Database Targets
 
@@ -15,7 +15,7 @@ Choose an artifact for the exporter host and a collector configuration for the d
 |:---|:---|:---|
 | PostgreSQL 10-18 | Default support | `pg_exporter.yml` / `config/` |
 | PostgreSQL 19 | Version-specific branches included | Default config; check queries against your server build |
-| PostgreSQL 9.1-9.6 | Legacy support | `legacy/pg_exporter.yml` / `legacy/config/` |
+| PostgreSQL 9.1-9.6 | Legacy support | Current `legacy/pg_exporter.yml` / `legacy/config/` on main |
 | PostgreSQL 9.0 and older | Unsupported | — |
 | PgBouncer 1.8+ | Version-specific collectors | `0910`-`0940` collector files; connect to the admin database |
 {.full-width .wide .expand}
@@ -26,7 +26,9 @@ The bundled PgBouncer collectors require 1.8 or later. That version changed the 
 
 ## Release Validation
 
-The v1.5.0 candidate passed default primary collection as a non-superuser on PostgreSQL 9.1–9.6, 10–18, and 19 RC1, plus PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, and concurrent scrape/health/reload requests were also tested. PostgreSQL 19 evidence refers to RC1, not an exhaustive check of every final-release build, extension, or production workload.
+The v1.6.0 release artifacts passed primary collection as a non-superuser on PostgreSQL 9.2–9.6 with the legacy bundle, PostgreSQL 10–18 and 19 RC1 with the default bundle, and PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, concurrent scrape/health/reload, HTTPS authentication, package installation, and upgrades from 1.5.0 were also tested. PostgreSQL 19 evidence refers to RC1. Windows and Intel macOS artifacts received static checks, not runtime acceptance.
+
+A separate follow-up verified PostgreSQL 9.1–9.6 with legacy configuration from main at `282e19d`, including tables with and without TOAST. PostgreSQL 9.1 needs that maintained bundle: the legacy query in older tags, including v1.6.0, can fail on relation OID 0. This configuration-only fix is outside the v1.6.0 release artifact boundary; see [installation](/install/#compatibility). These checks do not establish coverage of every extension, server build, or production workload.
 
 ## Metric and Dashboard Compatibility {#metric-compatibility}
 

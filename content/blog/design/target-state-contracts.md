@@ -9,7 +9,7 @@ tags: [Design, PostgreSQL, Reliability]
 summary: "v1.5.0 target-state guarantees, with the v1.6.0 amendment separating health probes from collection."
 ---
 
-> **Status:** Original contract shipped in v1.5.0; the 2026-11-09 health amendment is implemented in v1.6.0.<br>
+> **Status:** Original contract shipped in v1.5.0; the 2026-11-09 health amendment shipped in v1.6.0.<br>
 > **Decision / last verification:** Original decision 2026-10-23; health amendment and local verification 2026-11-09.<br>
 > **Scope:** v1.5.0 at source `1891254` (fix baseline `9b378cb`). This decision covers target URL handling and database identity, metadata-driven collector selection, HTTP health snapshots, YAML durations, and metrics-route validation.<br>
 > **Delivery:** Source committed and pushed; tag v1.5.0 points to `18912540fe5edce0ed0ee81fac0d989738ecaa87`. CI and the release workflow passed; the GitHub Release, RPM/DEB packages, archives, and Docker images are published. This does not establish production deployment or production-load acceptance.
@@ -34,7 +34,7 @@ In v1.5.0, the existing routes, HTTP codes, background probe interval, and scrap
 
 ## Health probe independence (v1.6.0, 2026-11-09)
 
-This amendment addresses [#112](https://github.com/pgsty/pg_exporter/issues/112) and [#113](https://github.com/pgsty/pg_exporter/issues/113), based on main at `9d9804f`. It is included in v1.6.0 at `6bee809`, after v1.5.0. Source is committed and pushed; CI and draft artifacts are separate release gates. A draft is not a public release or production deployment.
+This amendment addresses [#112](https://github.com/pgsty/pg_exporter/issues/112) and [#113](https://github.com/pgsty/pg_exporter/issues/113), based on main at `9d9804f`. It is included in v1.6.0 at `6bee809`, after v1.5.0. The v1.6.0 tag and published GitHub artifacts retain that source boundary. CI and local artifact acceptance passed; production deployment and production-load verification remain separate.
 
 Before v1.6.0, the main server's collection lock delayed background probes, and a scrape that finishes collecting child databases can overwrite a newer probe with an older main-target observation. Keep a separate short lock for database-handle initialization. Probes share the existing pool without waiting for the collection lock. The main PostgreSQL pool remains at three connections and discovered pools at one. Increase the main PgBouncer pool from one to two, allowing one serial collection and one serial probe without falsely reporting down because the exporter occupied its own connection. This costs at most one additional PgBouncer connection. Probes pass a connection-timeout context, but handshake phases still need an appropriate DSN `connect_timeout`; this is not a hard termination deadline.
 

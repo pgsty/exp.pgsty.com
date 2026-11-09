@@ -9,10 +9,10 @@ tags: [Design, PostgreSQL, Compatibility]
 summary: "v1.6.0：保留集群级进度采集，其他数据库的用户关系使用数字 OID。"
 ---
 
-> **状态：** 已实现，纳入 v1.6.0。<br>
+> **状态：** 已随 v1.6.0 发布。<br>
 > **决策／最后核验：** 2026-11-09。<br>
 > **范围：** main 上的 v1.6.0，源码 `6bee809`，解决 [#115](https://github.com/pgsty/pg_exporter/issues/115)，涵盖 PostgreSQL 12+ 的 vacuum、建索引与 cluster 进度，未随 v1.5.0 发布。<br>
-> **交付：** 源码已提交并推送为 `6bee809`，本地验证与 [Test Release](https://github.com/pgsty/pg_exporter/actions/runs/42549895870) 通过。带版本号的压缩包、RPM／DEB 与校验和已为草稿构建；公开标签、镜像发布、部署与生产验证仍是独立关卡。
+> **交付：** v1.6.0 标签指向 `6bee809`；GitHub Release、带版本号的压缩包、RPM／DEB 和校验和已发布。源码 CI、制品验收与 amd64／arm64 容器 TLS 验证通过。软件发布不等于生产部署或生产负载验证。
 
 ## 决策
 

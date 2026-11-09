@@ -9,10 +9,10 @@ tags: [Design, Security, Compatibility]
 summary: "v1.6.0: include CA roots and the license in both scratch images, and exercise TLS and DEB artifacts in release validation."
 ---
 
-> **Status:** Implemented in v1.6.0.<br>
+> **Status:** Shipped in v1.6.0.<br>
 > **Decision date / last verification:** 2026-11-08 / 2026-11-09.<br>
 > **Scope:** Container and release-validation changes based on v1.5.0 source `1891254`, incorporating the packaging correction from `68c95ba`. No exporter runtime or driver change.<br>
-> **Delivery:** Source `370b9fa` is included in v1.6.0 at `6bee809` and pushed. Both Docker build paths, amd64/arm64 GoReleaser images, three DEB architectures, Go tests, static checks, and the documentation build are validated. CI and draft artifacts are tracked by the v1.6.0 release gates; public tag, published images, deployment, and production verification remain separate.
+> **Delivery:** Tag v1.6.0 points to `6bee809`; the GitHub Release, versioned archives, RPM/DEB packages, and checksums are published. Source CI, artifact acceptance, and amd64/arm64 container TLS checks passed. Software publication does not establish production deployment or production-load verification.
 
 ## Problem
 
