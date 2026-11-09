@@ -13,7 +13,7 @@ hero:
   eyebrow: PostgreSQL + PgBouncer → Prometheus
   title: PG Exporter
   desc: 'Export PostgreSQL and PgBouncer metrics to Prometheus. Define collectors in YAML and SQL. PG Exporter selects queries for the target version, role, and installed extensions.'
-  note: v1.5.0 · 460 metric definitions · PostgreSQL and PgBouncer
+  note: v1.6.0 · 460 metric definitions · PostgreSQL and PgBouncer
   actions:
     - label: Download
       url: download/
@@ -26,7 +26,7 @@ hero:
   image:
     light: img/architecture-light.svg
     dark: img/architecture-dark.svg
-    alt: 'PG Exporter v1.5.0: each process collects one PostgreSQL instance or PgBouncer target and serves metrics to Prometheus or VictoriaMetrics'
+    alt: 'PG Exporter v1.6.0: each process collects one PostgreSQL instance or PgBouncer target and serves metrics to Prometheus or VictoriaMetrics'
   media:
     ratio: 1fr 0.94fr
     max_width: 500px

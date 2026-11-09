@@ -137,6 +137,14 @@ pg_exporter_query_scrape_error_count > 0
 
 ## 抓取缓慢或超时
 
+自 v1.6.0 起，采集、等待与响应写入阶段合计最多接纳两个指标请求。采集仍串行；第二个请求在剩余预算内等待，更多请求返回 HTTP 503。预算默认为 30 秒，合法、有限且为正数的 `X-Prometheus-Scrape-Timeout-Seconds` 请求头可以缩短它。等待期间取消的请求不执行 SQL。
+
+请求取消后，不再启动下一个采集器或数据库。已启动且 timeout 为正数的采集器，其谓词链与主 SQL 共用同一期限，继续执行并正常缓存结果。负数 timeout 关闭该期限，此时查询随请求取消。中断的采集在连接仍允许响应时返回 503。驱动与网络阻塞意味着这些期限不是硬性的墙钟上限；建连握手需另行设置 DSN 的 `connect_timeout`。
+
+中断轮次不增加 `pg_exporter_scrape_error_count` 和 `pg_exporter_server_scrape_error_count`，轮次汇总日志为 INFO `interrupted`；查询错误计数与 fatal 查询的 ERROR 日志仍然保留。因此，恰好与请求取消重叠的真实失败可能不计入这两个轮次计数。请求没有取消时，连接／预检失败和 fatal 查询失败（包括自身超时）仍按错误计数；非 fatal 失败仍体现在查询级计数中。
+
+刷新失败沿用原有失败 TTL。尤其是负数 timeout 的 fatal 采集器，被取消后会缓存 fatal 失败；后续有效抓取可能对该失败计数并返回 `pg_up 0`，直到成功刷新。建议 fatal 采集器保留正数 timeout。设计理由见 [采集生命周期](/zh/design/scrape-lifetime/)。
+
 `/stat` 以毫秒显示主目标各查询的耗时；`pg_exporter_query_scrape_duration` 按 `datname`、`query` 标签以秒报告耗时。两者都提供错误次数，具体错误内容在日志中。
 
 常见处理顺序：
@@ -168,7 +176,7 @@ curl -i -X POST http://127.0.0.1:9630/reload
 
 | 现象 | 可能原因与修复 |
 |:---|:---|
-| Docker 中 TLS 校验失败 | `scratch` 镜像没有 CA 包；挂载 CA 并设置 `sslrootcert` |
+| Docker 中 TLS 校验失败 | v1.6.0 包含公共 CA 根证书；检查主机名与信任链，私有 CA 仍需挂载并设置 `sslrootcert` |
 | 软件包服务忽略 `.pgpass` | 检查 `prometheus` 的主目录或 `PGPASSFILE`，将文件归属服务用户并设为 `0600` |
 | RPM 自动化找不到 v1.4.1 产物 | 产物前缀从 `pg_exporter` 改为 `pg-exporter` |
 | 容器替换后配置修改消失 | 将 `/etc/pg_exporter.yml` 从持久配置挂载 |

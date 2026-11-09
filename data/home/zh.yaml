@@ -13,7 +13,7 @@ hero:
   eyebrow: PostgreSQL + PgBouncer → Prometheus
   title: PG Exporter
   desc: '将 PostgreSQL 与 PgBouncer 指标导出到 Prometheus。用 YAML 和 SQL 定义采集器，PG Exporter 根据目标版本、角色与已安装的扩展选择查询。'
-  note: v1.5.0 · 460 指标定义 · PostgreSQL 与 PgBouncer
+  note: v1.6.0 · 460 指标定义 · PostgreSQL 与 PgBouncer
   actions:
     - label: 下载安装
       url: download/
@@ -26,7 +26,7 @@ hero:
   image:
     light: img/architecture-zh-light.svg
     dark: img/architecture-zh-dark.svg
-    alt: 'PG Exporter v1.5.0：每个进程采集一个 PostgreSQL 实例或 PgBouncer 目标，通过 /metrics 供 Prometheus 或 VictoriaMetrics 抓取'
+    alt: 'PG Exporter v1.6.0：每个进程采集一个 PostgreSQL 实例或 PgBouncer 目标，通过 /metrics 供 Prometheus 或 VictoriaMetrics 抓取'
   media:
     ratio: 1fr 0.94fr
     max_width: 500px

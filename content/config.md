@@ -9,7 +9,7 @@ categories: [Reference]
 
 A YAML **collector** defines a SQL query, its metrics, and when to run it. This page describes the configuration used by stable **v{{< param version >}}**. For process flags and environment variables, see [Command Reference](/cmd/).
 
-Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config).
+Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config).
 
 ## Configuration Loading
 
@@ -206,7 +206,7 @@ Usage notes:
   reject the collector result
 - `scale` is applied to the observation before bucket assignment; as with scalar
   columns, timestamp and boolean values are exempt from `scale`
-- The [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0450-pg_xact_age.yml)
+- The [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/config/0450-pg_xact_age.yml)
   collector in the default bundle serves as the reference implementation
 
 For the example above, the 95th percentile is:
@@ -251,6 +251,16 @@ normal execution time and below the scrape time budget. Connection prechecks use
 the separate `--connect-timeout` flag, measured in milliseconds.
 
 Cache TTLs and timeouts reject NaN, infinity, and positive values that overflow Go's `time.Duration`. Cache TTLs remain nonnegative; finite negative timeouts still disable the deadline.
+
+### Request Lifetime
+
+Since v1.6.0, at most two metrics requests are admitted across collection, waiting, and response writing. Collection is serial; the second request waits within its remaining budget, and further requests receive HTTP 503. The budget is 30 seconds, shortened by a valid positive finite `X-Prometheus-Scrape-Timeout-Seconds` header. A canceled waiter executes no SQL.
+
+Cancellation stops work before the next collector or database. A started collector with a positive timeout finishes its predicate chain and main SQL within their shared deadline and caches the result normally. A negative timeout removes that deadline: the query then follows request cancellation. An interrupted collection returns 503 if the connection still permits a response. Driver/network delays mean these deadlines are not hard wall-clock limits; configure the DSN `connect_timeout` for connection handshakes.
+
+An interrupted pass does not increment `pg_exporter_scrape_error_count` or `pg_exporter_server_scrape_error_count`; its summary log is INFO `interrupted`. Query errors and fatal-query ERROR logs remain observable. A real failure coinciding with request cancellation can therefore be omitted from these two pass counters. Without request cancellation, connection/precheck failures and fatal query failures, including their own timeouts, retain their error accounting. Non-fatal failures remain query-level errors.
+
+Failed refreshes retain the existing failure TTL. In particular, canceling a negative-timeout fatal collector caches a fatal failure: a later live scrape can count that failure and report `pg_up 0` until a successful refresh. Keep a positive timeout on fatal collectors. See [scrape lifetime](/design/scrape-lifetime/) for the rationale.
 
 ### Version Compatibility
 

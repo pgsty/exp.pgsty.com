@@ -9,7 +9,7 @@ categories: [指南]
 
 PG Exporter 将 SQL 和指标定义放在 YAML 中，由 Go 运行时加载定义、采集结果并提供 HTTP 服务。修改功能时，先确定行为由哪一层负责。
 
-用户手册以稳定版 **v{{< param version >}}** 为准。开发提交 `c0ba58a` 还包含尚未发布的 Composite、Patroni、pgBackRest 和 PostgreSQL 日志功能，其约定与状态见[设计归档](/zh/design/)。
+用户手册以稳定版 **v{{< param version >}}** 为准。独立的 `snort` 开发分支包含实验性的 Composite、Patroni、pgBackRest 和 PostgreSQL 日志功能，`main` 与 v1.6.0 不包含这些功能，其约定与状态见[设计归档](/zh/design/)。
 
 ## 仓库结构
 
@@ -28,7 +28,7 @@ PG Exporter 将 SQL 和指标定义放在 YAML 中，由 Go 运行时加载定�
 
 ## 工具链
 
-v1.5.0 标签声明 Go **1.27.3**。按所构建版本的要求选择工具链。构建稳定标签：
+v1.6.0 标签声明 Go **1.27.3**。按所构建版本的要求选择工具链。构建稳定标签：
 
 ```bash
 git clone --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git
@@ -158,4 +158,4 @@ python3 bin/sync_pg_exporter_content.py \
 
 对照 `content/` 检查导入结果，只应用相关变更。本站扩展指南和设计归档在本仓库直接维护。
 
-PG Exporter 源码贡献使用 [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.5.0/LICENSE)，本站原创文档使用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。软件改动提交到 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)，文档改动提交到 [pgsty/exp.pgsty.com](https://github.com/pgsty/exp.pgsty.com)。
+PG Exporter 源码贡献使用 [Apache 2.0](https://github.com/pgsty/pg_exporter/blob/v1.6.0/LICENSE)，本站原创文档使用 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。软件改动提交到 [pgsty/pg_exporter](https://github.com/pgsty/pg_exporter)，文档改动提交到 [pgsty/exp.pgsty.com](https://github.com/pgsty/exp.pgsty.com)。

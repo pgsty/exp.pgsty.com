@@ -29,7 +29,7 @@ The exporter also reports its own state. For example, `pg_up` reports whether th
 
 ## Customize collection
 
-Start with the bundled configuration, [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/pg_exporter.yml). Add queries when you need more metrics. Each collector can have its own selection conditions, timeout, and cache TTL.
+Start with the bundled configuration, [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/pg_exporter.yml). Add queries when you need more metrics. Each collector can have its own selection conditions, timeout, and cache TTL.
 
 After you change the configuration, reload it through `/reload`. The exporter checks the new configuration before it replaces the current configuration. You do not need to compile or restart the program.
 

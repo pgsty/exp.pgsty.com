@@ -50,13 +50,21 @@ pg_in_recovery 0
 
 A database failure can still produce HTTP 200 with `pg_up 0`. Check the metrics as well as the HTTP status. Non-fatal collector errors omit that collector’s results; other collectors continue. A fatal collector error stops further collection on that database. HTTP 500 indicates a gathering or encoding error, such as conflicting metric definitions.
 
+Since v1.6.0, at most two metrics requests are admitted across collection, waiting, and response writing. Collection is serial; the second request waits within its remaining budget, and further requests receive HTTP 503. The budget is 30 seconds, shortened by a valid positive finite `X-Prometheus-Scrape-Timeout-Seconds` header. A canceled waiter executes no SQL.
+
+Cancellation stops work before the next collector or database. A started collector with a positive timeout finishes its predicate chain and main SQL within their shared deadline and caches the result normally. A negative timeout removes that deadline: the query then follows request cancellation. An interrupted collection returns 503 if the connection still permits a response. Driver/network delays mean these deadlines are not hard wall-clock limits; configure the DSN `connect_timeout` for connection handshakes.
+
+An interrupted pass does not increment `pg_exporter_scrape_error_count` or `pg_exporter_server_scrape_error_count`; its summary log is INFO `interrupted`. Query errors and fatal-query ERROR logs remain observable. A real failure coinciding with request cancellation can therefore be omitted from these two pass counters. Without request cancellation, connection/precheck failures and fatal query failures, including their own timeouts, retain their error accounting. Non-fatal failures remain query-level errors.
+
+Failed refreshes retain the existing failure TTL. In particular, canceling a negative-timeout fatal collector caches a fatal failure: a later live scrape can count that failure and report `pg_up 0` until a successful refresh. Keep a positive timeout on fatal collectors. See [scrape lifetime](/design/scrape-lifetime/) for the rationale.
+
 ### Self-Monitoring Metrics
 
 The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer. `--namespace` changes this prefix. It does not change names defined in YAML.
 
 | Metric | Type | Labels | Meaning |
 |:---|:---|:---|:---|
-| `pg_up` | Gauge | — | 1 when the main target’s last scrape completed without a connection or fatal collector error |
+| `pg_up` | Gauge | — | Main target availability from collection; see the interruption rule below |
 | `pg_version` | Gauge | — | Main target’s version number |
 | `pg_in_recovery` | Gauge | — | 1 for a replica, 0 for a primary; use when `pg_up = 1` |
 | `pg_exporter_build_info` | Gauge | version, revision, branch, builddate, goversion, goos, goarch | Constant 1 with build metadata |
@@ -83,11 +91,13 @@ Configured constant labels are added to these series. Cumulative per-database an
 
 `--disable-intro` hides all built-in metrics in this table, including `pg_up`. YAML metrics, Go/process metrics, and HTTP health checks remain available.
 
+During interruption, `pg_up` preserves the previous main-target availability, or 1 if this pass completed its precheck. If the very first precheck is interrupted before success, it remains 0 until a later successful scrape. Child-database interruptions follow the same per-server rule and do not increment the main-target error counter.
+
 ## Health Checks
 
 ### GET /up
 
-`/up` reports the main target’s cached health state. The exporter probes the target once per second and also updates this state after a scrape. HTTP health requests read the cache without issuing SQL.
+After initialization, only the once-per-second background health probe updates the HTTP health snapshot. Slow collection does not hold the probe lock, and completing a scrape cannot overwrite a newer probe result. HTTP health requests read the snapshot without executing SQL. `pg_up` and `pg_in_recovery` remain scrape metrics: a fatal collector can make `pg_up` zero while `/up` still returns 200 for a reachable database. The main PostgreSQL pool allows three connections, PgBouncer two, and each discovered database one.
 
 | State in response body | HTTP status | Meaning |
 |:---|:---|:---|

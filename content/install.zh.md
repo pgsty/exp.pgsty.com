@@ -9,6 +9,8 @@ categories: [参考]
 
 Linux 服务可选择软件包，独立运行可选择发布压缩包，Docker 与 Kubernetes 使用容器镜像。[下载页面](/zh/download/)提供各方式的对照与安装命令，本页列出发布文件和仓库配置。
 
+软件仓库安装使用仓库当前提供的包，可能晚于 GitHub Release。需要精确安装 v1.6.0 时，使用下方带版本号的发布制品。
+
 ## Pigsty
 
 [Pigsty](https://pigsty.cc) 将 PG Exporter 与指标存储、告警规则和 Grafana 仪表盘一起部署。以下命令下载 Pigsty；随后按[安装指南](https://pigsty.cc/docs/setup/install/)配置并部署监控栈。
@@ -102,11 +104,11 @@ docker run --rm pgsty/pg_exporter:{{< param version >}} --version
 
 镜像内置 `/etc/pg_exporter.yml`，自定义采集器可挂载到该路径。自动发现默认启用，设置 `PG_EXPORTER_AUTO_DISCOVERY=false` 即可关闭。
 
-按 [Docker 部署示例](/zh/deploy/#docker-部署)挂载连接密钥并启动容器。镜像基于 `scratch`，没有 CA 证书包；使用 `sslmode=verify-ca` 或 `verify-full` 时，需挂载 CA 文件。
+按 [Docker 部署示例](/zh/deploy/#docker-部署)挂载连接密钥并启动容器。镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
 
 ## 从源码构建
 
-检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.5.0 要求 Go 1.27.3 或更高版本）：
+检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.6.0 要求 Go 1.27.3 或更高版本）：
 
 ```bash
 git clone --depth 1 --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git pg_exporter-src

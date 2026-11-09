@@ -50,13 +50,21 @@ pg_in_recovery 0
 
 数据库故障时，端点仍可能返回 HTTP 200，正文中 `pg_up` 为 0。检查 HTTP 状态时也要检查指标。普通采集器出错后，本轮不输出该采集器的结果，其他采集器继续执行。致命采集器出错后，停止该数据库的后续采集。HTTP 500 表示指标汇总或编码失败，例如指标定义冲突。
 
+自 v1.6.0 起，采集、等待与响应写入阶段合计最多接纳两个指标请求。采集仍串行；第二个请求在剩余预算内等待，更多请求返回 HTTP 503。预算默认为 30 秒，合法、有限且为正数的 `X-Prometheus-Scrape-Timeout-Seconds` 请求头可以缩短它。等待期间取消的请求不执行 SQL。
+
+请求取消后，不再启动下一个采集器或数据库。已启动且 timeout 为正数的采集器，其谓词链与主 SQL 共用同一期限，继续执行并正常缓存结果。负数 timeout 关闭该期限，此时查询随请求取消。中断的采集在连接仍允许响应时返回 503。驱动与网络阻塞意味着这些期限不是硬性的墙钟上限；建连握手需另行设置 DSN 的 `connect_timeout`。
+
+中断轮次不增加 `pg_exporter_scrape_error_count` 和 `pg_exporter_server_scrape_error_count`，轮次汇总日志为 INFO `interrupted`；查询错误计数与 fatal 查询的 ERROR 日志仍然保留。因此，恰好与请求取消重叠的真实失败可能不计入这两个轮次计数。请求没有取消时，连接／预检失败和 fatal 查询失败（包括自身超时）仍按错误计数；非 fatal 失败仍体现在查询级计数中。
+
+刷新失败沿用原有失败 TTL。尤其是负数 timeout 的 fatal 采集器，被取消后会缓存 fatal 失败；后续有效抓取可能对该失败计数并返回 `pg_up 0`，直到成功刷新。建议 fatal 采集器保留正数 timeout。设计理由见 [采集生命周期](/zh/design/scrape-lifetime/)。
+
 ### 自监控指标
 
 PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`。`--namespace` 可以修改此类前缀，但不会改变 YAML 中定义的指标名。
 
 | 指标 | 类型 | 标签 | 含义 |
 |:---|:---|:---|:---|
-| `pg_up` | Gauge | — | 主目标最近一次抓取没有连接错误或致命采集器错误时为 1 |
+| `pg_up` | Gauge | — | 采集所见的主目标可用状态；中断规则见下文 |
 | `pg_version` | Gauge | — | 主目标的版本号 |
 | `pg_in_recovery` | Gauge | — | 从库为 1，主库为 0；在 `pg_up = 1` 时使用 |
 | `pg_exporter_build_info` | Gauge | version、revision、branch、builddate、goversion、goos、goarch | 恒为 1，标签记录构建信息 |
@@ -83,11 +91,13 @@ PostgreSQL 的内置指标前缀默认为 `pg`，PgBouncer 默认为 `pgbouncer`
 
 `--disable-intro` 会隐藏表中所有内置指标，包括 `pg_up`。YAML 指标、Go/进程指标和 HTTP 健康检查仍然可用。
 
+中断时，`pg_up` 保留主目标此前的可用状态；若本轮预检已成功，则保留为 1。首次预检在成功前被中断时，保持为 0，后续成功抓取可恢复。子数据库中断采用相同的单库规则，不增加主目标的错误计数。
+
 ## 健康检查
 
 ### GET /up
 
-`/up` 返回主连接目标的缓存健康状态。exporter 每秒探测一次目标，抓取完成后也会更新状态。HTTP 健康请求只读取缓存，不执行 SQL。
+初始化后，HTTP 健康状态只由每秒一次的后台探测更新。慢采集不再占用探测所需的锁，采集完成也不会覆盖更新的探测结果。HTTP 健康请求只读取快照，不执行 SQL。`pg_up` 与 `pg_in_recovery` 仍属于采集指标：fatal 采集器失败可能使 `pg_up` 为 0，而数据库可达时 `/up` 仍返回 200。PostgreSQL 主连接池最多三个连接，PgBouncer 最多两个，每个发现数据库最多一个。
 
 | 响应正文 | HTTP 状态 | 含义 |
 |:---|:---|:---|

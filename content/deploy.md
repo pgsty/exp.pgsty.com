@@ -164,7 +164,7 @@ services:
       - ./ca.crt:/run/secrets/pg-ca.crt:ro
 ```
 
-The image includes the default collector configuration. To replace it, add a read-only mount at `/etc/pg_exporter.yml`. It is a `scratch` image with no shell or CA bundle, so the CA mount above is required for this TLS example.
+The image includes the default collector configuration. To replace it, add a read-only mount at `/etc/pg_exporter.yml`. The `scratch` image includes the system CA bundle and license, but no shell. Publicly trusted certificates can use the bundled roots; mount your private CA and set `sslrootcert` when using a private PKI with `sslmode=verify-ca` or `verify-full`.
 
 Check the running container:
 

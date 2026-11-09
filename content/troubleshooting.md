@@ -137,6 +137,14 @@ Run the collector SQL manually as the monitoring user in the same database. Pres
 
 ## Scrapes Are Slow or Time Out
 
+Since v1.6.0, at most two metrics requests are admitted across collection, waiting, and response writing. Collection is serial; the second request waits within its remaining budget, and further requests receive HTTP 503. The budget is 30 seconds, shortened by a valid positive finite `X-Prometheus-Scrape-Timeout-Seconds` header. A canceled waiter executes no SQL.
+
+Cancellation stops work before the next collector or database. A started collector with a positive timeout finishes its predicate chain and main SQL within their shared deadline and caches the result normally. A negative timeout removes that deadline: the query then follows request cancellation. An interrupted collection returns 503 if the connection still permits a response. Driver/network delays mean these deadlines are not hard wall-clock limits; configure the DSN `connect_timeout` for connection handshakes.
+
+An interrupted pass does not increment `pg_exporter_scrape_error_count` or `pg_exporter_server_scrape_error_count`; its summary log is INFO `interrupted`. Query errors and fatal-query ERROR logs remain observable. A real failure coinciding with request cancellation can therefore be omitted from these two pass counters. Without request cancellation, connection/precheck failures and fatal query failures, including their own timeouts, retain their error accounting. Non-fatal failures remain query-level errors.
+
+Failed refreshes retain the existing failure TTL. In particular, canceling a negative-timeout fatal collector caches a fatal failure: a later live scrape can count that failure and report `pg_up 0` until a successful refresh. Keep a positive timeout on fatal collectors. See [scrape lifetime](/design/scrape-lifetime/) for the rationale.
+
 `/stat` reports query durations in milliseconds for the main target. `pg_exporter_query_scrape_duration` reports seconds for each `datname` and `query`. Error counts are available in both; error text is in the logs.
 
 Typical remedies:
@@ -168,7 +176,7 @@ Collector YAML can also be reloaded with `SIGHUP`; Unix builds additionally acce
 
 | Symptom | Likely cause and fix |
 |:---|:---|
-| TLS verification fails in Docker | `scratch` image has no CA bundle; mount the CA and set `sslrootcert` |
+| TLS verification fails in Docker | v1.6.0 includes public CA roots; check hostname/trust and mount your private CA with `sslrootcert` when needed |
 | `.pgpass` is ignored in packaged service | Check the `prometheus` account home or `PGPASSFILE`; give the service user ownership and use mode `0600` |
 | RPM automation cannot find v1.4.1 artifact | Artifact prefix changed from `pg_exporter` to `pg-exporter` |
 | Config edits disappear after container replacement | Mount `/etc/pg_exporter.yml` from durable configuration |

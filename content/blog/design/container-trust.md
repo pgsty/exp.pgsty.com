@@ -2,17 +2,17 @@
 title: "Container Trust Roots and Release Checks"
 linkTitle: "Container Trust"
 date: "2026-11-08T00:00:00+08:00"
-lastmod: "2026-11-08T00:00:00+08:00"
+lastmod: "2026-11-09T00:00:00+08:00"
 authors: [Vonng]
 categories: [design]
 tags: [Design, Security, Compatibility]
-summary: "Unreleased: include CA roots and the license in both scratch images, and exercise TLS and DEB artifacts in release validation."
+summary: "v1.6.0: include CA roots and the license in both scratch images, and exercise TLS and DEB artifacts in release validation."
 ---
 
-> **Status:** Implemented but unreleased.<br>
-> **Decision date / last verification:** 2026-11-08 / 2026-11-08.<br>
+> **Status:** Implemented in v1.6.0.<br>
+> **Decision date / last verification:** 2026-11-08 / 2026-11-09.<br>
 > **Scope:** Container and release-validation changes based on v1.5.0 source `1891254`, incorporating the packaging correction from `68c95ba`. No exporter runtime or driver change.<br>
-> **Delivery:** Source is committed locally as `370b9fa`; the companion record is committed locally. Both Docker build paths, amd64/arm64 GoReleaser images, three DEB architectures, Go tests, static checks, and the documentation build are validated. Push, tag, published packages/images, deployment, and production verification have not occurred for this change.
+> **Delivery:** Source `370b9fa` is included in v1.6.0 at `6bee809` and pushed. Both Docker build paths, amd64/arm64 GoReleaser images, three DEB architectures, Go tests, static checks, and the documentation build are validated. CI and draft artifacts are tracked by the v1.6.0 release gates; public tag, published images, deployment, and production verification remain separate.
 
 ## Problem
 
@@ -44,4 +44,4 @@ The TLS cases use a local server and generated certificates, without depending o
 
 Release artifact checks retain RPM compatibility assertions and add DEB metadata, payload, configuration modes, conffiles, and installation checks. All DEB architectures are inspected; the container's native architecture is installed and its binary runs as `prometheus`. Checksums must verify successfully.
 
-These gates validate a build candidate. Stable documentation and release notes must continue to describe v1.5.0 until a new tag and its artifacts actually ship this correction.
+These gates validate a build candidate. The v1.6.0 manuals and release copy describe this correction; deploy them with the public release, after its artifacts are available.

@@ -32,6 +32,21 @@ v1.5.0 候选已以非超级用户通过 PostgreSQL 9.1–9.6、10–18、19 RC1
 
 升级 Exporter 和升级 PostgreSQL 大版本，可能改变指标契约的不同部分。以下对照以 [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config) 与 [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config) 标签中的内置 SQL 采集器为准，包含各列的 `rename` 映射；列出的是实际导出的指标名，不只是 PostgreSQL 视图列名或 YAML 文件名。自定义采集器与业务告警规则仍需单独检查。
 
+### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}
+
+在相同 PostgreSQL 版本上，内置 SQL 指标名、标签键、类型与单位不变，仍有 460 个去重指标定义。以下行为与标签取值发生变化：
+
+| 接口／指标 | 变化 | 升级处理 |
+|:---|:---|:---|
+| `pg_vacuuming_*`、`pg_indexing_*`、`pg_clustering_*` | 其他数据库的用户关系在 `relname` 中使用数字 OID；当前库与系统目录仍解析名称 | 更新 YAML；面板保留 `datname`、`pid`，接受新的标签取值 |
+| `/up` 与角色路由 | 初始化后只由健康探测更新 HTTP 状态 | 数据库可达时可能返回 200，而 fatal 采集器让 `pg_up` 为 0；按告警目的选择信号 |
+| 抓取错误计数 | 中断轮次不计作目标错误 | 单个查询失败查看查询级计数与日志，详见 [API](/zh/api/) |
+| `/metrics` 并发 | 最多接纳两个请求，等待可取消，超额或采集预算耗尽返回 503 | 控制并发抓取者数量并检查时间预算 |
+| PgBouncer 连接池 | 最大连接数由一个增为两个 | 为串行采集与后台探测各留一个连接 |
+{.full-width .wide .expand}
+
+从更早版本升级时，下文 v1.5.0 和 PostgreSQL 大版本迁移规则仍然适用。v1.6.0 不包含 `snort` 的实验组件。
+
 ### Exporter v1.4.1 → v1.5.0 {#exporter-150-metrics}
 
 保持 PostgreSQL 版本不变时，**内置 SQL 指标没有新增、删除或改名**，指标类型和单位也不变。不过，以下变化仍需检查仪表盘与告警：
@@ -144,9 +159,7 @@ groups:
 
 ## 容器约束
 
-官方镜像基于 `scratch` 构建，只包含静态 exporter 二进制、`/etc/pg_exporter.yml` 与许可证；镜像内没有 Shell，也没有操作系统 CA 证书包。使用 `sslmode=verify-ca` 或 `verify-full` 时，需要显式挂载 CA 证书。
-
-这里描述的是已发布的 v1.5.0 镜像。[尚未发布的容器修正](/zh/design/container-trust/)为两条构建路径补入公共 CA 根证书，并让普通源码构建也包含许可证。使用私有 CA 的部署仍需显式提供 CA 文件。
+镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
 
 ## 采集器级前置条件
 

@@ -164,7 +164,7 @@ services:
       - ./ca.crt:/run/secrets/pg-ca.crt:ro
 ```
 
-镜像已内置默认采集配置。需要替换时，将自定义文件只读挂载到 `/etc/pg_exporter.yml`。镜像基于 `scratch`，没有 Shell 和 CA 证书包，因此上面的 TLS 示例需要挂载 CA。
+镜像已内置默认采集配置。需要替换时，将自定义文件只读挂载到 `/etc/pg_exporter.yml`。镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
 
 检查容器：
 

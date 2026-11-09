@@ -34,7 +34,7 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
-PostgreSQL 10–13 的 v1.5.0 默认订阅采集器还需要在 Exporter 的 **主连接数据库** 中执行以下列级授权，不能只在订阅所属数据库授权：
+PostgreSQL 10–13 的 v1.6.0 默认订阅采集器还需要在 Exporter 的 **主连接数据库** 中执行以下列级授权，不能只在订阅所属数据库授权：
 
 ```sql
 GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
@@ -101,7 +101,7 @@ export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=
 
 `verify-full` 同时验证证书链与主机名，URL 中的主机名必须与服务器证书匹配。`require` 加密连接，但不校验主机名。
 
-官方 Docker 镜像基于 `scratch`，没有系统 CA 包。请将所需 CA 文件挂载进容器，并在 `sslrootcert` 中引用精确路径。
+镜像基于 `scratch`，包含系统 CA 证书包与许可证，但没有 shell。公共受信任证书可使用内置根证书；使用私有 CA 且启用 `sslmode=verify-ca` 或 `verify-full` 时，仍需挂载私有 CA 并设置 `sslrootcert`。
 
 ## 缩小 HTTP 暴露面
 
@@ -169,4 +169,4 @@ curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
 
 ## 工具链安全更新
 
-v1.5.0 使用 Go 1.27.3 与更新后的依赖，包括 `x/net` 0.61.0。[发布安全说明](/zh/release/v1.5.0/#安全更新)列出了纳入的 CVE 修复，并区分静态符号／包匹配与未导入模块的公告。升级时替换重新构建的二进制及配套采集器配置；仅更新主机编译器不会修复已有二进制。
+v1.6.0 使用 Go 1.27.3 与更新后的依赖，包括 `x/net` 0.62.0，并保留 v1.5.0 已记录的安全修复。[发布安全说明](/zh/release/v1.5.0/#安全更新)列出了纳入的 CVE 修复，并区分静态符号／包匹配与未导入模块的公告。升级时替换重新构建的二进制及配套采集器配置；仅更新主机编译器不会修复已有二进制。

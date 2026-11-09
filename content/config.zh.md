@@ -9,7 +9,7 @@ categories: [参考]
 
 YAML **采集器** 定义 SQL 查询、输出指标和执行条件。本页适用于稳定版 **v{{< param version >}}**。进程参数和环境变量见[命令参考](/zh/cmd/)。
 
-配置可以是单个 YAML 文件或一个目录。默认 `pg_exporter.yml` 由 [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config) 目录下的 57 个采集器文件和 1 个配置参考文件合并而成。
+配置可以是单个 YAML 文件或一个目录。默认 `pg_exporter.yml` 由 [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config) 目录下的 57 个采集器文件和 1 个配置参考文件合并而成。
 
 --------
 
@@ -210,7 +210,7 @@ pg_xact_age:
   不要对这些快照序列使用 `rate()` 或 `increase()`
 - SQL `NULL` 默认不计入观测，配置 `default` 后按默认值计入。没有观测的标签组不输出直方图序列。无法转换的值、NaN 或无穷值会使整个采集器结果失败
 - `scale` 在分桶前应用于观测值；与标量列一致，时间戳与布尔值不受 `scale` 影响
-- 默认配置包中的 [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/config/0450-pg_xact_age.yml) 采集器即为参考实现
+- 默认配置包中的 [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/config/0450-pg_xact_age.yml) 采集器即为参考实现
 
 上例的 95 分位数可以这样计算：
 
@@ -249,6 +249,16 @@ timeout: -1    # 关闭该采集器的查询超时
 超时覆盖所有谓词和主查询的总执行时间。将其设为高于正常查询耗时、低于抓取时间预算的值。连接预检查使用独立的 `--connect-timeout` 参数，单位为毫秒。
 
 缓存 TTL 和超时配置拒绝 NaN、无穷大以及会使 Go `time.Duration` 溢出的正数。缓存 TTL 仍须非负；有限的负超时仍表示关闭查询期限。
+
+### 请求生命周期
+
+自 v1.6.0 起，采集、等待与响应写入阶段合计最多接纳两个指标请求。采集仍串行；第二个请求在剩余预算内等待，更多请求返回 HTTP 503。预算默认为 30 秒，合法、有限且为正数的 `X-Prometheus-Scrape-Timeout-Seconds` 请求头可以缩短它。等待期间取消的请求不执行 SQL。
+
+请求取消后，不再启动下一个采集器或数据库。已启动且 timeout 为正数的采集器，其谓词链与主 SQL 共用同一期限，继续执行并正常缓存结果。负数 timeout 关闭该期限，此时查询随请求取消。中断的采集在连接仍允许响应时返回 503。驱动与网络阻塞意味着这些期限不是硬性的墙钟上限；建连握手需另行设置 DSN 的 `connect_timeout`。
+
+中断轮次不增加 `pg_exporter_scrape_error_count` 和 `pg_exporter_server_scrape_error_count`，轮次汇总日志为 INFO `interrupted`；查询错误计数与 fatal 查询的 ERROR 日志仍然保留。因此，恰好与请求取消重叠的真实失败可能不计入这两个轮次计数。请求没有取消时，连接／预检失败和 fatal 查询失败（包括自身超时）仍按错误计数；非 fatal 失败仍体现在查询级计数中。
+
+刷新失败沿用原有失败 TTL。尤其是负数 timeout 的 fatal 采集器，被取消后会缓存 fatal 失败；后续有效抓取可能对该失败计数并返回 `pg_up 0`，直到成功刷新。建议 fatal 采集器保留正数 timeout。设计理由见 [采集生命周期](/zh/design/scrape-lifetime/)。
 
 ### 版本兼容性
 

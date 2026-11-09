@@ -29,7 +29,7 @@ Prometheus 请求 `/metrics` 时，导出器执行选中的查询并返回指标
 
 ## 自定义采集
 
-先使用内置配置 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.5.0/pg_exporter.yml)，需要更多指标时再添加查询。每个采集器都可以单独设置选择条件、超时与缓存 TTL。
+先使用内置配置 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/pg_exporter.yml)，需要更多指标时再添加查询。每个采集器都可以单独设置选择条件、超时与缓存 TTL。
 
 修改配置后，通过 `/reload` 重载。导出器先检查新配置，再替换当前配置，无需重新编译或重启程序。
 

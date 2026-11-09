@@ -9,7 +9,7 @@ to the exact version in `go.mod`.
 - Site: <https://exp.pgsty.com>
 - Product source: <https://github.com/pgsty/pg_exporter>
 - Theme source: <https://github.com/pgsty/oink>
-- Latest stable release documented: `v1.5.0`
+- Latest stable release documented: `v1.6.0`
 
 ## Content layout
 
@@ -199,7 +199,7 @@ python3 bin/build_architecture_diagram.py
 
 This writes four homepage diagrams to `static/img/architecture*.svg`: English
 and Chinese, each with light and dark variants. Edit the generator rather than
-the SVGs. The diagram describes stable v1.5.0: one process targets a PostgreSQL
+the SVGs. The diagram describes stable v1.6.0: one process targets a PostgreSQL
 instance or PgBouncer and serves `/metrics`. Unreleased components belong in
 the Design archive. Product counts and their source boundary are recorded in
 `data/home/metrics.yaml`.

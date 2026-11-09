@@ -137,13 +137,13 @@ channels:
     url: https://hub.docker.com/r/pgsty/pg_exporter
     note: >-
       A multi-architecture amd64/arm64 image. It is a scratch image: it carries
-      the static binary, the merged config, and the license, but no shell and no
-      operating-system CA bundle, so mount a CA explicitly for `verify-full`.
+      the static binary, the merged config, the license, and the system CA bundle,
+      but no shell. Mount a private CA and set `sslrootcert` for private PKI.
       Replace `postgres` in the example URL with a hostname reachable from
       the container, and set the monitoring credentials.
     note_zh: >-
-      多架构 amd64/arm64 镜像。它基于 scratch 构建，只包含静态二进制、合并配置与许可证，
-      没有 shell 也没有系统 CA 证书；使用 `verify-full` 时请显式挂载 CA。
+      多架构 amd64/arm64 镜像。它基于 scratch 构建，包含静态二进制、合并配置、许可证与系统 CA 证书，
+      没有 shell；使用私有 CA 时仍需挂载证书并设置 `sslrootcert`。
       将示例 URL 中的 `postgres` 替换为容器可达的数据库主机名，并设置监控凭据。
     steps:
       - title: Run a pinned image
@@ -229,15 +229,15 @@ channels:
       发布压缩包、软件包及其 SHA-256 摘要。在 macOS 上使用 `shasum -a 256 <文件>`
       与对应条目比对。
     checksums: |
-      4cb1dfbbc6d22101d43e0841f6d5d86042a15f3894bd6e935151a1b94b94b980  pg-exporter-1.5.0-1.aarch64.rpm
-      c7efed8ab2062b873c87664987d73b8ff37fde89943b98a7f1967aef7961f7eb  pg-exporter-1.5.0-1.ppc64le.rpm
-      6788c7cbb83e4708199f00a1ddf8057f74ba3606e28e3aa26eeaf1a453a1e1b3  pg-exporter-1.5.0-1.x86_64.rpm
-      91f705bbeba67a6a4c4e6a4595efb3d214f787d38d7e310c3121a594ecdce28f  pg-exporter_1.5.0-1_amd64.deb
-      75dd27cdd734a84d703d594d0b4173d21ff302c95cb04320da528f8789f147bd  pg-exporter_1.5.0-1_arm64.deb
-      f41acf7693172d5e843df2c5e49e5173e74f9519f84b5453b0dcfa834c1efaf1  pg-exporter_1.5.0-1_ppc64le.deb
-      f3e5d03d3c3ca7df5e50e017e1c18ec78ccdc099f610296f674349acc1466975  pg_exporter-1.5.0.darwin-amd64.tar.gz
-      3fb47e285c2700227b0437c827fdbf0d87a93e24befb5e94f439082073700e8d  pg_exporter-1.5.0.darwin-arm64.tar.gz
-      e372f6defb844b4bfbe3286b40dba3d4aae2ce72c4bed9980e3b9a56507aef56  pg_exporter-1.5.0.linux-amd64.tar.gz
-      19f34db9e034d1437791af52676cf32e60a669d4a5036e0cc3efbe14efb61cde  pg_exporter-1.5.0.linux-arm64.tar.gz
-      aef7e910480656ddc744c4d6f1cdb3448299e6c63a469d9110fdf280d0c15ac2  pg_exporter-1.5.0.linux-ppc64le.tar.gz
-      cf39b3ecfeeac7d088e348ab24e717e600e3f61c98611b0815fb18fef1db1d9f  pg_exporter-1.5.0.windows-amd64.tar.gz
+      1bb4bfeb40f215a6ad3998d4399b12074bacfe03920a38784599b04eb1ca3028  pg-exporter-1.6.0-1.aarch64.rpm
+      87b248e8eab5e872146c63e7c8fff86eb8f4dcd4db5505957aff2e17043bd3a2  pg-exporter-1.6.0-1.ppc64le.rpm
+      955ee5549aebc347fa1bd4e0517812c687d037faf17054a678fbc5bfffc4eb03  pg-exporter-1.6.0-1.x86_64.rpm
+      448c9dfc738e1425ace8cafdf44bbc677c2aee21fb89ec49faec5a8d6b3c35ef  pg-exporter_1.6.0-1_amd64.deb
+      e10a3823b2fb30c44eba1d6b1f833af3244a2451221c8d65071eaad32673c001  pg-exporter_1.6.0-1_arm64.deb
+      61bc7efd5ac9a7a3bef2860a67bfa1ee0b379a09e85389ca75306aec3dee209a  pg-exporter_1.6.0-1_ppc64le.deb
+      f7a57acb1ccd9fd074e6a41a8811ae0fc482a7d8db34aec508415ff0ee93f5b2  pg_exporter-1.6.0.darwin-amd64.tar.gz
+      6c8e475ba675fa86921c07e5031db8073ddd012f198e88f66548be0d246baab7  pg_exporter-1.6.0.darwin-arm64.tar.gz
+      e392328ca27fd7a84e3273f2cfe70d28d2e7f162dcc735fb9fb96182368a59e3  pg_exporter-1.6.0.linux-amd64.tar.gz
+      3795371d53388757778eea180ea91e71e51945a4864ccef315a93a230d8729fe  pg_exporter-1.6.0.linux-arm64.tar.gz
+      ec2b7c7419a6f111494ccc777cfb86825e421b0f494aa68623e05e3c31d681f4  pg_exporter-1.6.0.linux-ppc64le.tar.gz
+      92fc6b5e58fcaa120473f59856874b8a44ea0e7388d417c5de0fbc709d6687f2  pg_exporter-1.6.0.windows-amd64.tar.gz

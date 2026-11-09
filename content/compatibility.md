@@ -32,6 +32,21 @@ The v1.5.0 candidate passed default primary collection as a non-superuser on Pos
 
 An exporter upgrade and a PostgreSQL major-version upgrade can change different parts of the metric contract. The comparisons below use the bundled SQL collectors at tags [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config) and [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config), including each column's `rename` setting. They describe exported metric names, not just PostgreSQL view columns or YAML filenames. Custom collectors and application-specific alert rules need their own review.
 
+### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}
+
+No built-in SQL metric names, label keys, types, or units change on the same PostgreSQL version. The bundle still has 460 distinct metric definitions. The following behavior and label values do change:
+
+| Surface | Change | Upgrade action |
+|:---|:---|:---|
+| `pg_vacuuming_*`, `pg_indexing_*`, `pg_clustering_*` | Foreign-database user relations use numeric OIDs in `relname`; connected-database and system-catalog names still resolve | Deploy the new YAML; retain `datname` and `pid` in dashboards and expect new label values |
+| `/up` and role routes | Only health probes update HTTP state after initialization | A reachable target can return 200 even when a fatal collector makes `pg_up 0`; choose the signal appropriate to the alert |
+| Scrape error counters | Interrupted passes do not add target errors | Use query-level errors and logs for individual query failures; see [API](/api/) |
+| `/metrics` overlap | Two admitted requests; cancelable waiting; excess or expired collection returns 503 | Keep scrapers within the admission limit and check their time budgets |
+| PgBouncer pool | Maximum connections increase from one to two | Allow one collection connection and one probe connection |
+{.full-width .wide .expand}
+
+The historical v1.5.0 and PostgreSQL-version migrations below still apply when upgrading from older versions. v1.6.0 does not add the experimental `snort` components.
+
 ### Exporter v1.4.1 → v1.5.0 {#exporter-150-metrics}
 
 With the same PostgreSQL version, **no bundled SQL metric names are added, removed, or renamed**, and metric types and units remain unchanged. The following changes still require dashboard and alert review:
@@ -144,9 +159,7 @@ Release archives include the binary, merged default config, license, default env
 
 ## Container Constraints
 
-The official image is built from `scratch`. It contains the static exporter binary, `/etc/pg_exporter.yml`, and the license, but no shell and no operating-system CA bundle. Mount required CA certificates explicitly when using `sslmode=verify-ca` or `verify-full`.
-
-This describes the published v1.5.0 image. The [unreleased container correction](/design/container-trust/) adds public CA roots to both build paths and includes the license in ordinary source builds as well. Private CA deployments still need an explicit CA file.
+The `scratch` image includes the system CA bundle and license, but no shell. Publicly trusted certificates can use the bundled roots; mount your private CA and set `sslrootcert` when using a private PKI with `sslmode=verify-ca` or `verify-full`.
 
 ## Collector-Level Requirements
 

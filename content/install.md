@@ -9,6 +9,8 @@ categories: [Reference]
 
 Use a Linux package for a managed service, a release archive for a standalone binary, or a container for Docker and Kubernetes. [Download](/download/) compares these options and provides installation commands. This page lists the release files and repository setup.
 
+Repository installation follows the repository’s current package, which can lag the GitHub release. Use the versioned release artifacts below when you need exactly v1.6.0.
+
 ## Pigsty
 
 [Pigsty](https://pigsty.io) deploys PG Exporter with metrics storage, alert rules, and Grafana dashboards. The command below downloads Pigsty; follow its [installation guide](https://pigsty.io/docs/setup/install/) to configure and deploy the monitoring stack.
@@ -103,11 +105,11 @@ docker run --rm pgsty/pg_exporter:{{< param version >}} --version
 
 The image includes `/etc/pg_exporter.yml`. Mount a replacement there for custom collectors. Auto-discovery is already enabled; set `PG_EXPORTER_AUTO_DISCOVERY=false` to disable it.
 
-Use the [Docker deployment example](/deploy/#docker-deployment) to mount the connection secret and start the container. The `scratch` image has no CA bundle; mount a CA file when using `sslmode=verify-ca` or `verify-full`.
+Use the [Docker deployment example](/deploy/#docker-deployment) to mount the connection secret and start the container. The `scratch` image includes the system CA bundle and license, but no shell. Publicly trusted certificates can use the bundled roots; mount your private CA and set `sslrootcert` when using a private PKI with `sslmode=verify-ca` or `verify-full`.
 
 ## Build from Source
 
-Check out the release tag and use the Go version declared by its `go.mod` (Go 1.27.3 or later for v1.5.0):
+Check out the release tag and use the Go version declared by its `go.mod` (Go 1.27.3 or later for v1.6.0):
 
 ```bash
 git clone --depth 1 --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git pg_exporter-src
