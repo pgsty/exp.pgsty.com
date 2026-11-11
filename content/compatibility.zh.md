@@ -28,7 +28,7 @@ PostgreSQL 19 分支覆盖恢复、锁、自动清理评分、WAL、订阅、接
 
 v1.6.0 发布基线已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配置）、10–18 与 19 RC1（默认配置）的主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复、并发采集／健康检查／重载、HTTPS 认证、软件包安装及从 1.5.0 升级。PG19 证据对应 RC1。后续使用 `282e19d` 的 legacy 配置（已包含在 v1.6.1 源码标签中）补充验证了 PostgreSQL 9.1–9.6 中有 TOAST 和无 TOAST 的表，获取方式见[安装说明](/zh/install/#compatibility)。
 
-v1.6.1 维护版本通过了完整 race 测试与 Go 1.21 HTTP mux 测试、模块与生成配置一致性门禁、六平台交叉编译、RPM／DEB 软件包与校验和检查、公开多架构 Docker 镜像的 CA／TLS／文件内容验证，以及 Darwin arm64 上针对 PostgreSQL 18.6 的真实多库采集与重载验收。Windows 与 Intel macOS 制品仅做静态检查，没有实际运行验收。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
+v1.6.1 维护版本通过了完整 race 测试与 Go 1.21 HTTP mux 测试、模块与生成配置一致性门禁、六平台交叉编译、RPM／DEB 软件包安装与校验和验证（Debian 12 与 Rocky Linux 9）、公开多架构 Docker 镜像的 CA／TLS／文件内容与流复制主库抓取验证，以及非超级用户 `monitor` 在 PostgreSQL 9.1–9.6（`legacy/pg_exporter.yml`）、PostgreSQL 10–18 与 19 RC1 主库（默认 `pg_exporter.yml`）、PostgreSQL 18 与 19 RC1 物理流复制备库及 PgBouncer 1.26.1 上的实机矩阵验收（全部零查询报错）。Windows、Linux ppc64le 与 Intel macOS 制品仅做构建与校验和检查，没有实际运行验收。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
 
 ## 指标、仪表盘与告警兼容性 {#metric-compatibility}
 
@@ -40,7 +40,7 @@ v1.6.1 维护版本通过了完整 race 测试与 Go 1.21 HTTP mux 测试、模�
 
 | 接口／指标 | 变化 | 升级处理 |
 |:---|:---|:---|
-| `pg_table_age` 与分区父表汇总计数 | 分区父表（`relkind = 'p'`）的 `age` 报告为 `0` 而非 `2147483647`，无子分区的分区父表汇总计数收敛为 `0` 而非 `NULL` | 更新 YAML；冻结年龄告警不再对分区父表产生误报 |
+| `pg_table_age` 与 `pg_table` 扫描／元组汇总 | 分区父表（`relkind = 'p'`，`relfrozenxid = 0`）的 `age` 报告为 `0` 而非 `2147483647`；`tbl_scan`、`tup_read`、`n_tup_mod` 对可空列做 `COALESCE`，修复无索引表（`idx_scan IS NULL`）或无统计行关系求和退化为 `0` 的问题（`pg_table_10` 元组 Gauge 同步补齐 `default: 0`） | 更新 YAML；冻结年龄告警不再对分区父表产生误报 |
 | `pg_table_size_*` | 在 `pg_catalog`、`information_schema`、`pg_toast` 之外排除临时模式（`pg_temp*`） | 更新 YAML，跳过其他会话的瞬态临时表 |
 | `pg_activity_max_*_duration` | 通过 `greatest(..., 0)` 将亚毫秒级负数耗时截断为 `0` | 更新 YAML |
 | `pg_tsdb_hypertable_*` | 使用 `format('%I.%I', ...)::regclass` 安全引用模式名与超表名 | 在大小写敏感或特殊字符命名上启用 TimescaleDB 采集器时更新 YAML |

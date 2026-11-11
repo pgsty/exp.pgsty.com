@@ -28,7 +28,7 @@ The bundled PgBouncer collectors require 1.8 or later. That version changed the 
 
 The v1.6.0 release baseline passed primary collection as a non-superuser on PostgreSQL 9.2–9.6 with the legacy bundle, PostgreSQL 10–18 and 19 RC1 with the default bundle, and PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, concurrent scrape/health/reload, HTTPS authentication, package installation, and upgrades from 1.5.0 were also tested. PostgreSQL 19 evidence refers to RC1. A follow-up verified PostgreSQL 9.1–9.6 with the legacy configuration at `282e19d` (included in the v1.6.1 source tag), covering tables with and without TOAST; see [installation](/install/#compatibility).
 
-The v1.6.1 maintenance release passed the full race and Go 1.21 HTTP-mux test suites, module and generated-config gates, six-target cross-builds, RPM/DEB package and checksum checks, published multi-arch Docker CA/TLS/payload verification, and Darwin arm64 live multi-database collection and reload acceptance on PostgreSQL 18.6. Windows and Intel macOS artifacts received static checks, not runtime acceptance. These checks do not establish coverage of every extension, server build, or production workload.
+The v1.6.1 maintenance release passed the full race and Go 1.21 HTTP-mux test suites, module and generated-config gates, six-target cross-builds, RPM/DEB package installation and checksum checks (Debian 12 and Rocky Linux 9), published multi-arch Docker CA/TLS/payload and live streaming-primary verification, and non-superuser (`monitor`) live acceptance across PostgreSQL 9.1–9.6 (`legacy/pg_exporter.yml`), PostgreSQL 10–18 and 19 RC1 primaries (`pg_exporter.yml`), PostgreSQL 18 and 19 RC1 physical streaming standbys, and PgBouncer 1.26.1 with zero query errors. Windows, Linux ppc64le, and Intel macOS artifacts received build/checksum checks rather than runtime acceptance. These checks do not establish coverage of every extension, server build, or production workload.
 
 ## Metric and Dashboard Compatibility {#metric-compatibility}
 
@@ -40,7 +40,7 @@ No built-in SQL metric names, label keys, types, buckets, HTTP routes, or CLI fl
 
 | Surface | Change | Upgrade action |
 |:---|:---|:---|
-| `pg_table_age` and partitioned rollup counters | Partitioned parent tables (`relkind = 'p'`) report `age = 0` instead of `2147483647`, and empty partitioned parent rollup sums coalesce to `0` instead of `NULL` | Deploy the new YAML; freeze-age alerts no longer fire falsely on partitioned parents |
+| `pg_table_age` and `pg_table` scan/tuple totals | Partitioned parent tables (`relkind = 'p'`, `relfrozenxid = 0`) report `age = 0` instead of `2147483647`; `tbl_scan`, `tup_read`, and `n_tup_mod` coalesce nullable terms so indexless tables (`idx_scan IS NULL`) and relations without stats rows retain accurate sums (`default: 0` also aligned on `pg_table_10` tuple gauges) | Deploy the new YAML; freeze-age alerts no longer fire falsely on partitioned parents |
 | `pg_table_size_*` | Excludes temporary schemas (`pg_temp*`) alongside `pg_catalog`, `information_schema`, and `pg_toast` | Deploy the new YAML so transient session temp tables are skipped |
 | `pg_activity_max_*_duration` | Clamps sub-millisecond negative durations to `0` via `greatest(..., 0)` | Deploy the new YAML |
 | `pg_tsdb_hypertable_*` | Quotes schema and hypertable names via `format('%I.%I', ...)::regclass` | Deploy the new YAML if enabling TimescaleDB hypertable metrics on quoted identifiers |
