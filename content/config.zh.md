@@ -121,6 +121,8 @@ collector_branch_name:           # 此采集器的唯一标识符
 - 指标名、标签名会在加载阶段进行 Prometheus 规则校验，非法配置会直接报错
 - 启动和重载时会检查固定标签与查询标签的冲突。开启内置指标时，`datname` 和 `query` 也是保留名称。任一已配置采集器使用 `HISTOGRAM` 时，固定标签不能叫 `le`
 - SQL 结果必须包含所有 `LABEL` 和 `HISTOGRAM` 列，即使返回零行也一样。缺少这些列会拒绝整个采集器结果。缺失的 `GAUGE` 或 `COUNTER` 列会被记录到日志并略过
+- 返回 `GAUGE` 或 `COUNTER` 列的查询必须保证标签元组唯一；重复时拒绝整个采集器结果，未设置 `fatal: true` 时其他采集器继续工作。只有直方图指标的查询会聚合同标签多行。不同采集器仍须避免输出相同指标和标签组合
+- `scale` 与 `default` 必须为有限数，加载时拒绝 NaN 与无穷值
 - 如果使用单行内联 `metrics` 写法，`description` 建议始终使用双引号包裹，避免 YAML 歧义
 
 ## 核心配置元素 {#core-configuration-elements}
@@ -361,7 +363,7 @@ metrics:
       description: "检查点写入时间（秒）"
 ```
 
-对 `GAUGE` 和 `COUNTER`，SQL NULL 默认转换为 `NaN`，可用 `default` 指定替代值。数值和默认值都会乘以 `scale`（默认 1）。时间戳转换为 Unix 秒数，布尔值转换为 0 或 1，两者不受缩放影响。NULL 标签转换为空字符串。
+对 `GAUGE` 和 `COUNTER`，SQL NULL 默认转换为 `NaN`，可用 `default` 指定替代值。数值和默认值都会乘以 `scale`（默认 1）。时间戳转换为 Unix 秒数，布尔值转换为 0 或 1，两者不受缩放影响。NULL 标签转换为空字符串。配置中的 `scale` 与 `default` 必须是有限数；未设置标量默认值时隐式输出 NaN 的行为保留。
 
 ## 采集器组织 {#collector-organization}
 

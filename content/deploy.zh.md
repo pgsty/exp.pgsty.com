@@ -121,7 +121,7 @@ sudo journalctl -u pg_exporter -n 50 --no-pager
 
 确认指标中有 `pg_up 1`。持续查看日志可运行 `sudo journalctl -u pg_exporter -f`。
 
-修改 `/etc/default/pg_exporter` 后执行 `sudo systemctl restart pg_exporter`。只修改采集器 YAML 时，可直接通过 `systemctl` 或 HTTP 重载：
+安装或替换 systemd 单元后，先执行 `sudo systemctl daemon-reload`。升级二进制或修改 `/etc/default/pg_exporter` 后，执行 `sudo systemctl restart pg_exporter`。自 v1.6.1 起附带的单元定义了 `ExecReload`；以后只改采集器 YAML 时，可通过 `systemctl` 或 HTTP 重载：
 
 ```bash
 sudo systemctl reload pg_exporter

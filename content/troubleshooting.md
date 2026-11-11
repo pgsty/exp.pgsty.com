@@ -124,6 +124,8 @@ pg_exporter_query_scrape_error_count > 0
 
 This value counts errors since the last plan was built; a nonzero value can describe an earlier failure. Scrape again and check whether it increases. Read the log for the error text.
 
+A `duplicate label set` error means a scalar query returned multiple rows with the same labels. Aggregate the SQL rows or add a meaningful distinguishing label. Since v1.6.1, that collector result is discarded before gathering; non-fatal failures leave other collectors available. Histogram-only collectors still group repeated label tuples. Duplicate series from different collectors remain a separate configuration problem.
+
 Common causes include:
 
 - monitoring role lacks access to an optional view or function;

@@ -127,10 +127,10 @@ This installs the binary at `/usr/local/bin/pg_exporter`. Use the [foreground ex
 Use the default configuration for PostgreSQL 10 and later; it includes PostgreSQL 19 branches. PostgreSQL 9.1–9.6 uses the [legacy bundle maintained on main](https://github.com/pgsty/pg_exporter/tree/main/legacy), separately from versioned binary archives and RPM/DEB packages. Download that bundle independently of the binary:
 
 ```bash
-curl -fSL https://raw.githubusercontent.com/pgsty/pg_exporter/main/legacy/pg_exporter.yml -o pg_exporter-legacy.yml
+curl -fSL https://raw.githubusercontent.com/pgsty/pg_exporter/v1.6.1/legacy/pg_exporter.yml -o pg_exporter-legacy.yml
 pg_exporter --config=pg_exporter-legacy.yml --url='postgres://monitor@localhost:5432/postgres'
 ```
 
-For PostgreSQL 9.1, use main at `282e19d` or later (included in the v1.6.1 source tag). This configuration fix handles tables without a TOAST relation; the older query in v1.6.0 and earlier source tags can fail with `could not open relation with OID 0` and omit all `pg_table_size_*` samples. Binary archives and RPM/DEB packages still distribute only the default PostgreSQL 10+ configuration.
+For PostgreSQL 9.1, use the pinned v1.6.1 configuration above, or main at `282e19d` or later. This configuration fix handles tables without a TOAST relation; the older query in v1.6.0 and earlier source tags can fail with `could not open relation with OID 0` and omit all `pg_table_size_*` samples. Binary archives and RPM/DEB packages still distribute only the default PostgreSQL 10+ configuration.
 
 The bundled PgBouncer collectors require 1.8 or later. See [Compatibility](/compatibility/) for version selection, architectures, and collector prerequisites.

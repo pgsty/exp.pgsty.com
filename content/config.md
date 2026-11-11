@@ -121,6 +121,8 @@ Validation rules:
 - Metric names and label names are validated against Prometheus naming rules during load; invalid configs fail fast
 - At startup and reload, constant labels are checked against query labels. With built-in metrics enabled, `datname` and `query` are also reserved. If any configured collector uses `HISTOGRAM`, a constant label named `le` is rejected
 - SQL results must include every `LABEL` and `HISTOGRAM` column, even for zero-row results. Missing either rejects the whole collector result. A missing `GAUGE` or `COUNTER` column is logged and omitted
+- Queries with a returned `GAUGE` or `COUNTER` column must have unique label tuples. Repeated tuples reject the entire collector result; other collectors continue unless `fatal: true`. Histogram-only queries aggregate repeated tuples. Separate collectors must still avoid exporting the same metric and label set
+- `scale` and `default` must be finite numbers; NaN and infinity are rejected during loading
 - If you use one-line inline `metrics` definitions, keep `description` values double-quoted to avoid YAML ambiguity
 
 ## Core Configuration Elements {#core-configuration-elements}
@@ -381,7 +383,7 @@ metrics:
 For `GAUGE` and `COUNTER`, SQL NULL becomes `NaN` unless `default` is set.
 Numeric values and defaults are multiplied by `scale` (default 1). Timestamps
 become Unix seconds and Booleans become 0 or 1; neither is scaled. A NULL label
-becomes an empty string.
+becomes an empty string. The configured `scale` and `default` must be finite; the implicit NaN for an unset scalar default remains valid.
 
 ## Collector Organization {#collector-organization}
 

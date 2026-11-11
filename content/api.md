@@ -60,7 +60,7 @@ Failed refreshes retain the existing failure TTL. In particular, canceling a neg
 
 ### Self-Monitoring Metrics {#self-monitoring-metrics}
 
-The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer. `--namespace` changes this prefix. It does not change names defined in YAML.
+The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer. `--namespace` changes this prefix. Invalid prefixes are rejected at startup. It does not change names defined in YAML.
 
 | Metric | Type | Labels | Meaning |
 |:---|:---|:---|:---|
@@ -87,7 +87,7 @@ The default built-in prefix is `pg` for PostgreSQL and `pgbouncer` for PgBouncer
 | `pg_exporter_query_cache_ttl` | Gauge | datname, query | Remaining result-cache lifetime, in seconds |
 {.full-width .wide .expand}
 
-Configured constant labels are added to these series. Cumulative per-database and per-query counts are exposed as Gauges. Query statistics reset when the server is replanned, including after a reload. Database statistics reset when its connection object is recreated.
+Configured constant labels are added to these series. On `pg_exporter_build_info`, the reserved `version`, `revision`, `branch`, `builddate`, `goversion`, `goos`, and `goarch` values take precedence over user labels. Invalid labels on per-database or per-query internal samples are warned about and skipped instead of causing a panic. Cumulative per-database and per-query counts are exposed as Gauges. Query statistics reset when the server is replanned, including after a reload. Database statistics reset when its connection object is recreated.
 
 `--disable-intro` hides all built-in metrics in this table, including `pg_up`. YAML metrics, Go/process metrics, and HTTP health checks remain available.
 

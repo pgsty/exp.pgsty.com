@@ -126,10 +126,10 @@ sudo install -m 0644 pg_exporter.yml /etc/pg_exporter.yml
 PostgreSQL 10 及更高版本使用默认配置，其中已包含 PostgreSQL 19 分支。PostgreSQL 9.1–9.6 使用 [main 分支单独维护的 legacy 配置包](https://github.com/pgsty/pg_exporter/tree/main/legacy)，它不包含在带版本号的二进制压缩包或 RPM／DEB 中。请独立下载此配置：
 
 ```bash
-curl -fSL https://raw.githubusercontent.com/pgsty/pg_exporter/main/legacy/pg_exporter.yml -o pg_exporter-legacy.yml
+curl -fSL https://raw.githubusercontent.com/pgsty/pg_exporter/v1.6.1/legacy/pg_exporter.yml -o pg_exporter-legacy.yml
 pg_exporter --config=pg_exporter-legacy.yml --url='postgres://monitor@localhost:5432/postgres'
 ```
 
-PostgreSQL 9.1 请使用 main 上 `282e19d` 或之后的配置（已包含在 v1.6.1 源码标签中）。该修复处理没有 TOAST 关系的表；v1.6.0 及更早源码标签中的旧查询可能报 `could not open relation with OID 0`，导致整组 `pg_table_size_*` 指标缺失。二进制压缩包和 RPM／DEB 仍仅分发面向 PostgreSQL 10+ 的默认配置。
+PostgreSQL 9.1 可使用上面固定到 v1.6.1 的配置，或 main 上 `282e19d` 及之后的版本。该修复处理没有 TOAST 关系的表；v1.6.0 及更早源码标签中的旧查询可能报 `could not open relation with OID 0`，导致整组 `pg_table_size_*` 指标缺失。二进制压缩包和 RPM／DEB 仍仅分发面向 PostgreSQL 10+ 的默认配置。
 
 内置 PgBouncer 采集器要求 1.8 或更高版本。版本选择、体系结构与采集器前置条件见[兼容性](/zh/compatibility/)。

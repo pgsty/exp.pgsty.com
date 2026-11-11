@@ -40,11 +40,14 @@ v1.6.1 维护版本通过了完整 race 测试与 Go 1.21 HTTP mux 测试、模�
 
 | 接口／指标 | 变化 | 升级处理 |
 |:---|:---|:---|
-| `pg_table_age` 与 `pg_table` 扫描／元组汇总 | 分区父表（`relkind = 'p'`，`relfrozenxid = 0`）的 `age` 报告为 `0` 而非 `2147483647`；`tbl_scan`、`tup_read`、`n_tup_mod` 对可空列做 `COALESCE`，修复无索引表（`idx_scan IS NULL`）或无统计行关系求和退化为 `0` 的问题（`pg_table_10` 元组 Gauge 同步补齐 `default: 0`） | 更新 YAML；冻结年龄告警不再对分区父表产生误报 |
-| `pg_table_size_*` | 在 `pg_catalog`、`information_schema`、`pg_toast` 之外排除临时模式（`pg_temp*`） | 更新 YAML，跳过其他会话的瞬态临时表 |
-| `pg_activity_max_*_duration` | 通过 `greatest(..., 0)` 将亚毫秒级负数耗时截断为 `0` | 更新 YAML |
-| `pg_tsdb_hypertable_*` | 使用 `format('%I.%I', ...)::regclass` 安全引用模式名与超表名 | 在大小写敏感或特殊字符命名上启用 TimescaleDB 采集器时更新 YAML |
-| 重复标签隔离与子库连接池回收 | 重复的 `(指标, 标签)` 行仅使所属采集器失败，不再中断整次 `/metrics` 响应；自动发现移除数据库或重载时关闭旧子库连接池 | 升级二进制（以及支持 `systemctl reload pg_exporter` 的服务单元文件） |
+| `pg_table_age`、扫描汇总与行数估计 | 全部四个分支对 `relfrozenxid = 0` 输出零；空值不再吞掉有效的扫描／元组汇总，空行数估计默认为零 | 更新 YAML；检查分区父表冻结年龄告警及无索引表修正后的数值 |
+| `pg_table_size_*` | 除系统目录外，排除 `pg_temp*` 与 `pg_toast*` 模式 | 更新 YAML，避免访问其他会话的临时表 |
+| `pg_activity_max_*_duration` | 将状态、事务和会话的负耗时截断为零 | 更新 YAML |
+| `pg_tsdb_hypertable_*` | 正确引用模式名与超表名 | 启用该可选采集器时更新 YAML |
+| 重复标量行 | 重复标签使所属采集器失败；非致命失败不影响其他采集器继续执行。只有直方图指标的查询仍聚合同标签多行 | 标量查询须保证每组标签一行；不同采集器间的冲突仍需另行修正 |
+| 数值选项与内置指标 | `scale`／`default` 必须有限；非法命名空间在启动时报错；构建信息字段不能被覆盖 | 检查自定义 YAML 与固定标签，升级二进制 |
+| 子库连接池 | 移除或替换目标时安全关闭旧池；重载复用池并清空采集计划 | 升级二进制；重载不是连接池重置操作 |
+| systemd 重载 | 软件包单元增加 `ExecReload` | 用 `daemon-reload` 更新单元；更换二进制需 restart，只改 YAML 可 reload |
 {.full-width .wide .expand}
 
 ### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}

@@ -121,7 +121,7 @@ sudo journalctl -u pg_exporter -n 50 --no-pager
 
 Check that the metrics include `pg_up 1`. To follow new log entries, run `sudo journalctl -u pg_exporter -f`.
 
-After editing `/etc/default/pg_exporter`, run `sudo systemctl restart pg_exporter`. For changes to collector YAML only, reload it directly with `systemctl` or HTTP:
+After installing or replacing the systemd unit, run `sudo systemctl daemon-reload`. After upgrading the binary or editing `/etc/default/pg_exporter`, run `sudo systemctl restart pg_exporter`. The unit shipped since v1.6.1 defines `ExecReload`; for later collector-YAML-only changes, use `systemctl` or HTTP:
 
 ```bash
 sudo systemctl reload pg_exporter

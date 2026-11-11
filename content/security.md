@@ -87,7 +87,7 @@ pg_exporter --config=/etc/pg_exporter.yml
 
 The file must contain one connection URL and be readable by the runtime user. Surrounding whitespace is removed. When this source is selected, an unreadable file stops startup. Clear higher-priority URL settings first; for the packaged service, remove `PG_EXPORTER_URL` from `/etc/default/pg_exporter`.
 
-Logs mask passwords in valid URLs and `password=` parameters. Malformed-URL diagnostics omit the original connection string. Keep the source file restricted to the service account and its administrator.
+Logs mask passwords in valid URLs and the values of `password=` and `sslpassword=` parameters. Malformed-URL diagnostics omit the original connection string. Keep the source file restricted to the service account and its administrator.
 
 Malformed URLs and invalid query escaping stop startup. Decoded query parameter names must be nonempty and contain neither Unicode whitespace nor `=`. Diagnostics use fixed text without the connection string or offending name. Rejecting these inputs prevents explicit TLS settings from being silently dropped during URL normalization. When `PG_EXPORTER_URL_FILE` is selected, empty or whitespace-only contents are also rejected; this check concerns the connection URL file, not TLS private-key files.
 

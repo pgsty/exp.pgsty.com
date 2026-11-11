@@ -40,11 +40,14 @@ No built-in SQL metric names, label keys, types, buckets, HTTP routes, or CLI fl
 
 | Surface | Change | Upgrade action |
 |:---|:---|:---|
-| `pg_table_age` and `pg_table` scan/tuple totals | Partitioned parent tables (`relkind = 'p'`, `relfrozenxid = 0`) report `age = 0` instead of `2147483647`; `tbl_scan`, `tup_read`, and `n_tup_mod` coalesce nullable terms so indexless tables (`idx_scan IS NULL`) and relations without stats rows retain accurate sums (`default: 0` also aligned on `pg_table_10` tuple gauges) | Deploy the new YAML; freeze-age alerts no longer fire falsely on partitioned parents |
-| `pg_table_size_*` | Excludes temporary schemas (`pg_temp*`) alongside `pg_catalog`, `information_schema`, and `pg_toast` | Deploy the new YAML so transient session temp tables are skipped |
-| `pg_activity_max_*_duration` | Clamps sub-millisecond negative durations to `0` via `greatest(..., 0)` | Deploy the new YAML |
-| `pg_tsdb_hypertable_*` | Quotes schema and hypertable names via `format('%I.%I', ...)::regclass` | Deploy the new YAML if enabling TimescaleDB hypertable metrics on quoted identifiers |
-| Collector duplicate-label isolation & child pools | Duplicate `(metric, labels)` rows fail only the offending collector instead of the whole `/metrics` response; dropped child-database pools close on discovery refresh and reload | Upgrade the binary (and unit file for `systemctl reload pg_exporter`) |
+| `pg_table_age`, scan totals, and row estimates | All four branches report zero for `relfrozenxid = 0`; nullable terms no longer erase valid scan/tuple totals; nullable row estimates default to zero | Deploy the new YAML; review partitioned-parent freeze-age alerts and corrected indexless-table values |
+| `pg_table_size_*` | Excludes `pg_temp*` and `pg_toast*` schemas as well as the catalog/information schemas | Deploy the new YAML to avoid querying another session's temporary tables |
+| `pg_activity_max_*_duration` | Negative state, transaction, and session durations clamp to zero | Deploy the new YAML |
+| `pg_tsdb_hypertable_*` | Quotes schema and hypertable names correctly | Deploy the new YAML if enabling this optional collector |
+| Duplicate scalar rows | Repeated label tuples fail that collector; non-fatal failures allow other collectors to continue. Histogram-only queries still aggregate repeated tuples | Ensure scalar queries return one row per label tuple; fix cross-collector collisions separately |
+| Numeric options and self-metrics | `scale` / `default` must be finite; invalid namespaces fail startup; build-info fields cannot be overwritten | Review custom YAML and constant labels; upgrade the binary |
+| Child-database pools | Removed or replaced targets close old pools safely; reload reuses pools and invalidates plans | Upgrade the binary; reload is not a connection-pool reset |
+| systemd reload | Packaged unit gains `ExecReload` | Refresh the unit with `daemon-reload`; restart for binary changes, reload for YAML-only changes |
 {.full-width .wide .expand}
 
 ### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}

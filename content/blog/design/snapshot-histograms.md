@@ -2,7 +2,7 @@
 title: "Snapshot Histograms Are Gauges, Not Counters"
 linkTitle: "Snapshot Histograms"
 date: "2026-07-11T22:06:29+08:00"
-lastmod: "2026-10-13T00:00:00+08:00"
+lastmod: "2026-11-12T00:00:00+08:00"
 authors: [Vonng]
 description: "Why SQL snapshot distributions expose bucket, count, and sum as Gauge series"
 summary: "Shipped in v1.4.0. Each SQL execution builds a fresh distribution. Buckets, count, and sum are Gauges and can decrease between scrapes."
@@ -14,8 +14,8 @@ A scalar metric cannot describe the distribution of a changing population. One 3
 
 > **Status:** Shipped in [v1.4.0](/release/v1.4.0/).<br>
 > **Decision date:** 2026-07-11; revised on 2026-07-17.<br>
-> **Last verified:** 2026-11-09.<br>
-> **Scope:** `HISTOGRAM` columns and the `pg_xact_age` collector in stable `v1.6.0`, checked against `6bee809` and development commit `c0ba58a`.<br>
+> **Last verified:** 2026-11-12.<br>
+> **Scope:** `HISTOGRAM` columns and the `pg_xact_age` collector in stable `v1.6.1` at `d0dead1`; snapshot semantics first shipped in v1.4.0.<br>
 > **Delivery:** Implementation, merge, release tag, and package publication completed. Focused local tests passed. Deployment and production operation remain unverified.
 
 A PG Exporter snapshot Histogram groups the observations returned by one SQL execution. Each execution starts a new distribution. The exporter exposes its buckets, count, and sum as Gauge series because their values can decrease.
@@ -65,6 +65,8 @@ Declare an observation column with `usage: HISTOGRAM` and explicit bucket bounds
 ```
 
 Each non-NULL value is one observation. Rows with the same complete label tuple belong to one distribution. Multiple Histogram columns aggregate independently.
+
+Since v1.6.1, a query that also returns a `GAUGE` or `COUNTER` column must have unique label tuples: repeated scalar samples reject the entire collector result. Keep a multi-row distribution query histogram-only, or separate its scalar metrics into another collector. Configured `scale` and `default` values must be finite. This validation leaves snapshot aggregation unchanged; see the [v1.6.1 release notes](/release/v1.6.1/).
 
 Bucket upper bounds are inclusive, finite, and strictly increasing. Configuration loading rejects empty lists, duplicates, `NaN`, and infinities. PG Exporter adds `+Inf` automatically. The `le` label and generated `_bucket`, `_count`, and `_sum` names are reserved; conflicting configuration is rejected.
 
