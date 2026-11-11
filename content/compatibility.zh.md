@@ -15,7 +15,7 @@ categories: [参考]
 |:---|:---|:---|
 | PostgreSQL 10-18 | 默认支持 | `pg_exporter.yml` / `config/` |
 | PostgreSQL 19 | 已包含版本专用分支 | 默认配置；在实际服务器构建上检查查询结果 |
-| PostgreSQL 9.1-9.6 | Legacy 支持 | main 上维护的 `legacy/pg_exporter.yml` / `legacy/config/` |
+| PostgreSQL 9.1-9.6 | 历史遗留支持（非主干支持） | main 上维护的 `legacy/pg_exporter.yml` / `legacy/config/` |
 | PostgreSQL 9.0 及更早版本 | 不支持 | — |
 | PgBouncer 1.8+ | 按版本选择采集器 | `0910`-`0940` 采集器文件；连接管理数据库 |
 {.full-width .wide .expand}
@@ -26,13 +26,26 @@ PostgreSQL 19 分支覆盖恢复、锁、自动清理评分、WAL、订阅、接
 
 ## 发布验证 {#release-validation}
 
-v1.6.0 发布制品已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配置）、10–18 与 19 RC1（默认配置）的主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复、并发采集／健康检查／重载、HTTPS 认证、软件包安装及从 1.5.0 升级。PG19 证据对应 RC1；Windows 与 Intel macOS 制品仅做静态检查，没有实际运行验收。
+v1.6.0 发布基线已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配置）、10–18 与 19 RC1（默认配置）的主库采集，以及 PgBouncer 1.26.1 实测。PG10–13 使用文档要求的订阅 OID 授权；另验证了物理备库晋升、断连恢复、并发采集／健康检查／重载、HTTPS 认证、软件包安装及从 1.5.0 升级。PG19 证据对应 RC1。后续使用 `282e19d` 的 legacy 配置（已包含在 v1.6.1 源码标签中）补充验证了 PostgreSQL 9.1–9.6 中有 TOAST 和无 TOAST 的表，获取方式见[安装说明](/zh/install/#compatibility)。
 
-后续使用 main 上 `282e19d` 的 legacy 配置，补充验证了 PostgreSQL 9.1–9.6 中有 TOAST 和无 TOAST 的表。PG9.1 需要这份维护版本：包括 v1.6.0 在内的旧标签中的 legacy 查询，可能因关系 OID 0 失败。该配置修复不属于 v1.6.0 发布制品，获取方式见 [安装说明](/zh/install/#compatibility)。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
+v1.6.1 维护版本通过了完整 race 测试与 Go 1.21 HTTP mux 测试、模块与生成配置一致性门禁、六平台交叉编译、RPM／DEB 软件包与校验和检查、公开多架构 Docker 镜像的 CA／TLS／文件内容验证，以及 Darwin arm64 上针对 PostgreSQL 18.6 的真实多库采集与重载验收。Windows 与 Intel macOS 制品仅做静态检查，没有实际运行验收。上述验证不代表覆盖每种扩展、服务器构建或生产负载。
 
 ## 指标、仪表盘与告警兼容性 {#metric-compatibility}
 
-升级 Exporter 和升级 PostgreSQL 大版本，可能改变指标契约的不同部分。以下对照以 [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config)、[`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config) 与 [`v1.6.0`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config) 标签中的内置 SQL 采集器为准，包含各列的 `rename` 映射；列出的是实际导出的指标名，不只是 PostgreSQL 视图列名或 YAML 文件名。自定义采集器与业务告警规则仍需单独检查。
+升级 Exporter 和升级 PostgreSQL 大版本，可能改变指标契约的不同部分。以下对照以 [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config)、[`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config)、[`v1.6.0`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config) 与 [`v1.6.1`](https://github.com/pgsty/pg_exporter/tree/v1.6.1/config) 标签中的内置 SQL 采集器为准，包含各列的 `rename` 映射；列出的是实际导出的指标名，不只是 PostgreSQL 视图列名或 YAML 文件名。自定义采集器与业务告警规则仍需单独检查。
+
+### Exporter v1.6.0 → v1.6.1 {#exporter-161-metrics}
+
+内置 SQL 指标名、标签键、类型、分桶、HTTP 路由与命令行参数均未改变。默认配置仍包含 58 个 YAML 文件、96 个分支、59 个命名空间和 460 个去重指标定义。v1.6.1 包含以下 SQL 取值与运行时边界修复：
+
+| 接口／指标 | 变化 | 升级处理 |
+|:---|:---|:---|
+| `pg_table_age` 与分区父表汇总计数 | 分区父表（`relkind = 'p'`）的 `age` 报告为 `0` 而非 `2147483647`，无子分区的分区父表汇总计数收敛为 `0` 而非 `NULL` | 更新 YAML；冻结年龄告警不再对分区父表产生误报 |
+| `pg_table_size_*` | 在 `pg_catalog`、`information_schema`、`pg_toast` 之外排除临时模式（`pg_temp*`） | 更新 YAML，跳过其他会话的瞬态临时表 |
+| `pg_activity_max_*_duration` | 通过 `greatest(..., 0)` 将亚毫秒级负数耗时截断为 `0` | 更新 YAML |
+| `pg_tsdb_hypertable_*` | 使用 `format('%I.%I', ...)::regclass` 安全引用模式名与超表名 | 在大小写敏感或特殊字符命名上启用 TimescaleDB 采集器时更新 YAML |
+| 重复标签隔离与子库连接池回收 | 重复的 `(指标, 标签)` 行仅使所属采集器失败，不再中断整次 `/metrics` 响应；自动发现移除数据库或重载时关闭旧子库连接池 | 升级二进制（以及支持 `systemctl reload pg_exporter` 的服务单元文件） |
+{.full-width .wide .expand}
 
 ### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}
 
@@ -47,7 +60,7 @@ v1.6.0 发布制品已以非超级用户通过 PostgreSQL 9.2–9.6（legacy 配
 | PgBouncer 连接池 | 最大连接数由一个增为两个 | 为串行采集与后台探测各留一个连接 |
 {.full-width .wide .expand}
 
-从更早版本升级时，下文 v1.5.0 和 PostgreSQL 大版本迁移规则仍然适用。v1.6.0 不包含 `snort` 的实验组件。
+从更早版本升级时，上文 v1.6.0 以及下文 v1.5.0 和 PostgreSQL 大版本迁移规则仍然适用。v1.6.1 不包含 `snort` 的实验组件。
 
 ### Exporter v1.4.1 → v1.5.0 {#exporter-150-metrics}
 
@@ -154,7 +167,7 @@ groups:
 | Docker 镜像 | Linux 容器 | amd64、arm64 |
 {.full-width .wide .expand}
 
-发布压缩包包含二进制、合并后的默认配置、许可证、默认环境文件与 systemd 单元。PostgreSQL 9.x 配置需要从对应源码标签获取，不在这些二进制压缩包中。macOS 与 Windows 产物适合开发或连接远端目标；软件包提供的服务集成只适用于 Linux。
+发布压缩包包含二进制、合并后的默认配置、许可证、默认环境文件与 systemd 单元。PostgreSQL 9.1–9.6 配置属于历史遗留维护（非主干支持），在 `main` 分支的 `legacy/` 下单独维护，不包含在二进制压缩包中，也不应从旧发布标签获取；获取方式见[安装说明](/zh/install/#compatibility)。macOS 与 Windows 产物适合开发或连接远端目标；软件包提供的服务集成只适用于 Linux。
 
 > [!NOTE] v1.4.1 起的 RPM 包名
 > 官方 RPM 包名与产物前缀改为 `pg-exporter`。新包为旧的 `pg_exporter` 名称声明了 `Provides` 与 `Obsoletes`，因此可以直接升级。可执行文件与配置名仍为 `pg_exporter` 和 `/etc/pg_exporter.yml`。

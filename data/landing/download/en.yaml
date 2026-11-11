@@ -9,7 +9,7 @@ hero:
   title: Install PG Exporter
   desc: Use a package for a Linux service, an archive for a standalone binary, or a container image. Pigsty installs
     the exporter as part of a monitoring stack.
-  note: v1.6.0 · Linux · macOS · Windows · amd64 / arm64 / ppc64le
+  note: v1.6.1 · Linux · macOS · Windows · amd64 / arm64 / ppc64le
   note_icon: fa-solid fa-box-archive
   align: center
   title_size: 3.4rem

@@ -44,7 +44,7 @@ install:
   desc: Download and install the binary and its collector configuration.
   body: |
     ```bash {copy="all"}
-    VERSION=1.6.0
+    VERSION=1.6.1
     ARCHIVE="pg_exporter-${VERSION}.linux-amd64.tar.gz"
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/$ARCHIVE" &&
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/checksums.txt" &&
@@ -56,7 +56,7 @@ install:
     pg_exporter --version
     ```
 
-    The checksum result is `OK`. The installed version is `v1.6.0`.
+    The checksum result is `OK`. The installed version is `v1.6.1`.
 
     Other platforms and package installation commands are on the [download page](/download/).
 monitoring-user:

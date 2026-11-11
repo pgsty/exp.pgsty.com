@@ -176,7 +176,7 @@ curl -i -X POST http://127.0.0.1:9630/reload
 
 | 现象 | 可能原因与修复 |
 |:---|:---|
-| Docker 中 TLS 校验失败 | v1.6.0 包含公共 CA 根证书；检查主机名与信任链，私有 CA 仍需挂载并设置 `sslrootcert` |
+| Docker 中 TLS 校验失败 | v1.6.0 起包含公共 CA 根证书；检查主机名与信任链，私有 CA 仍需挂载并设置 `sslrootcert` |
 | 软件包服务忽略 `.pgpass` | 检查 `prometheus` 的主目录或 `PGPASSFILE`，将文件归属服务用户并设为 `0600` |
 | RPM 自动化找不到 v1.4.1 产物 | 产物前缀从 `pg_exporter` 改为 `pg-exporter` |
 | 容器替换后配置修改消失 | 将 `/etc/pg_exporter.yml` 从持久配置挂载 |

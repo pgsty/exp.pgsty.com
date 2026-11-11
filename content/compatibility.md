@@ -15,7 +15,7 @@ Choose an artifact for the exporter host and a collector configuration for the d
 |:---|:---|:---|
 | PostgreSQL 10-18 | Default support | `pg_exporter.yml` / `config/` |
 | PostgreSQL 19 | Version-specific branches included | Default config; check queries against your server build |
-| PostgreSQL 9.1-9.6 | Legacy support | Current `legacy/pg_exporter.yml` / `legacy/config/` on main |
+| PostgreSQL 9.1-9.6 | Historical legacy support | Current `legacy/pg_exporter.yml` / `legacy/config/` on main |
 | PostgreSQL 9.0 and older | Unsupported | — |
 | PgBouncer 1.8+ | Version-specific collectors | `0910`-`0940` collector files; connect to the admin database |
 {.full-width .wide .expand}
@@ -26,13 +26,26 @@ The bundled PgBouncer collectors require 1.8 or later. That version changed the 
 
 ## Release Validation {#release-validation}
 
-The v1.6.0 release artifacts passed primary collection as a non-superuser on PostgreSQL 9.2–9.6 with the legacy bundle, PostgreSQL 10–18 and 19 RC1 with the default bundle, and PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, concurrent scrape/health/reload, HTTPS authentication, package installation, and upgrades from 1.5.0 were also tested. PostgreSQL 19 evidence refers to RC1. Windows and Intel macOS artifacts received static checks, not runtime acceptance.
+The v1.6.0 release baseline passed primary collection as a non-superuser on PostgreSQL 9.2–9.6 with the legacy bundle, PostgreSQL 10–18 and 19 RC1 with the default bundle, and PgBouncer 1.26.1. PostgreSQL 10–13 used the documented subscription OID grant. Physical standby promotion, reconnect recovery, concurrent scrape/health/reload, HTTPS authentication, package installation, and upgrades from 1.5.0 were also tested. PostgreSQL 19 evidence refers to RC1. A follow-up verified PostgreSQL 9.1–9.6 with the legacy configuration at `282e19d` (included in the v1.6.1 source tag), covering tables with and without TOAST; see [installation](/install/#compatibility).
 
-A separate follow-up verified PostgreSQL 9.1–9.6 with legacy configuration from main at `282e19d`, including tables with and without TOAST. PostgreSQL 9.1 needs that maintained bundle: the legacy query in older tags, including v1.6.0, can fail on relation OID 0. This configuration-only fix is outside the v1.6.0 release artifact boundary; see [installation](/install/#compatibility). These checks do not establish coverage of every extension, server build, or production workload.
+The v1.6.1 maintenance release passed the full race and Go 1.21 HTTP-mux test suites, module and generated-config gates, six-target cross-builds, RPM/DEB package and checksum checks, published multi-arch Docker CA/TLS/payload verification, and Darwin arm64 live multi-database collection and reload acceptance on PostgreSQL 18.6. Windows and Intel macOS artifacts received static checks, not runtime acceptance. These checks do not establish coverage of every extension, server build, or production workload.
 
 ## Metric and Dashboard Compatibility {#metric-compatibility}
 
-An exporter upgrade and a PostgreSQL major-version upgrade can change different parts of the metric contract. The comparisons below use the bundled SQL collectors at tags [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config), [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config), and [`v1.6.0`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config), including each column's `rename` setting. They describe exported metric names, not just PostgreSQL view columns or YAML filenames. Custom collectors and application-specific alert rules need their own review.
+An exporter upgrade and a PostgreSQL major-version upgrade can change different parts of the metric contract. The comparisons below use the bundled SQL collectors at tags [`v1.4.1`](https://github.com/pgsty/pg_exporter/tree/v1.4.1/config), [`v1.5.0`](https://github.com/pgsty/pg_exporter/tree/v1.5.0/config), [`v1.6.0`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config), and [`v1.6.1`](https://github.com/pgsty/pg_exporter/tree/v1.6.1/config), including each column's `rename` setting. They describe exported metric names, not just PostgreSQL view columns or YAML filenames. Custom collectors and application-specific alert rules need their own review.
+
+### Exporter v1.6.0 → v1.6.1 {#exporter-161-metrics}
+
+No built-in SQL metric names, label keys, types, buckets, HTTP routes, or CLI flags change. The default bundle retains 58 YAML files, 96 branches, 59 namespaces, and 460 distinct metric definitions. The following SQL value and runtime edge-case fixes ship in v1.6.1:
+
+| Surface | Change | Upgrade action |
+|:---|:---|:---|
+| `pg_table_age` and partitioned rollup counters | Partitioned parent tables (`relkind = 'p'`) report `age = 0` instead of `2147483647`, and empty partitioned parent rollup sums coalesce to `0` instead of `NULL` | Deploy the new YAML; freeze-age alerts no longer fire falsely on partitioned parents |
+| `pg_table_size_*` | Excludes temporary schemas (`pg_temp*`) alongside `pg_catalog`, `information_schema`, and `pg_toast` | Deploy the new YAML so transient session temp tables are skipped |
+| `pg_activity_max_*_duration` | Clamps sub-millisecond negative durations to `0` via `greatest(..., 0)` | Deploy the new YAML |
+| `pg_tsdb_hypertable_*` | Quotes schema and hypertable names via `format('%I.%I', ...)::regclass` | Deploy the new YAML if enabling TimescaleDB hypertable metrics on quoted identifiers |
+| Collector duplicate-label isolation & child pools | Duplicate `(metric, labels)` rows fail only the offending collector instead of the whole `/metrics` response; dropped child-database pools close on discovery refresh and reload | Upgrade the binary (and unit file for `systemctl reload pg_exporter`) |
+{.full-width .wide .expand}
 
 ### Exporter v1.5.0 → v1.6.0 {#exporter-160-metrics}
 
@@ -47,7 +60,7 @@ No built-in SQL metric names, label keys, types, or units change on the same Pos
 | PgBouncer pool | Maximum connections increase from one to two | Allow one collection connection and one probe connection |
 {.full-width .wide .expand}
 
-The historical v1.5.0 and PostgreSQL-version migrations below still apply when upgrading from older versions. v1.6.0 does not add the experimental `snort` components.
+The historical v1.6.0, v1.5.0, and PostgreSQL-version migrations still apply when upgrading from older versions. v1.6.1 does not add the experimental `snort` components.
 
 ### Exporter v1.4.1 → v1.5.0 {#exporter-150-metrics}
 
@@ -154,7 +167,7 @@ Adapt the selector and matching labels to your target identity; monitor `up` and
 | Docker image | Linux container | amd64, arm64 |
 {.full-width .wide .expand}
 
-Release archives include the binary, merged default config, license, default environment file, and systemd unit. Get the PostgreSQL 9.x configuration from the matching source tag; it is not included in these binary archives. macOS and Windows artifacts are useful for development and remote targets; the packaged service integration is Linux-specific.
+Release archives include the binary, merged default config, license, default environment file, and systemd unit. PostgreSQL 9.1–9.6 configuration is historical legacy support maintained separately on `main` under `legacy/` rather than bundled in binary archives or guaranteed by older source tags; see [installation](/install/#compatibility). macOS and Windows artifacts are useful for development and remote targets; the packaged service integration is Linux-specific.
 
 > [!NOTE] RPM name since v1.4.1
 > The official RPM package and artifact prefix is `pg-exporter`. It declares `Provides` and `Obsoletes` for the former `pg_exporter` name, so direct upgrades remain possible. The executable and configuration names remain `pg_exporter` and `/etc/pg_exporter.yml`.

@@ -9,7 +9,7 @@ categories: [Reference]
 
 A YAML **collector** defines a SQL query, its metrics, and when to run it. This page describes the configuration used by stable **v{{< param version >}}**. For process flags and environment variables, see [Command Reference](/cmd/).
 
-Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config).
+Load one YAML file or a directory of YAML files. The default `pg_exporter.yml` combines 57 collector files and one schema reference from [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.1/config).
 
 ## Configuration Loading {#configuration-loading}
 
@@ -206,7 +206,7 @@ Usage notes:
   reject the collector result
 - `scale` is applied to the observation before bucket assignment; as with scalar
   columns, timestamp and boolean values are exempt from `scale`
-- The [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/config/0450-pg_xact_age.yml)
+- The [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.6.1/config/0450-pg_xact_age.yml)
   collector in the default bundle serves as the reference implementation
 
 For the example above, the 95th percentile is:

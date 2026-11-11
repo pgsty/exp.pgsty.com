@@ -9,7 +9,7 @@ categories: [参考]
 
 Linux 服务可选择软件包，独立运行可选择发布压缩包，Docker 与 Kubernetes 使用容器镜像。[下载页面](/zh/download/)提供各方式的对照与安装命令，本页列出发布文件和仓库配置。
 
-软件仓库安装使用仓库当前提供的包，可能晚于 GitHub Release。需要精确安装 v1.6.0 时，使用下方带版本号的发布制品。
+软件仓库安装使用仓库当前提供的包，可能晚于 GitHub Release。需要精确安装 v1.6.1 时，使用下方带版本号的发布制品。
 
 ## Pigsty {#pigsty}
 
@@ -108,7 +108,7 @@ docker run --rm pgsty/pg_exporter:{{< param version >}} --version
 
 ## 从源码构建 {#build-from-source}
 
-检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.6.0 要求 Go 1.27.3 或更高版本）：
+检出发布标签，使用其 `go.mod` 声明的 Go 版本（v1.6.1 要求 Go 1.27.4 或更高版本）：
 
 ```bash
 git clone --depth 1 --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git pg_exporter-src
@@ -130,6 +130,6 @@ curl -fSL https://raw.githubusercontent.com/pgsty/pg_exporter/main/legacy/pg_exp
 pg_exporter --config=pg_exporter-legacy.yml --url='postgres://monitor@localhost:5432/postgres'
 ```
 
-PostgreSQL 9.1 请使用 main 上 `282e19d` 或之后的配置。该修复处理没有 TOAST 关系的表；旧查询可能报 `could not open relation with OID 0`，导致整组 `pg_table_size_*` 指标缺失。这是单独的 legacy 维护修改，不改变 v1.6.0 二进制及其默认配置；v1.6.0 源码标签中的旧副本不含此修复。
+PostgreSQL 9.1 请使用 main 上 `282e19d` 或之后的配置（已包含在 v1.6.1 源码标签中）。该修复处理没有 TOAST 关系的表；v1.6.0 及更早源码标签中的旧查询可能报 `could not open relation with OID 0`，导致整组 `pg_table_size_*` 指标缺失。二进制压缩包和 RPM／DEB 仍仅分发面向 PostgreSQL 10+ 的默认配置。
 
 内置 PgBouncer 采集器要求 1.8 或更高版本。版本选择、体系结构与采集器前置条件见[兼容性](/zh/compatibility/)。

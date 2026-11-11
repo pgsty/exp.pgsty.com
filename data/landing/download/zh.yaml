@@ -8,7 +8,7 @@ hero:
   eyebrow: 下载
   title: 安装 PG Exporter
   desc: Linux 服务可选择软件包，独立运行可选择压缩包或容器镜像。Pigsty 会随监控栈一起安装导出器。
-  note: v1.6.0 · Linux · macOS · Windows · amd64 / arm64 / ppc64le
+  note: v1.6.1 · Linux · macOS · Windows · amd64 / arm64 / ppc64le
   note_icon: fa-solid fa-box-archive
   align: center
   title_size: 3.4rem

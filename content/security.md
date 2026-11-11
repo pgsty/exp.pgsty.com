@@ -34,7 +34,7 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
-On PostgreSQL 10–13, the default v1.6.0 subscription collector also needs this column grant in the exporter’s **main connection database**, not merely in the databases owning subscriptions:
+On PostgreSQL 10–13, the default v1.6.1 subscription collector also needs this column grant in the exporter’s **main connection database**, not merely in the databases owning subscriptions:
 
 ```sql
 GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
@@ -169,4 +169,4 @@ See [Production Deployment](/deploy/) for service examples and [Troubleshooting]
 
 ## Toolchain security updates {#toolchain-security-updates}
 
-v1.6.0 uses Go 1.27.3 and refreshed modules, including `x/net` 0.62.0. It retains the security fixes documented for v1.5.0. The [release security notes](/release/v1.5.0/#security-updates) list the fixed CVEs and distinguish static symbol/package matches from unimported module advisories. Upgrade the rebuilt binary as well as its collector configuration; updating the host compiler alone does not repair an existing binary.
+v1.6.1 uses Go 1.27.4 and refreshed modules, including `x/net` 0.62.0. It retains the security fixes documented for v1.5.0. The [release security notes](/release/v1.5.0/#security-updates) list the fixed CVEs and distinguish static symbol/package matches from unimported module advisories. Upgrade the rebuilt binary as well as its collector configuration; updating the host compiler alone does not repair an existing binary.

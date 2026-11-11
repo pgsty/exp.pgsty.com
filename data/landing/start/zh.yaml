@@ -43,7 +43,7 @@ install:
   desc: 下载并安装程序与采集器配置。
   body: |
     ```bash {copy="all"}
-    VERSION=1.6.0
+    VERSION=1.6.1
     ARCHIVE="pg_exporter-${VERSION}.linux-amd64.tar.gz"
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/$ARCHIVE" &&
     curl -fLO "https://github.com/pgsty/pg_exporter/releases/download/v${VERSION}/checksums.txt" &&
@@ -55,7 +55,7 @@ install:
     pg_exporter --version
     ```
 
-    校验结果应为 `OK`，安装后的版本应为 `v1.6.0`。
+    校验结果应为 `OK`，安装后的版本应为 `v1.6.1`。
 
     其他平台与软件包安装方式见[下载页](/zh/download/)。
 monitoring-user:

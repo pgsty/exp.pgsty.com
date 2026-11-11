@@ -1,4 +1,4 @@
-# Product facts verified against pg_exporter v1.6.0 source (6bee809) on 2026-11-09.
+# Product facts verified against pg_exporter v1.6.1 source (d0dead1) on 2026-11-11.
 # These values describe the configuration, not the output of one scrape.
 # Count distinct <collector name>_<renamed column or SQL column> for GAUGE,
 # COUNTER, and HISTOGRAM columns in the tagged pg_exporter.yml. Each SQL
@@ -14,8 +14,8 @@ collector_files: 58
 postgres_range: "10-19"
 
 # Release articles prepared for the stable version, in each language.
-tagged_versions: 37
+tagged_versions: 38
 
 # Keep params.version, download checksums, homepage notes, and quick-start
 # VERSION examples in sync. Landing YAML does not interpolate Hugo params.
-release_version: "v1.6.0"
+release_version: "v1.6.1"

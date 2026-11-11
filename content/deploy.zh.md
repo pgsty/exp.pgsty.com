@@ -76,13 +76,14 @@ export PG_EXPORTER_URL='postgres://monitor@db.example.com:5432/postgres?sslmode=
 # /usr/lib/systemd/system/pg_exporter.service
 [Unit]
 Description=Prometheus exporter for PostgreSQL/Pgbouncer server metrics
-Documentation=https://pigsty.io/docs/pg_exporter
+Documentation=https://exp.pgsty.com/docs/
 After=network.target
 
 [Service]
 EnvironmentFile=-/etc/default/pg_exporter
 User=prometheus
 ExecStart=/usr/bin/pg_exporter $PG_EXPORTER_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
 [Install]
@@ -120,9 +121,11 @@ sudo journalctl -u pg_exporter -n 50 --no-pager
 
 确认指标中有 `pg_up 1`。持续查看日志可运行 `sudo journalctl -u pg_exporter -f`。
 
-修改 `/etc/default/pg_exporter` 后执行 `sudo systemctl restart pg_exporter`。只修改采集器 YAML 时，可直接重载：
+修改 `/etc/default/pg_exporter` 后执行 `sudo systemctl restart pg_exporter`。只修改采集器 YAML 时，可直接通过 `systemctl` 或 HTTP 重载：
 
 ```bash
+sudo systemctl reload pg_exporter
+# 或
 curl -fsS -X POST http://127.0.0.1:9630/reload
 ```
 

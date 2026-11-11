@@ -229,15 +229,15 @@ channels:
       发布压缩包、软件包及其 SHA-256 摘要。在 macOS 上使用 `shasum -a 256 <文件>`
       与对应条目比对。
     checksums: |
-      dd81e485377fd9bfead1b3e8000a145eb89d1c914becffaa3588cafc67731ed9  pg-exporter-1.6.0-1.aarch64.rpm
-      413f64b25feb6202bf7cf70f10d0a73527c42767a2cc2bef37beef6d33ab48ae  pg-exporter-1.6.0-1.ppc64le.rpm
-      c25e57077f916a83993263eb0009959bbafe183fb3da4f81169629dfdbd7c64a  pg-exporter-1.6.0-1.x86_64.rpm
-      46f03078e7e74430c34d3650b48cecacc55e011c6bcecde4f3ef555076f917b3  pg-exporter_1.6.0-1_amd64.deb
-      d24dea8ee5774f28a8e4c5e9c9977b07d80b6e1c4d5a86a7b7802cc5d6d02a0f  pg-exporter_1.6.0-1_arm64.deb
-      5cc839bc5f9d551559984442fcd24305e3113688dc2d92d437ed5421683e3ae0  pg-exporter_1.6.0-1_ppc64le.deb
-      ddefa112d810bf5ae8acc0eeb9edc23b44609ecd577a75df8f5c2321f81fea47  pg_exporter-1.6.0.darwin-amd64.tar.gz
-      a62d9474d091ac906a5fcd1898ffce599eaf74fb7c93800caa85b6c190d64d85  pg_exporter-1.6.0.darwin-arm64.tar.gz
-      296a26bf83acd7024f4de8fdeac0ee31baffa01e3153cf5c694e90ed8268719a  pg_exporter-1.6.0.linux-amd64.tar.gz
-      ea6d1dbe0820d599e81ed702e128b4fe4a557e2afb5b5c157de222576c1d7ce7  pg_exporter-1.6.0.linux-arm64.tar.gz
-      b720183a3c4d35d20d683bc6ba998e5eddcb1f76e5721788829aa56c2cd7155a  pg_exporter-1.6.0.linux-ppc64le.tar.gz
-      29909ef65af96f1da5e7258c7b9025c85ad1dca63596c9fba8b85b55e006bb25  pg_exporter-1.6.0.windows-amd64.tar.gz
+      d0612ad9294497830892a59d302e7f92510ffd7baca4347b7f0b2438efc90277  pg-exporter-1.6.1-1.aarch64.rpm
+      73fe4587efebeb444bf1b80730352bc07e22fcd88b0ac17acb6fb745ec26b9b5  pg-exporter-1.6.1-1.ppc64le.rpm
+      c20c8a802466776f60b7e95103013bb4d461ac7dab76e3d139c3c9158d3f2c82  pg-exporter-1.6.1-1.x86_64.rpm
+      0d6fe86ac43c707accfe10bf90af7b3c61e64242b7d916afff15fe3694a8e5fc  pg-exporter_1.6.1-1_amd64.deb
+      a055f9a724c4c5eb3ac436756448c4ad76024d1d7db5087d72f4369daaeb2ab4  pg-exporter_1.6.1-1_arm64.deb
+      f8500d010e05bd220c1e0978f27f6b053663ec7d0bdeab2bb85088d87c388d4c  pg-exporter_1.6.1-1_ppc64le.deb
+      496c42f329fc265e952c964afaef29ebc7d2d4640180872a735a84eebb962774  pg_exporter-1.6.1.darwin-amd64.tar.gz
+      9ace0b48115497f2b3d7d9e1660e13e6a778472c66c8ec5ff679faa2fa61c662  pg_exporter-1.6.1.darwin-arm64.tar.gz
+      e8fdf64c352081720a53420a2c7ea095654078d5fab5f6213786bb6476791fdf  pg_exporter-1.6.1.linux-amd64.tar.gz
+      91da5400ae31d42925af721c7d5f8eb0befcbb104d8a14ae5f08707abb5e333b  pg_exporter-1.6.1.linux-arm64.tar.gz
+      769e9e56f91787f21478301f9fab1cb7c2791c74f8c355d8e9fbdf818964a5fb  pg_exporter-1.6.1.linux-ppc64le.tar.gz
+      0e118a9815138a6dc0fed95d934aea0ad84dd4a58139371c2d16e47f85681066  pg_exporter-1.6.1.windows-amd64.tar.gz

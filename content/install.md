@@ -9,7 +9,7 @@ categories: [Reference]
 
 Use a Linux package for a managed service, a release archive for a standalone binary, or a container for Docker and Kubernetes. [Download](/download/) compares these options and provides installation commands. This page lists the release files and repository setup.
 
-Repository installation follows the repository’s current package, which can lag the GitHub release. Use the versioned release artifacts below when you need exactly v1.6.0.
+Repository installation follows the repository’s current package, which can lag the GitHub release. Use the versioned release artifacts below when you need exactly v1.6.1.
 
 ## Pigsty {#pigsty}
 
@@ -109,7 +109,7 @@ Use the [Docker deployment example](/deploy/#docker-deployment) to mount the con
 
 ## Build from Source {#build-from-source}
 
-Check out the release tag and use the Go version declared by its `go.mod` (Go 1.27.3 or later for v1.6.0):
+Check out the release tag and use the Go version declared by its `go.mod` (Go 1.27.4 or later for v1.6.1):
 
 ```bash
 git clone --depth 1 --branch v{{< param version >}} https://github.com/pgsty/pg_exporter.git pg_exporter-src
@@ -131,6 +131,6 @@ curl -fSL https://raw.githubusercontent.com/pgsty/pg_exporter/main/legacy/pg_exp
 pg_exporter --config=pg_exporter-legacy.yml --url='postgres://monitor@localhost:5432/postgres'
 ```
 
-For PostgreSQL 9.1, use main at `282e19d` or later. This configuration fix handles tables without a TOAST relation; the older query can fail with `could not open relation with OID 0` and omit all `pg_table_size_*` samples. It is a separate legacy maintenance change, not a change to the v1.6.0 binaries or their bundled default configuration. The copy in the v1.6.0 source tag does not contain it.
+For PostgreSQL 9.1, use main at `282e19d` or later (included in the v1.6.1 source tag). This configuration fix handles tables without a TOAST relation; the older query in v1.6.0 and earlier source tags can fail with `could not open relation with OID 0` and omit all `pg_table_size_*` samples. Binary archives and RPM/DEB packages still distribute only the default PostgreSQL 10+ configuration.
 
 The bundled PgBouncer collectors require 1.8 or later. See [Compatibility](/compatibility/) for version selection, architectures, and collector prerequisites.

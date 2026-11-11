@@ -29,7 +29,7 @@ The exporter also reports its own state. For example, `pg_up` reports whether th
 
 ## Customize collection {#customize-collection}
 
-Start with the bundled configuration, [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/pg_exporter.yml). Add queries when you need more metrics. Each collector can have its own selection conditions, timeout, and cache TTL.
+Start with the bundled configuration, [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.1/pg_exporter.yml). Add queries when you need more metrics. Each collector can have its own selection conditions, timeout, and cache TTL.
 
 After you change the configuration, reload it through `/reload`. The exporter checks the new configuration before it replaces the current configuration. You do not need to compile or restart the program.
 
@@ -43,7 +43,7 @@ For connection errors, missing metrics, or slow queries, follow [troubleshooting
 
 ## Versions and next steps {#versions-and-next-steps}
 
-These manuals describe **v{{< param version >}}**. The default configuration contains PostgreSQL 10–19 and PgBouncer 1.8–1.25 branches. A separate legacy configuration covers PostgreSQL 9.1–9.6. See [compatibility](/compatibility/) for details.
+These manuals describe **v{{< param version >}}**. The default configuration contains PostgreSQL 10–19 and PgBouncer 1.8+ (including 1.26+) branches. A separately maintained legacy configuration provides historical support for PostgreSQL 9.1–9.6. See [compatibility](/compatibility/) for details.
 
 The [Design archive](/design/) describes development features, including combined sources, pgBackRest metrics, and PostgreSQL log metrics. These features are not included in v{{< param version >}}.
 

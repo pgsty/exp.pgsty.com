@@ -29,7 +29,7 @@ Prometheus 请求 `/metrics` 时，导出器执行选中的查询并返回指标
 
 ## 自定义采集 {#customize-collection}
 
-先使用内置配置 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/pg_exporter.yml)，需要更多指标时再添加查询。每个采集器都可以单独设置选择条件、超时与缓存 TTL。
+先使用内置配置 [`pg_exporter.yml`](https://github.com/pgsty/pg_exporter/blob/v1.6.1/pg_exporter.yml)，需要更多指标时再添加查询。每个采集器都可以单独设置选择条件、超时与缓存 TTL。
 
 修改配置后，通过 `/reload` 重载。导出器先检查新配置，再替换当前配置，无需重新编译或重启程序。
 
@@ -43,7 +43,7 @@ Prometheus 请求 `/metrics` 时，导出器执行选中的查询并返回指标
 
 ## 版本与下一步 {#versions-and-next-steps}
 
-本文档对应 **v{{< param version >}}**。默认配置包含 PostgreSQL 10–19 和 PgBouncer 1.8–1.25 的采集分支，独立 legacy 配置覆盖 PostgreSQL 9.1–9.6。详情见[兼容性](/zh/compatibility/)。
+本文档对应 **v{{< param version >}}**。默认配置包含 PostgreSQL 10–19 和 PgBouncer 1.8+（含 1.26+）的采集分支；单独维护的 legacy 配置为 PostgreSQL 9.1–9.6 提供历史遗留支持。详情见[兼容性](/zh/compatibility/)。
 
 [设计归档](/zh/design/)介绍了组合数据源、pgBackRest 指标和 PostgreSQL 日志指标等开发功能。这些功能尚未包含在 v{{< param version >}} 中。
 

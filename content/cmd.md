@@ -42,7 +42,7 @@ collector configuration is resolved independently: `--config`, then
 
 The driver accepts connection defaults such as `PGHOST`, `PGPORT`, `PGUSER`,
 `PGDATABASE`, and `PGPASSFILE` for fields omitted from the URL. PG Exporter clears
-`PGSERVICE` and `PGSERVICEFILE`, so service-file settings do not override the target.
+`PGSERVICE`, `PGSERVICEFILE`, `PGSYSCONFDIR`, `PGLOCALEDIR`, and `PGREALM` at startup, so ambient service-file or locale/Kerberos settings do not override the target.
 Use [Deployment](/deploy/) for credential-file setup.
 
 ## Collection Flags {#collection-flags}

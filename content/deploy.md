@@ -76,13 +76,14 @@ The packages install the binary at `/usr/bin/pg_exporter`, collectors at `/etc/p
 # /usr/lib/systemd/system/pg_exporter.service
 [Unit]
 Description=Prometheus exporter for PostgreSQL/Pgbouncer server metrics
-Documentation=https://pigsty.io/docs/pg_exporter
+Documentation=https://exp.pgsty.com/docs/
 After=network.target
 
 [Service]
 EnvironmentFile=-/etc/default/pg_exporter
 User=prometheus
 ExecStart=/usr/bin/pg_exporter $PG_EXPORTER_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
 [Install]
@@ -120,9 +121,11 @@ sudo journalctl -u pg_exporter -n 50 --no-pager
 
 Check that the metrics include `pg_up 1`. To follow new log entries, run `sudo journalctl -u pg_exporter -f`.
 
-After editing `/etc/default/pg_exporter`, run `sudo systemctl restart pg_exporter`. For changes to collector YAML only, reload it directly:
+After editing `/etc/default/pg_exporter`, run `sudo systemctl restart pg_exporter`. For changes to collector YAML only, reload it directly with `systemctl` or HTTP:
 
 ```bash
+sudo systemctl reload pg_exporter
+# or
 curl -fsS -X POST http://127.0.0.1:9630/reload
 ```
 

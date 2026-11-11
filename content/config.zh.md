@@ -9,7 +9,7 @@ categories: [参考]
 
 YAML **采集器** 定义 SQL 查询、输出指标和执行条件。本页适用于稳定版 **v{{< param version >}}**。进程参数和环境变量见[命令参考](/zh/cmd/)。
 
-配置可以是单个 YAML 文件或一个目录。默认 `pg_exporter.yml` 由 [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.0/config) 目录下的 57 个采集器文件和 1 个配置参考文件合并而成。
+配置可以是单个 YAML 文件或一个目录。默认 `pg_exporter.yml` 由 [`config/`](https://github.com/pgsty/pg_exporter/tree/v1.6.1/config) 目录下的 57 个采集器文件和 1 个配置参考文件合并而成。
 
 ## 配置加载 {#configuration-loading}
 
@@ -201,7 +201,7 @@ pg_xact_age:
   不要对这些快照序列使用 `rate()` 或 `increase()`
 - SQL `NULL` 默认不计入观测，配置 `default` 后按默认值计入。没有观测的标签组不输出直方图序列。无法转换的值、NaN 或无穷值会使整个采集器结果失败
 - `scale` 在分桶前应用于观测值；与标量列一致，时间戳与布尔值不受 `scale` 影响
-- 默认配置包中的 [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.6.0/config/0450-pg_xact_age.yml) 采集器即为参考实现
+- 默认配置包中的 [`pg_xact_age`](https://github.com/pgsty/pg_exporter/blob/v1.6.1/config/0450-pg_xact_age.yml) 采集器即为参考实现
 
 上例的 95 分位数可以这样计算：
 

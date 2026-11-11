@@ -9,7 +9,7 @@ geometry and the copy live here and the files are generated:
     static/img/architecture-{light,dark}.svg
     static/img/architecture-zh-{light,dark}.svg
 
-Facts checked against pg_exporter v1.6.0: one process targets either a
+Facts checked against pg_exporter v1.6.1: one process targets either a
 PostgreSQL instance or PgBouncer. PostgreSQL uses lib/pq; PgBouncer uses its
 administration console. The process serves metrics on :9630/metrics.
 Development-only components are described in the Design archive.
@@ -128,7 +128,7 @@ DARK = {
 
 EN = {
     "alt": (
-        "PG Exporter v1.6.0: each process collects one PostgreSQL instance or "
+        "PG Exporter v1.6.1: each process collects one PostgreSQL instance or "
         "PgBouncer target and serves metrics on :9630/metrics for "
         "Prometheus or VictoriaMetrics."
     ),
@@ -159,7 +159,7 @@ EN = {
 
 ZH = {
     "alt": (
-        "PG Exporter v1.6.0：每个进程采集一个 PostgreSQL 实例或 PgBouncer 目标，"
+        "PG Exporter v1.6.1：每个进程采集一个 PostgreSQL 实例或 PgBouncer 目标，"
         "通过 :9630/metrics 供 Prometheus 或 VictoriaMetrics 抓取。"
     ),
     "cap_left": "每个进程连接一个目标",

@@ -34,7 +34,7 @@ CREATE ROLE monitor
 GRANT pg_monitor TO monitor;
 ```
 
-PostgreSQL 10–13 的 v1.6.0 默认订阅采集器还需要在 Exporter 的 **主连接数据库** 中执行以下列级授权，不能只在订阅所属数据库授权：
+PostgreSQL 10–13 的 v1.6.1 默认订阅采集器还需要在 Exporter 的 **主连接数据库** 中执行以下列级授权，不能只在订阅所属数据库授权：
 
 ```sql
 GRANT SELECT (oid) ON pg_catalog.pg_subscription TO monitor;
@@ -169,4 +169,4 @@ curl --cacert /etc/prometheus/ca/pg_exporter-ca.crt \
 
 ## 工具链安全更新 {#toolchain-security-updates}
 
-v1.6.0 使用 Go 1.27.3 与更新后的依赖，包括 `x/net` 0.62.0，并保留 v1.5.0 已记录的安全修复。[发布安全说明](/zh/release/v1.5.0/#security-updates)列出了纳入的 CVE 修复，并区分静态符号／包匹配与未导入模块的公告。升级时替换重新构建的二进制及配套采集器配置；仅更新主机编译器不会修复已有二进制。
+v1.6.1 使用 Go 1.27.4 与更新后的依赖，包括 `x/net` 0.62.0，并保留 v1.5.0 已记录的安全修复。[发布安全说明](/zh/release/v1.5.0/#security-updates)列出了纳入的 CVE 修复，并区分静态符号／包匹配与未导入模块的公告。升级时替换重新构建的二进制及配套采集器配置；仅更新主机编译器不会修复已有二进制。

@@ -176,7 +176,7 @@ Collector YAML can also be reloaded with `SIGHUP`; Unix builds additionally acce
 
 | Symptom | Likely cause and fix |
 |:---|:---|
-| TLS verification fails in Docker | v1.6.0 includes public CA roots; check hostname/trust and mount your private CA with `sslrootcert` when needed |
+| TLS verification fails in Docker | v1.6.0+ includes public CA roots; check hostname/trust and mount your private CA with `sslrootcert` when needed |
 | `.pgpass` is ignored in packaged service | Check the `prometheus` account home or `PGPASSFILE`; give the service user ownership and use mode `0600` |
 | RPM automation cannot find v1.4.1 artifact | Artifact prefix changed from `pg_exporter` to `pg-exporter` |
 | Config edits disappear after container replacement | Mount `/etc/pg_exporter.yml` from durable configuration |

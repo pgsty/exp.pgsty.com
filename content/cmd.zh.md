@@ -39,8 +39,8 @@ URL 未指定 `sslmode` 时，PG Exporter 会补上 `sslmode=disable`。采集�
 `pg_exporter.yml`、`/etc/pg_exporter.yml` 与 `/etc/pg_exporter` 中第一个存在的路径。显式指定的路径加载失败时，程序会报错，不会回退到其他路径。
 
 URL 中省略的字段可由驱动支持的环境变量补齐，例如 `PGHOST`、`PGPORT`、`PGUSER`、
-`PGDATABASE` 与 `PGPASSFILE`。PG Exporter 会清除 `PGSERVICE` 和 `PGSERVICEFILE`，
-避免服务文件覆盖连接目标。凭据文件的设置方法见[生产部署](/zh/deploy/)。
+`PGDATABASE` 与 `PGPASSFILE`。PG Exporter 启动时会清除 `PGSERVICE`、`PGSERVICEFILE`、`PGSYSCONFDIR`、`PGLOCALEDIR` 和 `PGREALM`，
+避免外部服务文件、系统配置目录或区域／Kerberos 环境变量干扰连接目标。凭据文件的设置方法见[生产部署](/zh/deploy/)。
 
 ## 采集参数 {#collection-flags}
 
